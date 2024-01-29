@@ -1,4 +1,4 @@
-# Jukebox
+th# Jukebox
 
 The Jukebox Mod is a song manager for Geometry Dash. The primary goal is simplifying the process of swapping Newgrounds songs with any NONGs.
 
@@ -10,7 +10,7 @@ NONGs have always been a hassle to manage, because some level creators use popul
 
 ## Start your jukebox!
 
-The Jukebox Mod makes the process of managing your songs a breeze. You can download your NONGs using your method of choice. A recommandation of mine is [yt-dlp](https://github.com/yt-dlp/yt-dlp), a CLI application. After getting your MP3 file, you can enter a song and author name, for easier management.
+The Jukebox Mod makes the process of managing your songs a breeze. You can download your NONGs using your method of choice. My recommandations are: [Cobalt](https://cobalt.tools/) and [yt-dlp](https://github.com/yt-dlp/yt-dlp), a CLI application. After getting your MP3 file, you can enter a song and author name, for easier management.
 
 > Note that Jukebox copies imported MP3 files in the storage location designated by Geode. You can open this folder from ingame.
 
