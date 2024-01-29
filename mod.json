@@ -1,0 +1,32 @@
+{
+	"geode": "2.0.0",
+	"version": "2.1.5",
+	"id": "fleym.nongd",
+	"name": "Jukebox",
+	"gd": {
+		"win": "2.204",
+		"android": "2.205"
+	},
+	"developer": "Fleym",
+	"description": "A simple song manager for Geometry Dash",
+	"repository": "https://github.com/Fleeym/nongd",
+	"issues": {
+		"info": "For any issues regarding this mod, send me a message on my discord: 'fleeym'. If you can, please give the level or song ID you are having problems with."
+	},
+	"tags": [
+		"Music"
+	],
+	"settings": {
+		"fix-empty-size": {
+			"name": "Fix 0.0B",
+			"type": "bool",
+			"description": "Fixes multi asset levels showing 0.0B size (experimental, might cause lag when downloading assets)",
+			"default": false
+		}
+	},
+	"resources": {
+		"sprites": [
+			"resources/*.png"
+		]
+	}
+}
