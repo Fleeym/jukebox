@@ -10,22 +10,16 @@ NONGs have always been a hassle to manage, because some level creators use popul
 
 ## Start your jukebox!
 
-The Jukebox Mod makes the process of managing your songs a breeze. You have 2 choices for adding a song to the game.
-
-1. Fetch from Song File Hub
-2. Download MP3 manually and add it ingame
-
-You can download your NONGs using your method of choice. A recommandation of mine is [yt-dlp](https://github.com/yt-dlp/yt-dlp), a CLI application. After getting your MP3 file, you can enter a song and author name, for easier management.
+The Jukebox Mod makes the process of managing your songs a breeze. You can download your NONGs using your method of choice. A recommandation of mine is [yt-dlp](https://github.com/yt-dlp/yt-dlp), a CLI application. After getting your MP3 file, you can enter a song and author name, for easier management.
 
 > Note that Jukebox copies imported MP3 files in the storage location designated by Geode. You can open this folder from ingame.
 
-Alternatively, you can download song data from **Song File Hub**, which is all tightly integrated inside the mod! Huge thanks to their team for helping out with the integration.
+Alternatively, you can download songs from **Song File Hub**. I have added a button that opens their site in your browser.
 
 ## So, how do I begin?
 
-You can open up the Jukebox menu form any Level page. Just click on the song name, and either a song list (if the level has multiple songs), or the song management screen (if the level only uses 1 song) will open. From here, you can add, remove, swap and fetch songs.
+You can open up the Jukebox menu form any Level page. Just click on the song name, and either a song list (if the level has multiple songs), or the song management screen (if the level only uses 1 song) will open. From here, you can add, remove and swap songs.
 
 ## Credits
 
 - The Geode team, for creating such an amazing toolkit
-- Song File Hub, for creating the best song archive in the community (and also letting me interact with their API)
