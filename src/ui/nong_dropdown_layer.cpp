@@ -295,9 +295,11 @@ void NongDropdownLayer::fetchSongFileHub(CCObject*) {
     if (m_currentListType == NongListType::Multiple) {
         return;
     }
+    std::stringstream ss;
+    ss << "Do you want to open <cb>Song File Hub</c>? The song ID (" << m_currentSongID << ") will be copied to your <cr>clipboard</c>.";
     createQuickPopup(
         "Song File Hub",
-        "Do you want to open <cb>Song File Hub?</c>. The song ID will be written to your <cr>clipboard</c>.",
+        ss.str(),
         "No",
         "Yes",
         [this](FLAlertLayer* alert, bool btn2) {
@@ -309,7 +311,7 @@ void NongDropdownLayer::fetchSongFileHub(CCObject*) {
             geode::utils::clipboard::write(ss.str());
             geode::utils::web::openLinkInBrowser("https://songfilehub.com");
         }
-    )->show();
+    );
 }
 
 void NongDropdownLayer::deleteAllNongs(CCObject*) {
