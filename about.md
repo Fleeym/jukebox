@@ -1,4 +1,4 @@
-th# Jukebox
+# Jukebox
 
 The Jukebox Mod is a song manager for Geometry Dash. The primary goal is simplifying the process of swapping Newgrounds songs with any NONGs.
 
