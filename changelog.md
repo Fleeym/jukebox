@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.2.1
+
+ * Fixed the "Unknown" bug
+ * Try and fix songs that have been broken by said "Unknown" bug
+ * Copy the song ID to the clipboard when opening Song File Hub
+ * Add a label with the chosen file path in the add popup
+ * Ask for permissions on Android before trying to pick a song
+
 ## v2.2.0
 
  * Removed Song File Hub integration
