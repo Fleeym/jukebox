@@ -1,4 +1,5 @@
 #include "nong_add_popup.hpp"
+#include <cwchar>
 
 bool NongAddPopup::setup(NongDropdownLayer* parent) {
     this->setTitle("Add NONG");
@@ -119,7 +120,7 @@ void NongAddPopup::createInputs() {
 void NongAddPopup::addSong(CCObject* target) {
     auto artistName = std::string(m_artistNameInput->getString());
     auto songName = std::string(m_songNameInput->getString());
-    if (m_songPath.empty()) {
+    if (wcslen(m_songPath.c_str()) == 0) {
         FLAlertLayer::create("Error", "No file selected.", "Ok")->show();
         return;
     }
