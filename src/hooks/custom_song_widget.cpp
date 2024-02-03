@@ -130,7 +130,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (active.path == result.value().defaultPath) {
             NongManager::get()->fixDefault(obj);
         }
-        if (!result.value().defaultValid) {
+        if (!result.value().defaultValid && active.path == result.value().defaultPath) {
             NongManager::get()->prepareCorrectDefault(obj->m_songID);
             this->template addEventListener<GetSongInfoEventFilter>(
                 [this](SongInfoObject* obj) {
