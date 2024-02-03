@@ -4,19 +4,35 @@
 #include <Geode/utils/web.hpp>
 #include <optional>
 #include <map>
+#include <unordered_map>
+#include <vector>
 
 #include "../types/song_info.hpp"
 #include "../types/nong_state.hpp"
 #include "../random_string.hpp"
 #include "../trim.hpp"
+#include "../events/get_song_info_event.hpp"
+#include "Geode/binding/SongInfoObject.hpp"
+#include "Geode/loader/Event.hpp"
 
 using namespace geode::prelude;
+
+enum class SongInfoGetAction {
+    CreateDefault,
+    FixDefault   
+};
 
 class NongManager : public CCObject {
 protected:
     inline static NongManager* m_instance = nullptr;
     NongState m_state;
     std::map<int, std::function<void(int)>> m_getSongInfoCallbacks;
+    std::unordered_map<int, std::vector<SongInfoGetAction>> m_getSongInfoActions;
+    EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener = { this, &NongManager::onSongInfoFetched };
+
+    std::optional<std::vector<SongInfoGetAction>> getSongIDActions(int songID);
+    void addSongIDAction(int songID, SongInfoGetAction action);
+    void createDefaultCallback(SongInfoObject* obj);
 public:
     /**
      * Only used once, on game launch. Reads the json and loads it into memory.
@@ -130,9 +146,8 @@ public:
      * Fetches song info for an id and creates the default entry in the json.
      * 
      * @param songID the id of the song
-     * @param fromCallback used to skip fetching song info from MDM (after it has been done once)
     */
-    void createDefault(int songID, bool fromCallback = false);
+    void createDefault(int songID);
 
     /**
      * Creates a default with name unknown and artist unknown. Used for invalid song ids.
@@ -147,6 +162,11 @@ public:
      * @return the path of the JSON
     */
     fs::path getJsonPath();
+
+    void prepareCorrectDefault(int songID);
+    void fixDefault(SongInfoObject* obj);
+
+    ListenerResult onSongInfoFetched(GetSongInfoEvent* event);
 
     static NongManager* get() {
         if (m_instance == nullptr) {

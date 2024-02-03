@@ -8,6 +8,7 @@ file(GLOB SOURCES
     src/ui/*.cpp
     src/managers/*.cpp
     src/hooks/*.cpp
+    src/events/*.cpp
 	src/*.cpp
 )
 

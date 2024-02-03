@@ -1,7 +1,17 @@
 #include "nong_manager.hpp"
+#include "Geode/binding/MusicDownloadManager.hpp"
+#include "Geode/binding/SongInfoObject.hpp"
+#include "Geode/loader/Event.hpp"
+#include <optional>
+#include <vector>
 
 std::optional<NongData> NongManager::getNongs(int songID) {
     if (!m_state.m_nongs.contains(songID)) {
+        return std::nullopt;
+    }
+
+    auto actions = this->getSongIDActions(songID);
+    if (actions.has_value()) {
         return std::nullopt;
     }
 
@@ -179,32 +189,21 @@ void NongManager::deleteNong(SongInfo const& song, int songID) {
     this->saveNongs(newData, songID);
 }
 
-void NongManager::createDefault(int songID, bool fromCallback) {
+void NongManager::createDefault(int songID) {
     if (m_state.m_nongs.contains(songID)) {
         return;
     }
     SongInfoObject* songInfo = MusicDownloadManager::sharedState()->getSongInfoObject(songID);
-    if (songInfo == nullptr && !m_getSongInfoCallbacks.contains(songID) && !fromCallback) {
+    if (songInfo == nullptr && !m_getSongInfoCallbacks.contains(songID)) {
         MusicDownloadManager::sharedState()->getSongInfo(songID, true);
-        m_getSongInfoCallbacks[songID] = [this](int songID) {
-            this->createDefault(songID, true);
-        };
+        this->addSongIDAction(songID, SongInfoGetAction::CreateDefault);
         return;
     }
     if (songInfo == nullptr) {
         return;
     }
-    fs::path songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(songID)));
-    NongData data;
-    SongInfo defaultSong;
-    defaultSong.authorName = songInfo->m_artistName;
-    defaultSong.songName = songInfo->m_songName;
-    defaultSong.path = songPath;
-    defaultSong.songUrl = songInfo->m_songUrl;
-    data.active = songPath;
-    data.defaultPath = songPath;
-    data.songs.push_back(defaultSong);
-    m_state.m_nongs[songID] = data;
+
+    this->createDefaultCallback(songInfo);
 }
 
 void NongManager::createUnknownDefault(int songID) {
@@ -214,7 +213,7 @@ void NongManager::createUnknownDefault(int songID) {
     fs::path songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(songID)));
     NongData data;
     SongInfo defaultSong;
-    defaultSong.authorName = "Unknown";
+    defaultSong.authorName = "";
     defaultSong.songName = "Unknown";
     defaultSong.path = songPath;
     defaultSong.songUrl = "";
@@ -299,4 +298,115 @@ void NongManager::loadSongs() {
 
     auto json = matjson::parse(std::string_view(buffer.str()));
     m_state = matjson::Serialize<NongState>::from_json(json);
+}
+
+void NongManager::prepareCorrectDefault(int songID) {
+    auto res = this->getNongs(songID);
+    if (!res.has_value()) {
+        return;
+    }
+
+    auto nongs = res.value();
+    if (nongs.defaultValid) {
+        return;
+    }
+    nongs.defaultValid = true;
+    this->saveNongs(nongs, songID);
+    MusicDownloadManager::sharedState()->clearSong(songID);
+    MusicDownloadManager::sharedState()->getSongInfo(songID, true);
+    this->addSongIDAction(songID, SongInfoGetAction::FixDefault);
+}
+
+void NongManager::fixDefault(SongInfoObject* obj) {
+    int songID = obj->m_songID;
+    auto nongs = this->getNongs(songID).value();
+    auto defaultNong = this->getDefaultNong(songID).value();
+    if (obj->m_songUrl.empty() && obj->m_artistName.empty()) {
+        nongs.defaultValid = false;
+        this->saveNongs(nongs, obj->m_songID);
+        return;
+    }
+    for (auto& song : nongs.songs) {
+        if (song.path != defaultNong.path) {
+            continue;
+        }
+
+        song.songName = obj->m_songName;
+        song.authorName = obj->m_artistName;
+        song.songUrl = obj->m_songUrl;
+    }
+    this->saveNongs(nongs, obj->m_songID);
+}
+
+void NongManager::createDefaultCallback(SongInfoObject* obj) {
+    if (auto nongs = NongManager::get()->getNongs(obj->m_songID)) {
+        return;
+    }
+    fs::path songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID)));
+    NongData data;
+    SongInfo defaultSong;
+    defaultSong.authorName = obj->m_artistName;
+    defaultSong.songName = obj->m_songName;
+    defaultSong.path = songPath;
+    defaultSong.songUrl = obj->m_songUrl;
+    data.active = songPath;
+    data.defaultPath = songPath;
+    data.songs.push_back(defaultSong);
+    m_state.m_nongs[obj->m_songID] = data;
+}
+
+ListenerResult NongManager::onSongInfoFetched(GetSongInfoEvent* event) {
+    SongInfoObject* obj = event->getObject();
+    if (obj == nullptr) {
+        return ListenerResult::Stop;
+    }
+
+    auto res = this->getSongIDActions(obj->m_songID);
+    if (!res.has_value()) {
+        return ListenerResult::Propagate;
+    }
+
+    auto actions = res.value();
+    for (auto const& action : actions) {
+        switch (action) {
+            case SongInfoGetAction::CreateDefault: {
+                this->createDefaultCallback(obj);
+                break;
+            }
+            case SongInfoGetAction::FixDefault: {
+                this->fixDefault(obj);
+                break;
+            }
+        }
+    }
+    m_getSongInfoActions.erase(obj->m_songID);
+    return ListenerResult::Propagate;
+}
+
+std::optional<std::vector<SongInfoGetAction>> NongManager::getSongIDActions(int songID) {
+    if (m_getSongInfoActions.contains(songID)) {
+        return std::nullopt;
+    }
+
+    if (m_getSongInfoActions[songID].empty()) {
+        m_getSongInfoActions.erase(songID);
+        return std::nullopt;
+    }
+
+    return m_getSongInfoActions[songID];
+}
+
+void NongManager::addSongIDAction(int songID, SongInfoGetAction action) {
+    if (!m_getSongInfoActions.contains(songID)) {
+        m_getSongInfoActions[songID] = { action };
+        return;
+    }
+
+    for (auto const& existingAction : m_getSongInfoActions[songID]) {
+        if (action == existingAction) {
+            return;
+        }
+    }
+
+    m_getSongInfoActions[songID].push_back(action);
 }

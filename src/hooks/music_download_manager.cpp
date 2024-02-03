@@ -3,6 +3,7 @@
 
 #include "../managers/nong_manager.hpp"
 #include "../types/song_info.hpp"
+#include "../events/get_song_info_event.hpp"
 
 class $modify(MusicDownloadManager) {
 	gd::string pathForSong(int id) {
@@ -19,7 +20,7 @@ class $modify(MusicDownloadManager) {
     void onGetSongInfoCompleted(gd::string p1, gd::string p2) {
         MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
         auto songID = std::stoi(p2);
-        NongManager::get()->resolveSongInfoCallback(songID);
+        GetSongInfoEvent(this->getSongInfoObject(songID)).post();
     }
 
     SongInfoObject* getSongInfoObject(int id) {

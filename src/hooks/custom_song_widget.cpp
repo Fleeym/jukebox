@@ -2,10 +2,13 @@
 #include <Geode/modify/CustomSongWidget.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
 #include <Geode/ui/GeodeUI.hpp>
+#include <sstream>
 
 #include "../types/song_info.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
+#include "Geode/binding/SongInfoObject.hpp"
+#include "Geode/loader/Event.hpp"
 #include "Geode/utils/cocos.hpp"
 
 using namespace geode::prelude;
@@ -39,7 +42,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return true;
         }
         // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool1, m_isMusicLibrary);
-
         
         m_songLabel->setVisible(false);
         return true;
@@ -93,32 +95,27 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void updateSongObject(SongInfoObject* obj) {
+        // log::info("update song object");
         // log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, obj->m_songID);
         // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool1, m_isMusicLibrary);
+
         CustomSongWidget::updateSongObject(obj);
         if (obj->m_songID == 0) {
             this->restoreUI();
             return;
         }
         if (m_showSelectSongBtn && obj->m_artistName.empty() && obj->m_songUrl.empty()) {
-            // log::info("returning");
             this->restoreUI();
             return;
         }
         if (m_isRobtopSong) {
             return;
         }
-        // log::info("not returning?");
         m_songLabel->setVisible(false);
-        if (obj->m_artistName.empty() && obj->m_songUrl.empty()) {
+        if (obj->m_songUrl.empty()) {
             // we have an invalid songID
-            auto res = NongManager::get()->getActiveNong(obj->m_songID);
-            if (res.has_value()) {
-                auto value = res.value();
-                obj->m_artistName = value.authorName;
-            } else {
+            if (!NongManager::get()->getNongs(obj->m_songID).has_value()) {
                 NongManager::get()->createUnknownDefault(obj->m_songID);
-                obj->m_artistName = "Unknown";
             }
         }
         auto result = NongManager::get()->getNongs(obj->m_songID);
@@ -129,9 +126,22 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 return;
             }
         }
+        auto active = NongManager::get()->getActiveNong(obj->m_songID).value();
+        if (active.path == result.value().defaultPath) {
+            NongManager::get()->fixDefault(obj);
+        }
+        if (!result.value().defaultValid) {
+            NongManager::get()->prepareCorrectDefault(obj->m_songID);
+            this->template addEventListener<GetSongInfoEventFilter>(
+                [this](SongInfoObject* obj) {
+                    this->createSongLabels();
+                    return ListenerResult::Propagate;
+                },
+                obj->m_songID
+            );
+        }
         m_fields->nongs = result.value();
         this->createSongLabels();
-        auto active = NongManager::get()->getActiveNong(obj->m_songID).value();
         auto data = NongManager::get()->getNongs(obj->m_songID).value();
         if (active.path != data.defaultPath) {
             m_deleteBtn->setVisible(false);
