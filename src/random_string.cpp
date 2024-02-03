@@ -10,7 +10,10 @@ namespace nongd {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "abcdefghijklmnopqrstuvwxyz";
             const size_t max_index = (sizeof(charset) - 1);
-            return charset[ rand() % max_index ];
+            std::random_device rd;
+            std::mt19937_64 gen(rd());
+            std::uniform_int_distribution<> dis(0, max_index);
+            return charset[ dis(gen) ];
         };
         std::string str(length,0);
         std::generate_n(str.begin(), length, randchar);
