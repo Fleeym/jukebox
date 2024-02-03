@@ -1,7 +1,9 @@
 #include "nong_dropdown_layer.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
+#include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 #include <filesystem>
+#include <sstream>
 
 bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {
     m_songIDS = ids;
@@ -171,11 +173,7 @@ void NongDropdownLayer::onBack(CCObject*) {
 }
 
 void NongDropdownLayer::openAddPopup(CCObject* target) {
-    // #ifdef GEODE_IS_ANDROID
-    // FLAlertLayer::create("Unavailable", "Adding songs manually is <cr>temporarily unavailable</c> on Android.", "Ok")->show();
-    // #else
     NongAddPopup::create(this)->show();
-    // #endif
 }
 
 void NongDropdownLayer::createList() {
@@ -296,6 +294,9 @@ void NongDropdownLayer::fetchSongFileHub(CCObject*) {
     if (m_currentListType == NongListType::Multiple) {
         return;
     }
+    std::stringstream ss;
+    ss << m_currentSongID;
+    geode::utils::clipboard::write(ss.str());
     geode::utils::web::openLinkInBrowser("https://songfilehub.com");
 }
 
