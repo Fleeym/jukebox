@@ -1,4 +1,9 @@
 #include "nong_add_popup.hpp"
+#include "Geode/cocos/CCDirector.h"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+#include "Geode/loader/Log.hpp"
+#include "Geode/utils/string.hpp"
+#include "../random_string.hpp"
 #include <cwchar>
 
 bool NongAddPopup::setup(NongDropdownLayer* parent) {
@@ -54,6 +59,21 @@ CCSize NongAddPopup::getPopupSize() {
     return { 320.f, 240.f };
 }
 
+void NongAddPopup::addPathLabel(std::string const& path) {
+    if (m_songPathLabel != nullptr) {
+        m_songPathLabel->removeFromParent();
+        m_songPathLabel = nullptr;
+    }
+
+    auto winsize = CCDirector::sharedDirector()->getWinSize();
+    auto label = CCLabelBMFont::create(path.c_str(), "goldFont.fnt");
+    label->limitLabelWidth(260.f, 0.9f, 0.1f);
+    label->setPosition({ winsize.width / 2, winsize.height / 2 + 75.f });
+    label->setID("song-path-label");
+    m_mainLayer->addChild(label);
+    m_songPathLabel = label;
+}
+
 void NongAddPopup::openFile(CCObject* target) {
     file::FilePickOptions options = {
         std::nullopt,
@@ -62,6 +82,8 @@ void NongAddPopup::openFile(CCObject* target) {
 
     file::pickFile(file::PickMode::OpenFile , options, [this](ghc::filesystem::path result) {
         auto path = fs::path(result.c_str());
+        auto strPath = geode::utils::string::wideToUtf8(result.c_str());
+        this->addPathLabel(strPath);
         m_songPath = path;
     }, []() {
         FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
@@ -86,6 +108,7 @@ void NongAddPopup::createInputs() {
     m_songNameInput->ignoreAnchorPointForPosition(true);
     m_songNameInput->m_textField->setAnchorPoint({ 0.5f, 0.5f });
     m_songNameInput->m_placeholderLabel->setAnchorPoint({ 0.5f, 0.5f });
+    m_songNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnm1234567890(),.-_+");
     m_songNameInput->setMaxLabelScale(0.7f);
     m_songNameInput->setLabelPlaceholderColor(ccc3(108, 153, 216));
     m_songNameInput->setMouseEnabled(true);
@@ -98,6 +121,7 @@ void NongAddPopup::createInputs() {
     m_artistNameInput->setID("artist-name-input");
     m_artistNameInput->setPosition(centered.width, centered.height - 50.f);
     m_artistNameInput->ignoreAnchorPointForPosition(true);
+    m_artistNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnm1234567890(),.-_+");
     m_artistNameInput->setMaxLabelScale(0.7f);
     m_artistNameInput->m_textField->setAnchorPoint({ 0.5f, 0.5f });
     m_artistNameInput->m_placeholderLabel->setAnchorPoint({ 0.5f, 0.5f });

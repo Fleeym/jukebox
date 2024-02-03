@@ -2,7 +2,7 @@
 
 #include <Geode/Geode.hpp>
 
-#include "../random_string.hpp"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
@@ -22,9 +22,11 @@ protected:
     CCTextInputNode* m_artistNameInput;
 
     fs::path m_songPath;
+    CCLabelBMFont* m_songPathLabel;
 
     bool setup(NongDropdownLayer* parent) override;
     void createInputs();
+    void addPathLabel(std::string const& path);
 
     CCSize getPopupSize();
     void openFile(CCObject*);
