@@ -3,6 +3,7 @@
 #include "Geode/cocos/CCDirector.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/loader/Log.hpp"
+#include "Geode/utils/MiniFunction.hpp"
 #include "Geode/utils/permission.hpp"
 #include "Geode/utils/string.hpp"
 #include "../random_string.hpp"
@@ -82,36 +83,32 @@ void NongAddPopup::openFile(CCObject* target) {
         {}
     };
 
+    auto callback = [this](ghc::filesystem::path result) {
+        auto path = fs::path(result.c_str());
+        #ifdef GEODE_IS_WINDOWS
+        auto strPath = geode::utils::string::wideToUtf8(result.c_str());
+        #else
+        std::string strPath = result.c_str();
+        #endif
+        this->addPathLabel(strPath);
+        m_songPath = path;
+    };
+    auto failedCallback = []() {
+        FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
+    };
+
     if (!geode::utils::permission::getPermissionStatus(permission::Permission::ReadAudio)) {
-        geode::utils::permission::requestPermission(permission::Permission::ReadAudio, [this, options](bool allowed) {
+        geode::utils::permission::requestPermission(permission::Permission::ReadAudio, [this, options, callback, failedCallback](bool allowed) {
             if (!allowed) {
                 FLAlertLayer::create("Error", "You need to allow media permissions to import songs!", "Ok")->show();
                 return;
             }
-            file::pickFile(file::PickMode::OpenFile , options, [this](ghc::filesystem::path result) {
-                auto path = fs::path(result.c_str());
-                #ifdef GEODE_IS_WINDOWS
-                auto strPath = geode::utils::string::wideToUtf8(result.c_str());
-                #else
-                std::string strPath = result.c_str();
-                #endif
-                this->addPathLabel(strPath);
-                m_songPath = path;
-            }, []() {
-                FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
-            });
+            file::pickFile(file::PickMode::OpenFile, options, callback, failedCallback);
         });
         return;
     }
 
-    file::pickFile(file::PickMode::OpenFile , options, [this](ghc::filesystem::path result) {
-        auto path = fs::path(result.c_str());
-        auto strPath = geode::utils::string::wideToUtf8(result.c_str());
-        this->addPathLabel(strPath);
-        m_songPath = path;
-    }, []() {
-        FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
-    });
+    file::pickFile(file::PickMode::OpenFile, options, callback, failedCallback);
 }
 
 void NongAddPopup::createInputs() {
