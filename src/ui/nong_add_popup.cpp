@@ -90,7 +90,11 @@ void NongAddPopup::openFile(CCObject* target) {
             }
             file::pickFile(file::PickMode::OpenFile , options, [this](ghc::filesystem::path result) {
                 auto path = fs::path(result.c_str());
+                #ifdef GEODE_IS_WINDOWS
                 auto strPath = geode::utils::string::wideToUtf8(result.c_str());
+                #else
+                std::string strPath = result.c_str();
+                #endif
                 this->addPathLabel(strPath);
                 m_songPath = path;
             }, []() {
