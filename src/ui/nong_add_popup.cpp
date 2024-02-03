@@ -168,7 +168,11 @@ void NongAddPopup::createInputs() {
 void NongAddPopup::addSong(CCObject* target) {
     auto artistName = std::string(m_artistNameInput->getString());
     auto songName = std::string(m_songNameInput->getString());
+    #ifdef GEODE_IS_WINDOWS
     if (wcslen(m_songPath.c_str()) == 0) {
+    #else
+    if (strlen(m_songPath.c_str()) == 0) {
+    #endif
         FLAlertLayer::create("Error", "No file selected.", "Ok")->show();
         return;
     }
