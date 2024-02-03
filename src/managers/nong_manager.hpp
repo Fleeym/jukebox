@@ -163,7 +163,15 @@ public:
     */
     fs::path getJsonPath();
 
+    /**
+     * Add actions needed to fix a broken song default
+     * @param songID id of the song
+    */
     void prepareCorrectDefault(int songID);
+    /**
+     * Callback that runs when a fix song default action runs
+     * @param songID id of the song
+    */
     void fixDefault(SongInfoObject* obj);
 
     ListenerResult onSongInfoFetched(GetSongInfoEvent* event);
