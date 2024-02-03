@@ -1,5 +1,6 @@
 #include "nong_dropdown_layer.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
+#include "Geode/ui/Popup.hpp"
 #include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 #include <filesystem>
@@ -294,10 +295,21 @@ void NongDropdownLayer::fetchSongFileHub(CCObject*) {
     if (m_currentListType == NongListType::Multiple) {
         return;
     }
-    std::stringstream ss;
-    ss << m_currentSongID;
-    geode::utils::clipboard::write(ss.str());
-    geode::utils::web::openLinkInBrowser("https://songfilehub.com");
+    createQuickPopup(
+        "Song File Hub",
+        "Do you want to open <cb>Song File Hub?</c>. The song ID will be written to your <cr>clipboard</c>.",
+        "No",
+        "Yes",
+        [this](FLAlertLayer* alert, bool btn2) {
+            if (!btn2) {
+                return;
+            }
+            std::stringstream ss;
+            ss << m_currentSongID;
+            geode::utils::clipboard::write(ss.str());
+            geode::utils::web::openLinkInBrowser("https://songfilehub.com");
+        }
+    )->show();
 }
 
 void NongDropdownLayer::deleteAllNongs(CCObject*) {
