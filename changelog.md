@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.2.2
+
+ * Actually bump mod.json version
+
 ## v2.2.1
 
  * Fixed the "Unknown" bug
