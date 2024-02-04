@@ -1,7 +1,12 @@
 // hello :)
 
+#include "Geode/loader/ModEvent.hpp"
 #include "managers/nong_manager.hpp"
 
-$execute {
+$on_mod(Loaded) {
     NongManager::get()->loadSongs();
 };
+
+$on_mod(DataSaved) {
+    NongManager::get()->writeJson();
+}
