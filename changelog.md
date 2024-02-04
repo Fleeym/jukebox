@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.2.3 (Cocos2dx reference)
+
+ * Fix NongAddPopup filters
+ * Fix random letter generator sometimes getting \0 as a character
+ * Write JSON on DataSaved
+ * Move initial JSON read to on_mod(Loaded)
+ * Remove permission check for Android
+
 ## v2.2.2
 
  * Actually bump mod.json version
