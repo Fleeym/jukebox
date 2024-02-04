@@ -4,6 +4,7 @@
 #include "Geode/loader/Event.hpp"
 #include <optional>
 #include <vector>
+#include <string>
 
 std::optional<NongData> NongManager::getNongs(int songID) {
     if (!m_state.m_nongs.contains(songID)) {
@@ -296,7 +297,16 @@ void NongManager::loadSongs() {
     buffer << input.rdbuf();
     input.close();
 
-    auto json = matjson::parse(std::string_view(buffer.str()));
+    std::string string = buffer.str();
+    std::string fixed;
+    fixed.reserve(string.size());
+    for (size_t i = 0; i < string.size(); i++) {
+        if (string[i] != '\0') {
+            fixed += string[i];
+        }
+    }
+
+    auto json = matjson::parse(std::string_view(fixed));
     m_state = matjson::Serialize<NongState>::from_json(json);
 }
 
