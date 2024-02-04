@@ -118,7 +118,7 @@ void NongAddPopup::createInputs() {
     m_songNameInput->ignoreAnchorPointForPosition(true);
     m_songNameInput->m_textField->setAnchorPoint({ 0.5f, 0.5f });
     m_songNameInput->m_placeholderLabel->setAnchorPoint({ 0.5f, 0.5f });
-    m_songNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnm1234567890(),.-_+");
+    m_songNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
     m_songNameInput->setMaxLabelScale(0.7f);
     m_songNameInput->setLabelPlaceholderColor(ccc3(108, 153, 216));
     m_songNameInput->setMouseEnabled(true);
@@ -131,7 +131,7 @@ void NongAddPopup::createInputs() {
     m_artistNameInput->setID("artist-name-input");
     m_artistNameInput->setPosition(centered.width, centered.height - 50.f);
     m_artistNameInput->ignoreAnchorPointForPosition(true);
-    m_artistNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnm1234567890(),.-_+");
+    m_artistNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
     m_artistNameInput->setMaxLabelScale(0.7f);
     m_artistNameInput->m_textField->setAnchorPoint({ 0.5f, 0.5f });
     m_artistNameInput->m_placeholderLabel->setAnchorPoint({ 0.5f, 0.5f });
