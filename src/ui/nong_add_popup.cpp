@@ -97,17 +97,6 @@ void NongAddPopup::openFile(CCObject* target) {
         FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
     };
 
-    if (!geode::utils::permission::getPermissionStatus(permission::Permission::ReadAudio)) {
-        geode::utils::permission::requestPermission(permission::Permission::ReadAudio, [this, options, callback, failedCallback](bool allowed) {
-            if (!allowed) {
-                FLAlertLayer::create("Error", "You need to allow media permissions to import songs!", "Ok")->show();
-                return;
-            }
-            file::pickFile(file::PickMode::OpenFile, options, callback, failedCallback);
-        });
-        return;
-    }
-
     file::pickFile(file::PickMode::OpenFile, options, callback, failedCallback);
 }
 
