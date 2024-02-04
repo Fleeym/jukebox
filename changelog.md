@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.2.4
+
+ * Try and fix crash on startup from invalid JSON
+
 ## v2.2.3 (Cocos2dx reference)
 
  * Fix NongAddPopup filters
