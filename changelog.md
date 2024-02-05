@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.2.5
+
+ * Prevent CustomSongWidget update after adding a new song
+
 ## v2.2.4
 
  * Try and fix crash on startup from invalid JSON

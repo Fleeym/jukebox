@@ -285,7 +285,6 @@ void NongDropdownLayer::addSong(SongInfo const& song) {
         }
     }
     NongManager::get()->addNong(song, m_currentSongID);
-    this->updateParentWidget(song);
     FLAlertLayer::create("Success", "The song was added!", "Ok")->show();
     m_data[m_currentSongID] = NongManager::get()->getNongs(m_currentSongID).value();
     this->createList();
