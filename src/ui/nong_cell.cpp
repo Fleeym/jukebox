@@ -1,10 +1,19 @@
 #include "nong_cell.hpp"
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/binding/FLAlertLayer.hpp"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/loader/Event.hpp"
+#include "Geode/ui/Popup.hpp"
+#include "Geode/utils/cocos.hpp"
+#include <winnt.h>
 
 bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
     if (!JBListCell::init(parentPopup, size)) return false;
 
     m_songInfo = info;
     m_parentPopup = parentPopup;
+    m_isDefault = isDefault;
+    m_isActive = selected;
 
     CCMenuItemSpriteExtra* button;
 
@@ -14,7 +23,6 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
         button = CCMenuItemSpriteExtra::create(
             sprite,
             this,
-            // menu_selector(NongCell::onSet)
             nullptr
         );
     } else {
@@ -43,6 +51,20 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
         deleteButton->setID("delete-button");
         menu->addChild(deleteButton);
         deleteButton->setPositionX(38.f);
+    } else {
+        auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
+        sprite->setScale(0.8f);
+        if (!selected) {
+            sprite->setColor(cc3x(0x808080));
+        }
+        auto fixButton = CCMenuItemSpriteExtra::create(
+            sprite,
+            this,
+            menu_selector(NongCell::onFixDefault)
+        );
+        fixButton->setID("fix-button");
+        fixButton->setPositionX(38.f);
+        menu->addChild(fixButton);
     }
 
     menu->setAnchorPoint(ccp(0, 0));
@@ -92,6 +114,40 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
 
     this->addChild(m_songInfoLayer);
     return true;
+}
+
+void NongCell::onFixDefault(CCObject* target) {
+    if (!m_isActive) {
+        FLAlertLayer::create("Error", "Set the default song as <cr>active</c> first", "Ok")->show();
+        return;
+    }
+    createQuickPopup(
+        "Fix default",
+        "Do you want to refetch song info <cb>for the default song</c>? Use this <cr>ONLY</c> if it gets renamed by accident!",
+        "No",
+        "Yes",
+        [this](FLAlertLayer* alert, bool btn2) {
+            if (btn2) {
+                NongManager::get()->markAsInvalidDefault(m_parentPopup->getSongID());
+
+                m_parentPopup->updateParentWidget(m_songInfo);
+                // TODO I swear to god I'll regret this some day
+                this->retain();
+                m_parentPopup->retain();
+                m_parentPopup->m_mainLayer->retain();
+                this->template addEventListener<GetSongInfoEventFilter>(
+                    [this](auto song) {
+                        m_parentPopup->refreshList();
+                        FLAlertLayer::create("Success", "Default song data was refetched successfully!", "Ok")->show();
+                        this->release();
+                        m_parentPopup->release();
+                        m_parentPopup->m_mainLayer->release();
+                        return ListenerResult::Propagate;
+                    }, m_parentPopup->getSongID()
+                );
+            }
+        }
+    );
 }
 
 void NongCell::onSet(CCObject* target) {

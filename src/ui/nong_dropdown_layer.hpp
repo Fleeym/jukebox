@@ -49,6 +49,7 @@ public:
     void deleteSong(SongInfo const& song);
     void addSong(SongInfo const& song);
     void updateParentWidget(SongInfo const& song);
+    void refreshList();
 
     static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {
         auto ret = new NongDropdownLayer;

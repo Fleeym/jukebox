@@ -3,6 +3,7 @@
 #include <Geode/Geode.hpp>
 
 #include "../types/song_info.hpp"
+#include "Geode/cocos/cocoa/CCObject.h"
 #include "list_cell.hpp"
 #include "nong_dropdown_layer.hpp"
 
@@ -20,6 +21,9 @@ protected:
 
     NongDropdownLayer* m_parentPopup;
 
+    bool m_isDefault;
+    bool m_isActive;
+
     bool init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault);
 
     virtual void FLAlert_Clicked(FLAlertLayer*, bool btn2);
@@ -27,4 +31,5 @@ public:
     static NongCell* create(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault);
     void onSet(CCObject*);
     void deleteSong(CCObject*);
+    void onFixDefault(CCObject*);
 };

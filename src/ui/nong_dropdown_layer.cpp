@@ -258,6 +258,11 @@ void NongDropdownLayer::setActiveSong(SongInfo const& song) {
     this->createList();
 }
 
+void NongDropdownLayer::refreshList() {
+    m_data[m_currentSongID] = NongManager::get()->getNongs(m_currentSongID).value();
+    this->createList();
+}
+
 void NongDropdownLayer::updateParentWidget(SongInfo const& song) {
     m_parentWidget->m_songInfoObject->m_artistName = song.authorName;
     m_parentWidget->m_songInfoObject->m_songName = song.songName;
@@ -331,4 +336,8 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
             FLAlertLayer::create("Success", "All nongs were deleted successfully!", "Ok")->show();
         }
     );
+}
+
+int NongDropdownLayer::getSongID() {
+    return m_currentSongID;
 }

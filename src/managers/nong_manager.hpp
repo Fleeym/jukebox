@@ -174,6 +174,12 @@ public:
     */
     void fixDefault(SongInfoObject* obj);
 
+    /**
+     * Marks a song ID as having an invalid default
+     * @param songID id of the song
+    */
+    void markAsInvalidDefault(int songID);
+
     ListenerResult onSongInfoFetched(GetSongInfoEvent* event);
 
     static NongManager* get() {

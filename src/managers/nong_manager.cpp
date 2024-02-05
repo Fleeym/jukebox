@@ -327,6 +327,18 @@ void NongManager::prepareCorrectDefault(int songID) {
     this->addSongIDAction(songID, SongInfoGetAction::FixDefault);
 }
 
+void NongManager::markAsInvalidDefault(int songID) {
+    auto res = this->getNongs(songID);
+    if (!res.has_value()) {
+        return;
+    }
+
+    auto nongs = res.value();
+    nongs.defaultValid = false;
+
+    this->saveNongs(nongs, songID);
+}
+
 void NongManager::fixDefault(SongInfoObject* obj) {
     int songID = obj->m_songID;
     auto nongs = this->getNongs(songID).value();
