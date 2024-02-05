@@ -48,7 +48,7 @@ public:
 
     static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {
         auto ret = new NongDropdownLayer;
-        if (ret && ret->init(420.f, 280.f, ids, parent, defaultSongID, "GJ_square02.png")) {
+        if (ret && ret->initAnchored(420.f, 280.f, ids, parent, defaultSongID, "GJ_square02.png")) {
             ret->autorelease();
             return ret;
         }
