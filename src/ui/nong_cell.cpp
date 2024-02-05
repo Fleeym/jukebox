@@ -5,7 +5,6 @@
 #include "Geode/loader/Event.hpp"
 #include "Geode/ui/Popup.hpp"
 #include "Geode/utils/cocos.hpp"
-#include <winnt.h>
 
 bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
     if (!JBListCell::init(parentPopup, size)) return false;
