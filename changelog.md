@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.3.0
+
+ * Redesign NongDropdownLayer and NongAddPopup, using the new initAnchored
+ * Use more layouts in the UI
+ * Fix a bug that made the download bar visible after fixing the default song
+
 ## v2.2.5
 
  * Prevent CustomSongWidget update after adding a new song
