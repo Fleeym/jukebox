@@ -1,10 +1,11 @@
-#include "nong_manager.hpp"
-#include "Geode/binding/MusicDownloadManager.hpp"
-#include "Geode/binding/SongInfoObject.hpp"
-#include "Geode/loader/Event.hpp"
+#include <Geode/binding/MusicDownloadManager.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/loader/Event.hpp>
 #include <optional>
 #include <vector>
 #include <string>
+
+#include "nong_manager.hpp"
 
 std::optional<NongData> NongManager::getNongs(int songID) {
     if (!m_state.m_nongs.contains(songID)) {

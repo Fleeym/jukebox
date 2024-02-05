@@ -1,11 +1,10 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
+#include <Geode/cocos/cocoa/CCObject.h>
 
-#include "../types/song_info.hpp"
-#include "Geode/cocos/cocoa/CCObject.h"
 #include "list_cell.hpp"
 #include "nong_dropdown_layer.hpp"
+#include "../types/song_info.hpp"
 
 using namespace geode::prelude;
 

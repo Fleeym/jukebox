@@ -1,3 +1,5 @@
+#include <Geode/binding/StatsCell.hpp>
+
 #include "list_cell.hpp"
 
 bool JBListCell::init(CCLayer* layer, CCSize const& size) {

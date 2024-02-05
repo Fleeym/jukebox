@@ -1,6 +1,7 @@
+#include <Geode/loader/Event.hpp>
+#include <Geode/utils/MiniFunction.hpp>
+
 #include "get_song_info_event.hpp"
-#include "Geode/loader/Event.hpp"
-#include "Geode/utils/MiniFunction.hpp"
 
 ListenerResult GetSongInfoEventFilter::handle(MiniFunction<Callback> fn, GetSongInfoEvent* event) {
     if (event->getObject() == nullptr) {

@@ -1,5 +1,7 @@
-#include "random_string.hpp"
 #include <string_view>
+#include <random>
+
+#include "random_string.hpp"
 
 namespace nongd {
     std::string random_string(size_t length)

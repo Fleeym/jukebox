@@ -1,15 +1,15 @@
 #include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/modify/CustomSongWidget.hpp>
 #include <Geode/modify/LevelInfoLayer.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/loader/Event.hpp>
+#include <Geode/utils/cocos.hpp>
 #include <Geode/ui/GeodeUI.hpp>
 #include <sstream>
 
 #include "../types/song_info.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
-#include "Geode/binding/SongInfoObject.hpp"
-#include "Geode/loader/Event.hpp"
-#include "Geode/utils/cocos.hpp"
 
 using namespace geode::prelude;
 

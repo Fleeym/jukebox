@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
+#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 
-#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;

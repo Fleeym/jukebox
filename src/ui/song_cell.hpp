@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
-
 #include "../types/song_info.hpp"
 #include "list_cell.hpp"
 #include "nong_dropdown_layer.hpp"

@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
+#include <Geode/binding/FLAlertLayerProtocol.hpp>
+#include <Geode/cocos/cocoa/CCGeometry.h>
+#include <Geode/cocos/layers_scenes_transitions_nodes/CCLayer.h>
 
 using namespace geode::prelude;
 

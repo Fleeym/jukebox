@@ -1,5 +1,8 @@
 #include "trim.hpp"
 
+#include <algorithm>
+#include <string>
+
 namespace nongd {
     void left_trim(std::string &s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {

@@ -1,13 +1,12 @@
+#include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/cocos/CCDirector.h>
+#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/loader/Log.hpp>
+#include <Geode/utils/MiniFunction.hpp>
+#include <Geode/utils/string.hpp>
+
 #include "nong_add_popup.hpp"
-#include "Geode/binding/FLAlertLayer.hpp"
-#include "Geode/cocos/CCDirector.h"
-#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
-#include "Geode/loader/Log.hpp"
-#include "Geode/utils/MiniFunction.hpp"
-#include "Geode/utils/permission.hpp"
-#include "Geode/utils/string.hpp"
 #include "../random_string.hpp"
-#include <cwchar>
 
 bool NongAddPopup::setup(NongDropdownLayer* parent) {
     this->setTitle("Add NONG");

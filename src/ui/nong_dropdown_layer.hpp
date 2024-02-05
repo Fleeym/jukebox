@@ -1,18 +1,13 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
 #include <Geode/ui/GeodeUI.hpp>
+#include <Geode/utils/cocos.hpp>
 
 #include "../types/song_info.hpp"
 #include "../types/nong_list_type.hpp"
-#include "../managers/nong_manager.hpp"
 #include "nong_add_popup.hpp"
 #include "nong_cell.hpp"
 #include "song_cell.hpp"
-#include "Geode/binding/FLAlertLayer.hpp"
-#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
-#include "Geode/utils/cocos.hpp"
-#include <sstream>
 
 using namespace geode::prelude;
 

@@ -1,10 +1,14 @@
-#include "nong_dropdown_layer.hpp"
-#include "Geode/binding/FLAlertLayer.hpp"
-#include "Geode/ui/Popup.hpp"
-#include "Geode/utils/general.hpp"
-#include "Geode/utils/web.hpp"
+#include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/ui/Popup.hpp>
+#include <Geode/utils/general.hpp>
+#include <Geode/utils/web.hpp>
 #include <filesystem>
 #include <sstream>
+
+#include "nong_dropdown_layer.hpp"
+#include "../managers/nong_manager.hpp"
+
+namespace fs = std::filesystem;
 
 bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {
     m_songIDS = ids;

@@ -1,10 +1,11 @@
+#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/ui/Popup.hpp>
+#include <Geode/utils/cocos.hpp>
+
 #include "nong_cell.hpp"
-#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
-#include "Geode/binding/FLAlertLayer.hpp"
-#include "Geode/cocos/cocoa/CCObject.h"
-#include "Geode/loader/Event.hpp"
-#include "Geode/ui/Popup.hpp"
-#include "Geode/utils/cocos.hpp"
+#include "../managers/nong_manager.hpp"
 
 bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
     if (!JBListCell::init(parentPopup, size)) return false;

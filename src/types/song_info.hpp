@@ -1,9 +1,8 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
 #include <string>
-
-#include "../filesystem.hpp"
+#include <filesystem>
+namespace fs = std::filesystem;
 
 using namespace geode::prelude;
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Geode/Geode.hpp>
 #include <Geode/utils/web.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/loader/Event.hpp>
 #include <optional>
 #include <map>
 #include <unordered_map>
@@ -9,11 +10,7 @@
 
 #include "../types/song_info.hpp"
 #include "../types/nong_state.hpp"
-#include "../random_string.hpp"
-#include "../trim.hpp"
 #include "../events/get_song_info_event.hpp"
-#include "Geode/binding/SongInfoObject.hpp"
-#include "Geode/loader/Event.hpp"
 
 using namespace geode::prelude;
 
