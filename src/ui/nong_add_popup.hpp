@@ -2,6 +2,8 @@
 
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/ui/InputNode.hpp"
 #include "nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
@@ -15,12 +17,14 @@ protected:
     CCMenuItemSpriteExtra* m_addSongButton;
     CCMenu* m_selectSongMenu;
     CCMenu* m_addSongMenu;
-    CCLayer* m_containerLayer;
 
-    CCTextInputNode* m_songNameInput;
-    CCTextInputNode* m_artistNameInput;
+    InputNode* m_songNameInput;
+    InputNode* m_artistNameInput;
+    InputNode* m_levelNameInput;
 
     fs::path m_songPath;
+    CCNode* m_selectedContainer;
+    CCNode* m_songPathContainer;
     CCLabelBMFont* m_songPathLabel;
 
     bool setup(NongDropdownLayer* parent) override;

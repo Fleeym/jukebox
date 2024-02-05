@@ -4,18 +4,24 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/MiniFunction.hpp>
 #include <Geode/utils/string.hpp>
+#include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/base_nodes/Layout.hpp>
+#include <Geode/ui/InputNode.hpp>
+#include <ccTypes.h>
+#include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include <Geode/cocos/sprite_nodes/CCSprite.h>
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
 
 bool NongAddPopup::setup(NongDropdownLayer* parent) {
-    this->setTitle("Add NONG");
+    this->setTitle("Add Song");
     m_parentPopup = parent;
 
-    auto center = CCDirector::sharedDirector()->getWinSize() / 2;
-
+    auto spr = CCSprite::createWithSpriteFrameName("accountBtn_myLevels_001.png");
+    spr->setScale(0.7f);
     m_selectSongButton = CCMenuItemSpriteExtra::create(
-        ButtonSprite::create("Select mp3..."),
+        spr,
         this,
         menu_selector(NongAddPopup::openFile)
     );
@@ -23,7 +29,10 @@ bool NongAddPopup::setup(NongDropdownLayer* parent) {
     m_selectSongMenu->setID("select-file-menu");
     m_selectSongButton->setID("select-file-button");
     m_selectSongMenu->addChild(this->m_selectSongButton);
-    m_selectSongMenu->setPosition(center.width, center.height + this->getPopupSize().height / 2 - 75.f);
+    m_selectSongMenu->setContentSize(m_selectSongButton->getScaledContentSize());
+    m_selectSongMenu->setAnchorPoint({1.0f, 0.0f});
+    m_selectSongMenu->setPosition(m_mainLayer->getContentSize().width - 10.f, 10.f);
+    m_selectSongMenu->setLayout(ColumnLayout::create());
 
     m_addSongButton = CCMenuItemSpriteExtra::create(
         ButtonSprite::create("Add"),
@@ -34,13 +43,30 @@ bool NongAddPopup::setup(NongDropdownLayer* parent) {
     m_addSongMenu->setID("add-song-menu");
     m_addSongButton->setID("add-song-button");
     m_addSongMenu->addChild(this->m_addSongButton);
-    m_addSongMenu->setPosition(center.width, center.height - this->getPopupSize().height / 2 + 25.f);
+    m_addSongMenu->setPosition(m_mainLayer->getContentSize().width / 2, 10.f);
+    m_addSongMenu->setAnchorPoint({0.5f, 0.0f});
+    m_addSongMenu->setContentSize(m_addSongButton->getContentSize());
+    m_addSongMenu->setLayout(ColumnLayout::create());
 
-    m_containerLayer = CCLayer::create();
+    auto selectedContainer = CCNode::create();
+    selectedContainer->setID("selected-container");
+    m_selectedContainer = selectedContainer;
+    auto selectedLabel = CCLabelBMFont::create("Selected file:", "goldFont.fnt");
+    selectedLabel->setScale(0.75f);
+    selectedLabel->setID("selected-label");
+    selectedContainer->addChild(selectedLabel);
+    auto layout = ColumnLayout::create();
+    layout->setAutoScale(false);
+    layout->setAxisReverse(true);
+    layout->setAxisAlignment(AxisAlignment::End);
+    selectedContainer->setContentSize({ 250.f, 50.f });
+    selectedContainer->setPosition(m_mainLayer->getContentSize().width / 2, m_mainLayer->getContentSize().height / 2 - 25.f);
+    selectedContainer->setAnchorPoint({0.5f, 1.0f});
+    selectedContainer->setLayout(layout);
+    m_mainLayer->addChild(selectedContainer);
 
-    m_containerLayer->addChild(this->m_selectSongMenu);
-    m_containerLayer->addChild(this->m_addSongMenu);
-    m_mainLayer->addChild(this->m_containerLayer);
+    m_mainLayer->addChild(this->m_selectSongMenu);
+    m_mainLayer->addChild(this->m_addSongMenu);
     this->createInputs();
 
     return true;
@@ -49,7 +75,7 @@ bool NongAddPopup::setup(NongDropdownLayer* parent) {
 NongAddPopup* NongAddPopup::create(NongDropdownLayer* parent) {
     auto ret = new NongAddPopup();
     auto size = ret->getPopupSize();
-    if (ret && ret->init(size.width, size.height, parent)) {
+    if (ret && ret->initAnchored(size.width, size.height, parent)) {
         ret->autorelease();
         return ret;
     }
@@ -62,18 +88,37 @@ CCSize NongAddPopup::getPopupSize() {
 }
 
 void NongAddPopup::addPathLabel(std::string const& path) {
-    if (m_songPathLabel != nullptr) {
-        m_songPathLabel->removeFromParent();
+    if (m_songPathContainer != nullptr) {
+        m_songPathContainer->removeFromParent();
+        m_songPathContainer = nullptr;
         m_songPathLabel = nullptr;
     }
-
-    auto winsize = CCDirector::sharedDirector()->getWinSize();
-    auto label = CCLabelBMFont::create(path.c_str(), "goldFont.fnt");
-    label->limitLabelWidth(260.f, 0.9f, 0.1f);
-    label->setPosition({ winsize.width / 2, winsize.height / 2 + 75.f });
+    auto container = CCNode::create();
+    container->setID("song-path-container");
+    auto label = CCLabelBMFont::create(path.c_str(), "bigFont.fnt");
+    label->limitLabelWidth(240.f, 0.6f, 0.1f);
     label->setID("song-path-label");
-    m_mainLayer->addChild(label);
     m_songPathLabel = label;
+    m_songPathContainer = container;
+
+    auto bgSprite = CCScale9Sprite::create(
+        "square02b_001.png",
+        { 0.0f, 0.0f, 80.0f, 80.0f }
+    );
+    bgSprite->setID("song-path-bg");
+    bgSprite->setColor({ 0, 0, 0 });
+    bgSprite->setOpacity(75);
+    bgSprite->setContentSize({ 250.f, 55.f });
+    bgSprite->setScaleY(0.4f);
+    container->setContentSize(bgSprite->getScaledContentSize());
+    bgSprite->setPosition(container->getScaledContentSize() / 2);
+    label->setPosition(container->getScaledContentSize() / 2);
+    container->addChild(bgSprite);
+    container->addChild(label);
+    container->setAnchorPoint({0.5f, 0.5f});
+    container->setPosition(m_mainLayer->getContentSize() / 2);
+    m_selectedContainer->addChild(container);
+    m_selectedContainer->updateLayout();
 }
 
 void NongAddPopup::openFile(CCObject* target) {
@@ -100,54 +145,46 @@ void NongAddPopup::openFile(CCObject* target) {
 }
 
 void NongAddPopup::createInputs() {
-    auto centered = CCDirector::sharedDirector()->getWinSize() / 2;
-    auto bgSprite = CCScale9Sprite::create(
-        "square02b_001.png", { 0.0f, 0.0f, 80.0f, 80.0f }
-    );
-    bgSprite->setScale(0.7f);
-    bgSprite->setColor({ 0, 0, 0 });
-    bgSprite->setOpacity(75);
-    bgSprite->setPosition(centered);
-    bgSprite->setContentSize({ 409.f, 54.f });
-    bgSprite->setID("song-name-bg");
+    auto inputParent = CCNode::create();
+    inputParent->setID("input-parent");
+    auto songInput = geode::InputNode::create(250.f, "Song name*", "bigFont.fnt");
+    songInput->setID("song-name-input");
+    songInput->getInput()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    songInput->getInput()->setMaxLabelScale(0.7f);
+    songInput->getInput()->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
+    songInput->getInput()->setLabelPlaceholderScale(0.7f);
+    m_songNameInput = songInput;
 
-    m_songNameInput = CCTextInputNode::create(250.f, 30.f, "Song name", "bigFont.fnt");
-    m_songNameInput->setID("song-name-input");
-    m_songNameInput->setPosition(centered);
-    m_songNameInput->ignoreAnchorPointForPosition(true);
-    m_songNameInput->m_textField->setAnchorPoint({ 0.5f, 0.5f });
-    m_songNameInput->m_placeholderLabel->setAnchorPoint({ 0.5f, 0.5f });
-    m_songNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
-    m_songNameInput->setMaxLabelScale(0.7f);
-    m_songNameInput->setLabelPlaceholderColor(ccc3(108, 153, 216));
-    m_songNameInput->setMouseEnabled(true);
-    m_songNameInput->setTouchEnabled(true);
+    auto artistInput = InputNode::create(250.f, "Artist name*", "bigFont.fnt");
+    artistInput->setID("artist-name-input");
+    artistInput->getInput()->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
+    artistInput->getInput()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    artistInput->getInput()->setMaxLabelScale(0.7f);
+    artistInput->getInput()->setLabelPlaceholderScale(0.7f);
+    m_artistNameInput = artistInput;
 
-    m_containerLayer->addChild(bgSprite);
-    m_containerLayer->addChild(this->m_songNameInput);
+    auto levelNameInput = InputNode::create(250.f, "Level name", "bigFont.fnt");
+    levelNameInput->setID("artist-name-input");
+    levelNameInput->getInput()->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
+    levelNameInput->getInput()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    levelNameInput->getInput()->setMaxLabelScale(0.7f);
+    levelNameInput->getInput()->setLabelPlaceholderScale(0.7f);
+    m_levelNameInput = levelNameInput;
 
-    m_artistNameInput = CCTextInputNode::create(250.f, 30.f, "Artist name", "bigFont.fnt");
-    m_artistNameInput->setID("artist-name-input");
-    m_artistNameInput->setPosition(centered.width, centered.height - 50.f);
-    m_artistNameInput->ignoreAnchorPointForPosition(true);
-    m_artistNameInput->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
-    m_artistNameInput->setMaxLabelScale(0.7f);
-    m_artistNameInput->m_textField->setAnchorPoint({ 0.5f, 0.5f });
-    m_artistNameInput->m_placeholderLabel->setAnchorPoint({ 0.5f, 0.5f });
-    m_artistNameInput->setLabelPlaceholderColor(ccc3(108, 153, 216));
+    uint32_t inputs = 3;
+    uint32_t gaps = 2;
+    float inputHeight = songInput->getContentSize().height;
 
-    auto bgSprite_artist = CCScale9Sprite::create(
-        "square02b_001.png", { 0.0f, 0.0f, 80.0f, 80.0f }
-    );
-    bgSprite_artist->setScale(0.7f);
-    bgSprite_artist->setColor({ 0, 0, 0 });
-    bgSprite_artist->setOpacity(75);
-    bgSprite_artist->setPosition(centered.width, centered.height - 50.f);
-    bgSprite_artist->setContentSize({ 409.f, 54.f });
-    bgSprite_artist->setID("artist-name-bg");
-
-    m_containerLayer->addChild(bgSprite_artist);
-    m_containerLayer->addChild(this->m_artistNameInput);
+    inputParent->addChild(songInput);
+    inputParent->addChild(artistInput);
+    inputParent->addChild(levelNameInput);
+    auto layout = ColumnLayout::create();
+    layout->setAxisReverse(true);
+    inputParent->setContentSize({ 250.f, inputs * inputHeight + gaps * layout->getGap()});
+    inputParent->setAnchorPoint({ 0.5f, 1.0f });
+    inputParent->setPosition(m_mainLayer->getContentSize().width / 2, m_mainLayer->getContentSize().height - 40.f);
+    inputParent->setLayout(layout);
+    m_mainLayer->addChild(inputParent);
 }
 
 void NongAddPopup::addSong(CCObject* target) {

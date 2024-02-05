@@ -57,7 +57,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
         menu_selector(NongDropdownLayer::fetchSongFileHub)
     );
     m_downloadBtn = downloadBtn;
-    // downloadBtn->setPositionY(35.f);
     spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
     spr->setScale(0.7f);
     auto addBtn = CCMenuItemSpriteExtra::create(
@@ -73,7 +72,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
         this,
         menu_selector(NongDropdownLayer::deleteAllNongs)
     );
-    // removeBtn->setPositionY(67.f);
     m_deleteBtn = removeBtn;
     spr = CCSprite::createWithSpriteFrameName("backArrowPlain_01_001.png");
     auto backBtn = CCMenuItemSpriteExtra::create(
@@ -91,7 +89,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
         m_backBtn->setVisible(false);
     }
     if (m_data.size() == 1) {
-        m_backBtn->setVisible(true);
+        m_backBtn->setVisible(false);
     }
     menu->addChild(addBtn);
     menu->addChild(downloadBtn);
