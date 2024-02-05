@@ -3,6 +3,8 @@
 ## v2.2.5
 
  * Prevent CustomSongWidget update after adding a new song
+ * Add a way to refetch default song info if it somehow is broken
+ * Bugfixes
 
 ## v2.2.4
 
