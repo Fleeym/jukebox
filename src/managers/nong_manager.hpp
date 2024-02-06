@@ -30,6 +30,8 @@ protected:
     std::optional<std::vector<SongInfoGetAction>> getSongIDActions(int songID);
     void addSongIDAction(int songID, SongInfoGetAction action);
     void createDefaultCallback(SongInfoObject* obj);
+    void setDefaultState();
+    void backupCurrentJSON();
 public:
     /**
      * Only used once, on game launch. Reads the json and loads it into memory.

@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.4.0
+
+ * Fix a bug that caused defaultValid to be undefined when writing to JSON
+ * Fix crashing if JSON is invalid
+ * Backup invalid JSONs
+
 ## v2.3.0
 
  * Redesign NongDropdownLayer and NongAddPopup, using the new initAnchored

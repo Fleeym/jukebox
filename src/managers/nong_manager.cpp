@@ -1,6 +1,11 @@
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
+#include <Geode/loader/Log.hpp>
+#include <Geode/loader/Mod.hpp>
+#include <chrono>
+#include <filesystem>
+#include <format>
 #include <optional>
 #include <system_error>
 #include <vector>
@@ -292,6 +297,7 @@ fs::path NongManager::getJsonPath() {
 void NongManager::loadSongs() {
     auto path = this->getJsonPath();
     if (!fs::exists(path)) {
+        this->setDefaultState();
         return;
     }
     std::ifstream input(path.string());
@@ -300,6 +306,10 @@ void NongManager::loadSongs() {
     input.close();
 
     std::string string = buffer.str();
+    if (string.empty()) {
+        this->setDefaultState();
+        return;
+    }
     std::string fixed;
     fixed.reserve(string.size());
     for (size_t i = 0; i < string.size(); i++) {
@@ -308,8 +318,46 @@ void NongManager::loadSongs() {
         }
     }
 
-    auto json = matjson::parse(std::string_view(fixed));
-    m_state = matjson::Serialize<NongState>::from_json(json);
+    std::string error;
+    auto json = matjson::parse(std::string_view(fixed), error);
+    if (!json.has_value()) {
+        this->backupCurrentJSON();
+        this->setDefaultState();
+        Mod::get()->setSavedValue("failed-load", true);
+        return;
+    }
+    m_state = matjson::Serialize<NongState>::from_json(json.value());
+}
+
+void NongManager::backupCurrentJSON() {
+    auto savedir = fs::path(Mod::get()->getSaveDir());
+    auto backups = savedir / "backups";
+    if (!fs::exists(backups)) {
+        std::error_code ec;
+        bool result = fs::create_directory(backups, ec);
+        if (ec) {
+            log::error("Couldn't create backups directory, error code {}", ec);
+            return;
+        }
+        if (!result) {
+            log::error("Couldn't create backups directory");
+            return;
+        }
+    }
+
+    auto now = std::chrono::system_clock::now();
+    std::string formatted = std::format("backup-{:%d-%m-%Y %H-%M-%OS}.json", now);
+    fs::path backupPath = backups / formatted;
+    std::error_code ec;
+    fs::path currentJson = this->getJsonPath();
+    bool result = fs::copy_file(currentJson, backupPath, ec);
+    if (ec) {
+        log::error("Couldn't create backup for nong_data.json, error code: {}", ec);
+    }
+}
+
+void NongManager::setDefaultState() {
+    m_state.m_manifestVersion = nongd::getManifestVersion();
 }
 
 void NongManager::prepareCorrectDefault(int songID) {
@@ -376,6 +424,7 @@ void NongManager::createDefaultCallback(SongInfoObject* obj) {
     data.active = songPath;
     data.defaultPath = songPath;
     data.songs.push_back(defaultSong);
+    data.defaultValid = true;
     m_state.m_nongs[obj->m_songID] = data;
 }
 
