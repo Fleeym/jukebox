@@ -4,8 +4,9 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <chrono>
+#include <fmt/chrono.h>
 #include <filesystem>
-#include <format>
+#include <fmt/core.h>
 #include <optional>
 #include <system_error>
 #include <vector>
@@ -346,7 +347,7 @@ void NongManager::backupCurrentJSON() {
     }
 
     auto now = std::chrono::system_clock::now();
-    std::string formatted = std::format("backup-{:%d-%m-%Y %H-%M-%OS}.json", now);
+    std::string formatted = fmt::format("backup-{:%d-%m-%Y %H-%M-%OS}.json", now);
     fs::path backupPath = backups / formatted;
     std::error_code ec;
     fs::path currentJson = this->getJsonPath();
