@@ -10,6 +10,7 @@
 #include <ccTypes.h>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
+#include <system_error>
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
@@ -233,11 +234,11 @@ void NongAddPopup::addSong(CCObject* target) {
     unique += ".mp3";
     destination = destination / unique;
     bool result;
-    try {
-        result = fs::copy_file(m_songPath, destination);
-    } catch (fs::filesystem_error e) {
+    std::error_code error_code;
+    result = fs::copy_file(m_songPath, destination, error_code);
+    if (error_code) {
         std::stringstream ss;
-        ss << "Failed to save song. Please try again! Error: " << e.what();
+        ss << "Failed to save song. Please try again! Error code: " << error_code.value();
         FLAlertLayer::create("Error", ss.str().c_str(), "Ok")->show();
         return;
     }

@@ -2,6 +2,7 @@
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
 #include <optional>
+#include <system_error>
 #include <vector>
 #include <string>
 
@@ -228,15 +229,15 @@ void NongManager::createUnknownDefault(int songID) {
 }
 
 std::string NongManager::getFormattedSize(SongInfo const& song) {
-    try {
-        auto size = fs::file_size(song.path);
-        double toMegabytes = size / 1024.f / 1024.f;
-        std::stringstream ss;
-        ss << std::setprecision(3) << toMegabytes << "MB";
-        return ss.str();
-    } catch (fs::filesystem_error) {
+    std::error_code code;
+    auto size = fs::file_size(song.path, code);
+    if (code) {
         return "N/A";
     }
+    double toMegabytes = size / 1024.f / 1024.f;
+    std::stringstream ss;
+    ss << std::setprecision(3) << toMegabytes << "MB";
+    return ss.str();
 }
 
 void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::function<void(std::string)> callback) {
