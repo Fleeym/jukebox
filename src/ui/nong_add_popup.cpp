@@ -238,7 +238,7 @@ void NongAddPopup::addSong(CCObject* target) {
     result = fs::copy_file(m_songPath, destination, error_code);
     if (error_code) {
         std::stringstream ss;
-        ss << "Failed to save song. Please try again! Error code: " << error_code.value();
+        ss << "Failed to save song. Please try again! Error category: " << error_code.category().name() << ", message: " << error_code.category().message(error_code.value());
         FLAlertLayer::create("Error", ss.str().c_str(), "Ok")->show();
         return;
     }
