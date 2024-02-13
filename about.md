@@ -20,6 +20,10 @@ Alternatively, you can download songs from **Song File Hub**. I have added a but
 
 You can open up the Jukebox menu form any Level page. Just click on the song name, and either a song list (if the level has multiple songs), or the song management screen (if the level only uses 1 song) will open. From here, you can add, remove and swap songs.
 
+## Reporting bugs
+
+You can report bugs on the [Jukebox Discord server](https://discord.gg/SFE7qxYFyU)
+
 ## Credits
 
 - The Geode team, for creating such an amazing toolkit
