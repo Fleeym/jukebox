@@ -129,7 +129,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         auto active = NongManager::get()->getActiveNong(obj->m_songID).value();
         if (active.path == result.value().defaultPath) {
             NongManager::get()->fixDefault(obj);
-            m_sliderBar->setVisible(false);
+            m_sliderGroove->setVisible(false);
         }
         if (!result.value().defaultValid && active.path == result.value().defaultPath) {
             NongManager::get()->prepareCorrectDefault(obj->m_songID);
