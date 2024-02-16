@@ -1,5 +1,6 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/cocos.hpp>

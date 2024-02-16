@@ -1,10 +1,9 @@
 #pragma once
 
+#include <matjson.hpp>
 #include <string>
 #include <filesystem>
 namespace fs = std::filesystem;
-
-using namespace geode::prelude;
 
 struct SongInfo {
     fs::path path;

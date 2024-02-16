@@ -2,6 +2,9 @@
 
 #include <Geode/ui/GeodeUI.hpp>
 #include <Geode/utils/cocos.hpp>
+#include <Geode/ui/Popup.hpp>
+#include <Geode/binding/CustomSongWidget.hpp>
+#include <Geode/ui/ListView.hpp>
 
 #include "../types/song_info.hpp"
 #include "../types/nong_list_type.hpp"
