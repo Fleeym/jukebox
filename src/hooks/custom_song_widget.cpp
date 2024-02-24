@@ -115,7 +115,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         m_songLabel->setVisible(false);
-        if (obj->m_songUrl.empty()) {
+        if (obj->m_songUrl.empty() && obj->m_artistName.empty()) {
             // we have an invalid songID
             if (!NongManager::get()->getNongs(obj->m_songID).has_value()) {
                 NongManager::get()->createUnknownDefault(obj->m_songID);
@@ -130,7 +130,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }
         }
         auto active = NongManager::get()->getActiveNong(obj->m_songID).value();
-        if (active.path == result.value().defaultPath) {
+        if (!result.value().defaultValid && active.path == result.value().defaultPath) {
             NongManager::get()->fixDefault(obj);
             m_sliderGroove->setVisible(false);
         }

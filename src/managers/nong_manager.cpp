@@ -124,7 +124,7 @@ void NongManager::saveNongs(NongData const& data, int songID) {
 void NongManager::writeJson() {
     auto json = matjson::Serialize<NongState>::to_json(m_state);
     auto path = this->getJsonPath();
-    std::ofstream output(path.string());
+    std::ofstream output(path.c_str());
     output << json.dump(matjson::NO_INDENTATION);
     output.close();
 }
