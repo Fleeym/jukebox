@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.5.1
+
+ * Fix fixDefault running for every single CustomSongWidget instance
+
 ## v2.5.0
 
  * Fix the download slider being made invisible
