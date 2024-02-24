@@ -8,6 +8,9 @@
 
 #include "nong_dropdown_layer.hpp"
 #include "../managers/nong_manager.hpp"
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/sprite_nodes/CCSprite.h"
 
 namespace fs = std::filesystem;
 
@@ -44,6 +47,21 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     manifestLabel->setColor(cc3x(0xc2c2c2));
     manifestLabel->setID("manifest-label");
     m_mainLayer->addChild(manifestLabel);
+
+    auto bigMenu = CCMenu::create();
+    bigMenu->setID("big-menu");
+    bigMenu->ignoreAnchorPointForPosition(false);
+    auto discordSpr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
+    auto discordBtn = CCMenuItemSpriteExtra::create(
+        discordSpr,
+        this,
+        menu_selector(NongDropdownLayer::onDiscord)
+    );
+    discordBtn->setID("discord-button");
+    CCPoint position = discordBtn->getScaledContentSize() / 2;
+    position += { 5.f, 5.f };
+    bigMenu->addChildAtPosition(discordBtn, Anchor::BottomLeft, position);
+    this->addChild(bigMenu);
 
     auto spr = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
     spr->setScale(0.7f);
@@ -286,6 +304,20 @@ void NongDropdownLayer::setActiveSong(SongInfo const& song) {
 void NongDropdownLayer::refreshList() {
     m_data[m_currentSongID] = NongManager::get()->getNongs(m_currentSongID).value();
     this->createList();
+}
+
+void NongDropdownLayer::onDiscord(CCObject* target) {
+    geode::createQuickPopup(
+        "Discord",
+        "Do you want to <cb>join the Jukebox discord server</c> to receive updates and submit bug reports?",
+        "No",
+        "Yes",
+        [](FLAlertLayer* alert, bool btn2) {
+            if (btn2) {
+                geode::utils::web::openLinkInBrowser("https://discord.gg/SFE7qxYFyU");
+            }
+        }
+    );
 }
 
 void NongDropdownLayer::updateParentWidget(SongInfo const& song) {

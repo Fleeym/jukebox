@@ -42,6 +42,7 @@ protected:
 public:
     void onSelectSong(int songID);
     void onBack(CCObject*);
+    void onDiscord(CCObject*);
     int getSongID();
     void setActiveSong(SongInfo const& song);
     void deleteSong(SongInfo const& song);
