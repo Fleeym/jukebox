@@ -156,7 +156,12 @@ void NongManager::deleteAll(int songID) {
     for (auto savedSong : existingData.songs) {
         if (savedSong.path != existingData.defaultPath) {
             if (fs::exists(savedSong.path)) {
-                fs::remove(savedSong.path);
+                std::error_code ec;
+                fs::remove(savedSong.path, ec);
+                if (ec) {
+                    log::error("Couldn't delete nong. Category: {}, message: {}", ec.category().name(), ec.category().message(ec.value()));
+                    return;
+                }
             }
             continue;
         }
@@ -184,7 +189,12 @@ void NongManager::deleteNong(SongInfo const& song, int songID) {
                 existingData.active = existingData.defaultPath;
             }
             if (song.songUrl != "local" && existingData.defaultPath != song.path && fs::exists(song.path)) {
-                fs::remove(song.path);
+                std::error_code ec;
+                fs::remove(song.path, ec);
+                if (ec) {
+                    log::error("Couldn't delete nong. Category: {}, message: {}", ec.category().name(), ec.category().message(ec.value()));
+                    return;
+                }
             }
             continue;
         }
@@ -337,7 +347,7 @@ void NongManager::backupCurrentJSON() {
         std::error_code ec;
         bool result = fs::create_directory(backups, ec);
         if (ec) {
-            log::error("Couldn't create backups directory, error code {}", ec);
+            log::error("Couldn't create backups directory, error category: {}, message: {}", ec.category().name(), ec.category().message(ec.value()));
             return;
         }
         if (!result) {
@@ -353,7 +363,7 @@ void NongManager::backupCurrentJSON() {
     fs::path currentJson = this->getJsonPath();
     bool result = fs::copy_file(currentJson, backupPath, ec);
     if (ec) {
-        log::error("Couldn't create backup for nong_data.json, error code: {}", ec);
+        log::error("Couldn't create backup for nong_data.json, error category: {}, message: {}", ec.category().name(), ec.category().message(ec.value()));
     }
 }
 
