@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.5.2
+
+ * Fix dailies and weeklies setting their song name to "Unknown"
+
 ## v2.5.1
 
  * Fix fixDefault running for every single CustomSongWidget instance
