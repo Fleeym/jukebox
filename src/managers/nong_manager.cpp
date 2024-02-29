@@ -381,7 +381,7 @@ void NongManager::prepareCorrectDefault(int songID) {
     if (nongs.defaultValid) {
         return;
     }
-    nongs.defaultValid = true;
+    nongs.defaultValid = false;
     this->saveNongs(nongs, songID);
     MusicDownloadManager::sharedState()->clearSong(songID);
     MusicDownloadManager::sharedState()->getSongInfo(songID, true);
@@ -418,6 +418,7 @@ void NongManager::fixDefault(SongInfoObject* obj) {
         song.authorName = obj->m_artistName;
         song.songUrl = obj->m_songUrl;
     }
+    nongs.defaultValid = true;
     this->saveNongs(nongs, obj->m_songID);
 }
 

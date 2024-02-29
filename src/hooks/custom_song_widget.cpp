@@ -13,6 +13,7 @@
 #include "../types/song_info.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
+#include "Geode/loader/Log.hpp"
 
 using namespace geode::prelude;
 
@@ -121,7 +122,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 NongManager::get()->createUnknownDefault(obj->m_songID);
             }
         }
-        auto result = NongManager::get()->getNongs(obj->m_songID);
+        std::optional<NongData> result = NongManager::get()->getNongs(obj->m_songID);
         if (!result.has_value()) {
             NongManager::get()->createDefault(obj->m_songID);
             result = NongManager::get()->getNongs(obj->m_songID);
@@ -129,12 +130,16 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 return;
             }
         }
-        auto active = NongManager::get()->getActiveNong(obj->m_songID).value();
-        if (!result.value().defaultValid && active.path == result.value().defaultPath) {
+
+        NongData nongData = result.value();
+
+        SongInfo active = NongManager::get()->getActiveNong(obj->m_songID).value();
+        if (!nongData.defaultValid && active.path == nongData.defaultPath) {
             NongManager::get()->fixDefault(obj);
             m_sliderGroove->setVisible(false);
+            nongData = NongManager::get()->getNongs(obj->m_songID).value();
         }
-        if (!result.value().defaultValid && active.path == result.value().defaultPath) {
+        if (!nongData.defaultValid && active.path == nongData.defaultPath) {
             NongManager::get()->prepareCorrectDefault(obj->m_songID);
             this->template addEventListener<GetSongInfoEventFilter>(
                 [this](SongInfoObject* obj) {
@@ -143,11 +148,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 },
                 obj->m_songID
             );
+            nongData = NongManager::get()->getNongs(obj->m_songID).value();
         }
-        m_fields->nongs = result.value();
+        m_fields->nongs = nongData;
         this->createSongLabels();
-        auto data = NongManager::get()->getNongs(obj->m_songID).value();
-        if (active.path != data.defaultPath) {
+        if (active.path != nongData.defaultPath) {
             m_deleteBtn->setVisible(false);
         }
     }
