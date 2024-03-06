@@ -1,6 +1,8 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <map>
 #include <unordered_map>
@@ -27,6 +29,7 @@ class NongManager : public CCObject {
 protected:
     inline static NongManager* m_instance = nullptr;
     std::unique_ptr<ModState> m_state;
+    std::mutex m_state_mutex;
     std::map<int, std::function<void(int)>> m_getSongInfoCallbacks;
     std::unordered_map<int, std::vector<SongInfoGetAction>> m_getSongInfoActions;
     EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener = { this, &NongManager::onSongInfoFetched };
@@ -35,7 +38,8 @@ protected:
     void addSongIDAction(int songID, SongInfoGetAction action);
     void createDefaultCallback(SongInfoObject* obj);
     void setDefaultState();
-    void backupCurrentJSON();
+    void backupBadJson(std::filesystem::path const& json);
+    std::optional<std::unique_ptr<SongData>> loadFromPath(std::filesystem::path path);
 public:
     /**
      * Only used once, on game launch. Reads the json and loads it into memory.
@@ -93,7 +97,12 @@ public:
     /**
      * Writes song data to the JSON
     */
-    void save();
+    void save(int songID);
+
+    /**
+     * Saves song data for all ids 
+    */
+    void saveAll();
 
     /**
      * Removes all NONG data for a song ID
@@ -131,7 +140,7 @@ public:
      * 
      * @return the path of the JSON
     */
-    std::filesystem::path getJsonPath();
+    std::filesystem::path getJsonPath(int songID);
 
     /**
      * Add actions needed to fix a broken song default

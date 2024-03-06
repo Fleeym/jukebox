@@ -40,9 +40,11 @@ public:
     void addSong(std::unique_ptr<Nong> song);
     void deleteOne(Nong* song);
     void deleteAll();
+
+    void setDefaultValid(bool defaultValid) { m_defaultValid = defaultValid; }
      
-    const Nong* getActive() const { return m_active; }
-    const Nong* getDefault() const { return m_default; }
+    Nong* getActive() { return m_active; }
+    Nong* getDefault() { return m_default; }
     const bool isDefaultValid() const { return m_defaultValid; }
     const std::vector<std::unique_ptr<Nong>>& getSongs() const { return m_songs; }
 };
