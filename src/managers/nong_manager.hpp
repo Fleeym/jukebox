@@ -1,18 +1,22 @@
 #pragma once
 
-#include <Geode/utils/web.hpp>
-#include <Geode/binding/SongInfoObject.hpp>
-#include <Geode/loader/Event.hpp>
+#include <memory>
 #include <optional>
 #include <map>
 #include <unordered_map>
 #include <vector>
 
-#include "../types/song_info.hpp"
-#include "../types/nong_state.hpp"
+#include <Geode/utils/web.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/loader/Event.hpp>
+
+#include "../types/nong.hpp"
+#include "../types/mod_state.hpp"
 #include "../events/get_song_info_event.hpp"
 
 using namespace geode::prelude;
+
+namespace nongd {
 
 enum class SongInfoGetAction {
     CreateDefault,
@@ -22,7 +26,7 @@ enum class SongInfoGetAction {
 class NongManager : public CCObject {
 protected:
     inline static NongManager* m_instance = nullptr;
-    NongState m_state;
+    std::unique_ptr<ModState> m_state;
     std::map<int, std::function<void(int)>> m_getSongInfoCallbacks;
     std::unordered_map<int, std::vector<SongInfoGetAction>> m_getSongInfoActions;
     EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener = { this, &NongManager::onSongInfoFetched };
@@ -59,7 +63,7 @@ public:
      * @param song the song to add
      * @param songID the id of the song
     */
-    void addNong(SongInfo const& song, int songID);
+    void addNong(std::unique_ptr<Nong> song, int songID);
 
     /**
      * Removes a NONG from the JSON of a songID
@@ -67,7 +71,7 @@ public:
      * @param song the song to remove
      * @param songID the id of the song
     */
-    void deleteNong(SongInfo const& song, int songID);
+    void deleteNong(Nong* song, int songID);
 
     /**
      * Fetches all NONG data for a certain songID
@@ -75,23 +79,7 @@ public:
      * @param songID the id of the song
      * @return the data from the JSON or nullopt if it wasn't created yet
     */
-    std::optional<NongData> getNongs(int songID);
-
-    /**
-     * Fetches the active song from the songID JSON
-     * 
-     * @param songID the id of the song
-     * @return the song data or nullopt in case of an error
-    */
-    std::optional<SongInfo> getActiveNong(int songID);
-
-    /**
-     * Fetches the default song from the songID JSON
-     * 
-     * @param songID the id of the song
-     * @return the song data or nullopt in case of an error
-    */
-    std::optional<SongInfo> getDefaultNong(int songID);
+    std::optional<SongData*> getNongs(int songID);
 
     /**
      * Validates any local nongs that have an invalid path
@@ -100,20 +88,12 @@ public:
      * 
      * @return an array of songs that were deleted as result of the validation
     */
-    std::vector<SongInfo> validateNongs(int songID);
-
-    /**
-     * Saves NONGS to the songID JSON
-     * 
-     * @param data the data to save
-     * @param songID the id of the song
-    */
-    void saveNongs(NongData const& data, int songID);
+    std::vector<Nong*> validateNongs(int songID);
 
     /**
      * Writes song data to the JSON
     */
-    void writeJson();
+    void save();
 
     /**
      * Removes all NONG data for a song ID
@@ -121,15 +101,6 @@ public:
      * @param songID the id of the song
     */
     void deleteAll(int songID);
-
-    /**
-     * Formats a size in bytes to a x.xxMB string
-     * 
-     * @param song the song
-     * 
-     * @return the formatted size, with the format x.xxMB
-    */
-    std::string getFormattedSize(SongInfo const& song);
 
     /**
      * Calculates the total size of multiple assets, then writes it to a string.
@@ -160,7 +131,7 @@ public:
      * 
      * @return the path of the JSON
     */
-    fs::path getJsonPath();
+    std::filesystem::path getJsonPath();
 
     /**
      * Add actions needed to fix a broken song default
@@ -190,3 +161,5 @@ public:
         return m_instance;
     }
 };
+
+}

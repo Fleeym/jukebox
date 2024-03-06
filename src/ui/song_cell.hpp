@@ -10,7 +10,7 @@ class NongDropdownLayer;
 
 class JBSongCell : public JBListCell {
 protected:
-    SongInfo m_active;
+    Nong m_active;
     CCLabelBMFont* m_songNameLabel;
     CCLabelBMFont* m_authorNameLabel;
     int m_songID;

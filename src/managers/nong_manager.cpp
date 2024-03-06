@@ -1,21 +1,26 @@
+#include "nong_manager.hpp"
+
+#include <chrono>
+#include <filesystem>
+#include <memory>
+#include <optional>
+#include <system_error>
+#include <utility>
+#include <vector>
+#include <string>
+
+#include <fmt/core.h>
+#include <fmt/chrono.h>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <chrono>
-#include <fmt/chrono.h>
-#include <filesystem>
-#include <fmt/core.h>
-#include <optional>
-#include <system_error>
-#include <vector>
-#include <string>
 
-#include "nong_manager.hpp"
+namespace nongd {
 
-std::optional<NongData> NongManager::getNongs(int songID) {
-    if (!m_state.m_nongs.contains(songID)) {
+std::optional<SongData*> NongManager::getNongs(int songID) {
+    if (!m_state->m_nongs.contains(songID)) {
         return std::nullopt;
     }
 
@@ -24,47 +29,7 @@ std::optional<NongData> NongManager::getNongs(int songID) {
         return std::nullopt;
     }
 
-    return m_state.m_nongs[songID];
-}
-
-std::optional<SongInfo> NongManager::getActiveNong(int songID) {
-    auto nongs_res = this->getNongs(songID);
-    if (!nongs_res.has_value()) {
-        return std::nullopt;
-    }
-    auto nongs = nongs_res.value();
-
-    for (auto &song : nongs.songs) {
-        if (song.path == nongs.active) {
-            return song;
-        }
-    }
-    
-    nongs.active = nongs.defaultPath;
-
-    for (auto &song : nongs.songs) {
-        if (song.path == nongs.active) {
-            return song;
-        }
-    }
-
-    return std::nullopt;
-}
-
-std::optional<SongInfo> NongManager::getDefaultNong(int songID) {
-    auto nongs_res = this->getNongs(songID);
-    if (!nongs_res.has_value()) {
-        return std::nullopt;
-    }
-    auto nongs = nongs_res.value();
-
-    for (auto &song : nongs.songs) {
-        if (song.path == nongs.defaultPath) {
-            return song;
-        }
-    }
-    
-    return std::nullopt;
+    return m_state->m_nongs[songID].get();
 }
 
 void NongManager::resolveSongInfoCallback(int id) {
@@ -74,138 +39,93 @@ void NongManager::resolveSongInfoCallback(int id) {
     }
 }
 
-std::vector<SongInfo> NongManager::validateNongs(int songID) {
-    auto result = this->getNongs(songID);
-    // Validate nong paths and delete those that don't exist anymore
-    std::vector<SongInfo> invalidSongs;
-    std::vector<SongInfo> validSongs;
-    if (!result.has_value()) {
-        return invalidSongs;
-    }
-    auto currentData = result.value();
+// std::vector<Nong> NongManager::validateNongs(int songID) {
+//     auto result = this->getNongs(songID);
+//     // Validate nong paths and delete those that don't exist anymore
+//     std::vector<Nong> invalidSongs;
+//     std::vector<Nong> validSongs;
+//     if (!result.has_value()) {
+//         return invalidSongs;
+//     }
+//     auto currentData = result.value();
 
-    for (auto &song : currentData.songs) {
-        if (!fs::exists(song.path) && currentData.defaultPath != song.path && song.songUrl == "local") {
-            invalidSongs.push_back(song);
-            if (song.path == currentData.active) {
-                currentData.active = currentData.defaultPath;
-            }
-        } else {
-            validSongs.push_back(song);
-        }
-    }
+//     for (auto &song : currentData.songs) {
+//         if (!fs::exists(song.path) && currentData.defaultPath != song.path && song.songUrl == "local") {
+//             invalidSongs.push_back(song);
+//             if (song.path == currentData.active) {
+//                 currentData.active = currentData.defaultPath;
+//             }
+//         } else {
+//             validSongs.push_back(song);
+//         }
+//     }
 
-    if (invalidSongs.size() > 0) {
-        NongData newData = {
-            .active = currentData.active,
-            .defaultPath = currentData.defaultPath,
-            .songs = validSongs,
-        };
+//     if (invalidSongs.size() > 0) {
+//         NongData newData = {
+//             .active = currentData.active,
+//             .defaultPath = currentData.defaultPath,
+//             .songs = validSongs,
+//         };
 
-        this->saveNongs(newData, songID);
-    }
+//         this->saveNongs(newData, songID);
+//     }
 
-    return invalidSongs;
-}
+//     return invalidSongs;
+// }
 
 int NongManager::getCurrentManifestVersion() {
-    return m_state.m_manifestVersion;
+    return m_state->m_manifestVersion;
 }
 
 int NongManager::getStoredIDCount() {
-    return m_state.m_nongs.size();
+    return m_state->m_nongs.size();
 }
 
-void NongManager::saveNongs(NongData const& data, int songID) {
-    m_state.m_nongs[songID] = data;
-    this->writeJson();
-}
-
-void NongManager::writeJson() {
-    auto json = matjson::Serialize<NongState>::to_json(m_state);
+void NongManager::save() {
+    auto json = matjson::Serialize<ModState>::to_json(m_state.get());
     auto path = this->getJsonPath();
     std::ofstream output(path.c_str());
     output << json.dump(matjson::NO_INDENTATION);
     output.close();
 }
 
-void NongManager::addNong(SongInfo const& song, int songID) {
-    auto result = this->getNongs(songID);
+void NongManager::addNong(std::unique_ptr<Nong> song, int songID) {
+    std::optional<SongData*> result = this->getNongs(songID);
     if (!result.has_value()) {
         return;
     }
     auto existingData = result.value();
 
-    for (auto const& savedSong : existingData.songs) {
-        if (song.path.string() == savedSong.path.string()) {
+    for (auto const& savedSong : existingData->getSongs()) {
+        if (song->path == savedSong->path) {
             return;
         }
     }
-    existingData.songs.push_back(song);
-    this->saveNongs(existingData, songID);
+    existingData->addSong(std::move(song));
+    this->save();
 }
 
 void NongManager::deleteAll(int songID) {
-    std::vector<SongInfo> newSongs;
-    auto result = this->getNongs(songID);
+    std::vector<Nong> newSongs;
+    std::optional<SongData*> result = this->getNongs(songID);
     if (!result.has_value()) {
         return;
     }
     auto existingData = result.value();
+    existingData->deleteAll();
 
-    for (auto savedSong : existingData.songs) {
-        if (savedSong.path != existingData.defaultPath) {
-            if (fs::exists(savedSong.path)) {
-                std::error_code ec;
-                fs::remove(savedSong.path, ec);
-                if (ec) {
-                    log::error("Couldn't delete nong. Category: {}, message: {}", ec.category().name(), ec.category().message(ec.value()));
-                    return;
-                }
-            }
-            continue;
-        }
-        newSongs.push_back(savedSong);
-    }
-
-    NongData newData = {
-        .active = existingData.defaultPath,
-        .defaultPath = existingData.defaultPath,
-        .songs = newSongs,
-    };
-    this->saveNongs(newData, songID);
+    this->save();
 }
 
-void NongManager::deleteNong(SongInfo const& song, int songID) {
-    std::vector<SongInfo> newSongs;
+void NongManager::deleteNong(Nong* song, int songID) {
+    std::vector<Nong> newSongs;
     auto result = this->getNongs(songID);
     if(!result.has_value()) {
         return;
     }
     auto existingData = result.value();
-    for (auto savedSong : existingData.songs) {
-        if (savedSong.path == song.path) {
-            if (song.path == existingData.active) {
-                existingData.active = existingData.defaultPath;
-            }
-            if (song.songUrl != "local" && existingData.defaultPath != song.path && fs::exists(song.path)) {
-                std::error_code ec;
-                fs::remove(song.path, ec);
-                if (ec) {
-                    log::error("Couldn't delete nong. Category: {}, message: {}", ec.category().name(), ec.category().message(ec.value()));
-                    return;
-                }
-            }
-            continue;
-        }
-        newSongs.push_back(savedSong);
-    }
-    NongData newData = {
-        .active = existingData.active,
-        .defaultPath = existingData.defaultPath,
-        .songs = newSongs,
-    };
-    this->saveNongs(newData, songID);
+    existingData->deleteOne(song);
+    this->save();
 }
 
 void NongManager::createDefault(int songID) {
@@ -229,31 +149,28 @@ void NongManager::createUnknownDefault(int songID) {
     if (this->getNongs(songID).has_value()) {
         return;
     }
-    fs::path songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(songID)));
-    NongData data;
-    SongInfo defaultSong;
-    defaultSong.authorName = "";
-    defaultSong.songName = "Unknown";
-    defaultSong.path = songPath;
-    defaultSong.songUrl = "";
-    data.active = songPath;
-    data.defaultPath = songPath;
-    data.songs.push_back(defaultSong);
-    data.defaultValid = false;
-    m_state.m_nongs[songID] = data;
-    this->writeJson();
-}
+    auto songPath = std::filesystem::path(
+        std::string(MusicDownloadManager::sharedState()->pathForSong(songID))
+    );
 
-std::string NongManager::getFormattedSize(SongInfo const& song) {
-    std::error_code code;
-    auto size = fs::file_size(song.path, code);
-    if (code) {
-        return "N/A";
-    }
-    double toMegabytes = size / 1024.f / 1024.f;
-    std::stringstream ss;
-    ss << std::setprecision(3) << toMegabytes << "MB";
-    return ss.str();
+    std::unique_ptr<Nong> defaultSong = std::make_unique<Nong>(Nong {
+        .path = std::move(songPath),
+        .songName = "Unknown",
+        .authorName = "",
+        .songUrl = ""
+    });
+
+    Nong* ptr = defaultSong.get();
+    std::vector<std::unique_ptr<Nong>> vec;
+    vec.push_back(std::move(defaultSong));
+
+    m_state->m_nongs.insert(std::make_pair(songID, std::make_unique<SongData>(SongData {
+        std::move(vec),
+        ptr,
+        ptr,
+        false
+    })));
+    this->save();
 }
 
 void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::function<void(std::string)> callback) {
@@ -300,14 +217,14 @@ void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::fu
     }).detach();
 }
 
-fs::path NongManager::getJsonPath() {
-    auto savedir = fs::path(Mod::get()->getSaveDir().string());
+std::filesystem::path NongManager::getJsonPath() {
+    auto savedir = std::filesystem::path(Mod::get()->getSaveDir().string());
     return savedir / "nong_data.json";
 }
 
 void NongManager::loadSongs() {
     auto path = this->getJsonPath();
-    if (!fs::exists(path)) {
+    if (!std::filesystem::exists(path)) {
         this->setDefaultState();
         return;
     }
@@ -337,7 +254,7 @@ void NongManager::loadSongs() {
         Mod::get()->setSavedValue("failed-load", true);
         return;
     }
-    m_state = matjson::Serialize<NongState>::from_json(json.value());
+    m_state = matjson::Serialize<ModState>::from_json(json.value());
 }
 
 void NongManager::backupCurrentJSON() {
@@ -428,7 +345,7 @@ void NongManager::createDefaultCallback(SongInfoObject* obj) {
     }
     fs::path songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID)));
     NongData data;
-    SongInfo defaultSong;
+    Nong defaultSong;
     defaultSong.authorName = obj->m_artistName;
     defaultSong.songName = obj->m_songName;
     defaultSong.path = songPath;
@@ -494,4 +411,6 @@ void NongManager::addSongIDAction(int songID, SongInfoGetAction action) {
     }
 
     m_getSongInfoActions[songID].push_back(action);
+}
+
 }

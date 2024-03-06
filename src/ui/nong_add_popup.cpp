@@ -249,7 +249,7 @@ void NongAddPopup::addSong(CCObject* target) {
         return;
     }
 
-    SongInfo song = {
+    Nong song = {
         .path = destination,
         .songName = songName,
         .authorName = artistName,

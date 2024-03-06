@@ -33,7 +33,7 @@ protected:
 
     bool setup(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) override;
     void createList();
-    SongInfo getActiveSong();
+    Nong getActiveSong();
     CCSize getCellSize() const;
     void deleteAllNongs(CCObject*);
     void fetchSongFileHub(CCObject*);
@@ -44,10 +44,10 @@ public:
     void onBack(CCObject*);
     void onDiscord(CCObject*);
     int getSongID();
-    void setActiveSong(SongInfo const& song);
-    void deleteSong(SongInfo const& song);
-    void addSong(SongInfo const& song);
-    void updateParentWidget(SongInfo const& song);
+    void setActiveSong(Nong const& song);
+    void deleteSong(Nong const& song);
+    void addSong(Nong const& song);
+    void updateParentWidget(Nong const& song);
     void refreshList();
 
     static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {

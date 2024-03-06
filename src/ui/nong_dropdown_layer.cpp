@@ -268,7 +268,7 @@ void NongDropdownLayer::createList() {
     handleTouchPriority(this);
 }
 
-SongInfo NongDropdownLayer::getActiveSong() {
+Nong NongDropdownLayer::getActiveSong() {
     auto active = NongManager::get()->getActiveNong(m_currentSongID);
     if (!active.has_value()) {
         m_data[m_currentSongID].active = m_data[m_currentSongID].defaultPath;
@@ -285,7 +285,7 @@ CCSize NongDropdownLayer::getCellSize() const {
     };
 }
 
-void NongDropdownLayer::setActiveSong(SongInfo const& song) {
+void NongDropdownLayer::setActiveSong(Nong const& song) {
     auto songs = m_data[m_currentSongID];
     if (!fs::exists(song.path)) {
         FLAlertLayer::create("Failed", "Failed to set song: file not found", "Ok")->show();
@@ -320,7 +320,7 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
     );
 }
 
-void NongDropdownLayer::updateParentWidget(SongInfo const& song) {
+void NongDropdownLayer::updateParentWidget(Nong const& song) {
     m_parentWidget->m_songInfoObject->m_artistName = song.authorName;
     m_parentWidget->m_songInfoObject->m_songName = song.songName;
     if (song.songUrl != "local") {
@@ -329,7 +329,7 @@ void NongDropdownLayer::updateParentWidget(SongInfo const& song) {
     m_parentWidget->updateSongObject(this->m_parentWidget->m_songInfoObject);
 }
 
-void NongDropdownLayer::deleteSong(SongInfo const& song) {
+void NongDropdownLayer::deleteSong(Nong const& song) {
     NongManager::get()->deleteNong(song, m_currentSongID);
     auto active = NongManager::get()->getActiveNong(m_currentSongID).value();
     this->updateParentWidget(active);
@@ -338,7 +338,7 @@ void NongDropdownLayer::deleteSong(SongInfo const& song) {
     this->createList();
 }
 
-void NongDropdownLayer::addSong(SongInfo const& song) {
+void NongDropdownLayer::addSong(Nong const& song) {
     auto data = m_data[m_currentSongID];
     for (auto savedSong : data.songs) {
         if (song.path.string() == savedSong.path.string()) {

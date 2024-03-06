@@ -10,7 +10,7 @@
 #include <Geode/ui/GeodeUI.hpp>
 #include <sstream>
 
-#include "../types/song_info.hpp"
+#include "../types/song_data.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
 #include "Geode/loader/Log.hpp"
@@ -18,7 +18,7 @@
 using namespace geode::prelude;
 
 class $modify(JBSongWidget, CustomSongWidget) {
-    NongData nongs;
+    nongd::SongData* nongs;
     CCMenu* menu;
     CCMenuItemSpriteExtra* songNameLabel;
     CCLabelBMFont* sizeIdLabel;
@@ -27,7 +27,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
     bool fetchedAssetInfo = false;
     bool firstRun = true;
     bool searching = false;
-    std::unordered_map<int, NongData> assetNongData;
+    std::unordered_map<int, nongd::SongData*> assetNongData;
 
     bool init(
         SongInfoObject* songInfo,
@@ -133,7 +133,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         NongData nongData = result.value();
 
-        SongInfo active = NongManager::get()->getActiveNong(obj->m_songID).value();
+        Nong active = NongManager::get()->getActiveNong(obj->m_songID).value();
         if (!nongData.defaultValid && active.path == nongData.defaultPath) {
             NongManager::get()->fixDefault(obj);
             m_sliderGroove->setVisible(false);

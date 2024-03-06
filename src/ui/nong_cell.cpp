@@ -8,7 +8,7 @@
 #include "nong_cell.hpp"
 #include "../managers/nong_manager.hpp"
 
-bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
+bool NongCell::init(Nong info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
     if (!JBListCell::init(parentPopup, size)) return false;
 
     m_songInfo = info;
@@ -159,7 +159,7 @@ void NongCell::deleteSong(CCObject* target) {
     FLAlertLayer::create(this, "Are you sure?", "Are you sure you want to delete <cy>" + this->m_songInfo.songName + "</c> from your NONGs?", "No", "Yes")->show();
 }
 
-NongCell* NongCell::create(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
+NongCell* NongCell::create(Nong info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
     auto ret = new NongCell();
     if (ret && ret->init(info, parentPopup, size, selected, isDefault)) {
         return ret;
