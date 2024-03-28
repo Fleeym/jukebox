@@ -24,6 +24,12 @@
 			"default": false
 		}
 	},
+	"api": {
+		"include": [
+			"include/*.hpp",
+			"src/types/song_info.hpp"
+		]
+	},
 	"resources": {
 		"sprites": [
 			"resources/*.png"
