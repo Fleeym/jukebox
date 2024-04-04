@@ -1,6 +1,6 @@
 #include "manifest.hpp"
 
-namespace nongd {
+namespace jukebox {
     int getManifestVersion() {
         return 2;
     }

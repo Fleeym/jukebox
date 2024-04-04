@@ -1,5 +1,5 @@
 #pragma once
 
-namespace nongd {
+namespace jukebox {
     int getManifestVersion();
 }

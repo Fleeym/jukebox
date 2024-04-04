@@ -3,7 +3,7 @@
 
 #include "random_string.hpp"
 
-namespace nongd {
+namespace jukebox {
     std::string random_string(size_t length)
     {
         static std::string_view const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

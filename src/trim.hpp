@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace nongd {
+namespace jukebox {
     void left_trim(std::string &s);
     void right_trim(std::string &s);
     void trim(std::string &s);

@@ -368,7 +368,7 @@ void NongManager::backupCurrentJSON() {
 }
 
 void NongManager::setDefaultState() {
-    m_state.m_manifestVersion = nongd::getManifestVersion();
+    m_state.m_manifestVersion = jukebox::getManifestVersion();
 }
 
 void NongManager::prepareCorrectDefault(int songID) {
