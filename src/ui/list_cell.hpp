@@ -6,6 +6,8 @@
 
 using namespace geode::prelude;
 
+namespace jukebox {
+
 class JBListCell : public CCLayer, public FLAlertLayerProtocol {
 protected:
     float m_width;
@@ -15,3 +17,5 @@ protected:
     bool init(CCLayer* layer, CCSize const& size);
     void draw() override;
 };
+
+}

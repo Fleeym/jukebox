@@ -14,6 +14,8 @@
 
 #include "nong_manager.hpp"
 
+namespace jukebox {
+
 std::optional<NongData> NongManager::getNongs(int songID) {
     if (!m_state.m_nongs.contains(songID)) {
         return std::nullopt;
@@ -494,4 +496,6 @@ void NongManager::addSongIDAction(int songID, SongInfoGetAction action) {
     }
 
     m_getSongInfoActions[songID].push_back(action);
+}
+
 }

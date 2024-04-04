@@ -16,6 +16,7 @@
 #include "Geode/loader/Log.hpp"
 
 using namespace geode::prelude;
+using namespace jukebox;
 
 class $modify(JBSongWidget, CustomSongWidget) {
     NongData nongs;

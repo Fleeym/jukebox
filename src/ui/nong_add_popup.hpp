@@ -1,12 +1,15 @@
 #pragma once
 
+#include <Geode/c++stl/gdstdlib.hpp>
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/ui/InputNode.hpp>
 
-#include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/ui/InputNode.hpp"
 #include "nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
+
+namespace jukebox {
 
 class NongDropdownLayer;
 
@@ -37,3 +40,5 @@ protected:
 public:
     static NongAddPopup* create(NongDropdownLayer* parent);
 };
+
+}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Geode/c++stl/gdstdlib.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 
 #include "list_cell.hpp"
@@ -7,6 +8,8 @@
 #include "../types/song_info.hpp"
 
 using namespace geode::prelude;
+
+namespace jukebox {
 
 class NongDropdownLayer;
 
@@ -32,3 +35,5 @@ public:
     void deleteSong(CCObject*);
     void onFixDefault(CCObject*);
 };
+
+}

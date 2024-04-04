@@ -1,5 +1,7 @@
 #include "song_cell.hpp"
 
+namespace jukebox {
+
 bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCSize const& size) {
     if (!JBListCell::init(parentPopup, size)) return false;
     m_parentPopup = parentPopup;
@@ -38,4 +40,6 @@ bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCS
 
 void JBSongCell::onSelectSong(CCObject*) {
     m_parentPopup->onSelectSong(m_songID);
+}
+
 }

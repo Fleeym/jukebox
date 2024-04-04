@@ -5,6 +5,8 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
+namespace jukebox {
+
 struct SongInfo {
     fs::path path;
     std::string songName;
@@ -20,10 +22,12 @@ struct NongData {
     bool defaultValid;
 };
 
+}
+
 template<>
-struct matjson::Serialize<NongData> {
-    static NongData from_json(matjson::Value const& value) {
-        std::vector<SongInfo> songs;
+struct matjson::Serialize<jukebox::NongData> {
+    static jukebox::NongData from_json(matjson::Value const& value) {
+        std::vector<jukebox::SongInfo> songs;
         auto jsonSongs = value["songs"].as_array();
         bool valid = true;
         if (value.contains("defaultValid")) {
@@ -37,7 +41,7 @@ struct matjson::Serialize<NongData> {
             }
             auto path = fs::path(jsonSong["path"].as_string());
 
-            SongInfo song = {
+            jukebox::SongInfo song = {
                 .path = path,
                 .songName = jsonSong["songName"].as_string(),
                 .authorName = jsonSong["authorName"].as_string(),
@@ -47,7 +51,7 @@ struct matjson::Serialize<NongData> {
             songs.push_back(song);
         }
 
-        return NongData {
+        return jukebox::NongData {
             .active = fs::path(value["active"].as_string()),
             .defaultPath = fs::path(value["defaultPath"].as_string()),
             .songs = songs,
@@ -55,7 +59,7 @@ struct matjson::Serialize<NongData> {
         };
     }
 
-    static matjson::Value to_json(NongData const& value) {
+    static matjson::Value to_json(jukebox::NongData const& value) {
         auto ret = matjson::Object();
         auto array = matjson::Array();
         ret["active"] = value.active.string();

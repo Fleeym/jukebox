@@ -8,6 +8,8 @@
 #include "nong_cell.hpp"
 #include "../managers/nong_manager.hpp"
 
+namespace jukebox {
+
 bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
     if (!JBListCell::init(parentPopup, size)) return false;
 
@@ -172,4 +174,6 @@ void NongCell::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
     if (btn2) {
         m_parentPopup->deleteSong(m_songInfo);
     }
+}
+
 }

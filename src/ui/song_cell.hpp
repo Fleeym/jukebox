@@ -6,6 +6,8 @@
 
 using namespace geode::prelude;
 
+namespace jukebox {
+
 class NongDropdownLayer;
 
 class JBSongCell : public JBListCell {
@@ -29,3 +31,5 @@ public:
     }
     void onSelectSong(CCObject*);
 };
+
+}

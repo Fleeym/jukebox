@@ -2,6 +2,8 @@
 
 #include "list_cell.hpp"
 
+namespace jukebox {
+
 bool JBListCell::init(CCLayer* layer, CCSize const& size) {
     m_width = size.width;
     m_height = size.height;
@@ -13,4 +15,6 @@ bool JBListCell::init(CCLayer* layer, CCSize const& size) {
 
 void JBListCell::draw() {
     reinterpret_cast<StatsCell*>(this)->StatsCell::draw();
+}
+
 }

@@ -3,9 +3,9 @@
 #include "managers/nong_manager.hpp"
 
 $on_mod(Loaded) {
-    NongManager::get()->loadSongs();
+    jukebox::NongManager::get()->loadSongs();
 };
 
 $on_mod(DataSaved) {
-    NongManager::get()->writeJson();
+    jukebox::NongManager::get()->writeJson();
 }

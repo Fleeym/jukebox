@@ -5,6 +5,8 @@
 #include "../types/song_info.hpp"
 #include "../events/get_song_info_event.hpp"
 
+using namespace jukebox;
+
 class $modify(MusicDownloadManager) {
 	gd::string pathForSong(int id) {
         auto active = NongManager::get()->getActiveNong(id);

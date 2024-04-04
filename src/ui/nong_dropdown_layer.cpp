@@ -14,6 +14,8 @@
 
 namespace fs = std::filesystem;
 
+namespace jukebox {
+
 bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {
     m_songIDS = ids;
     m_parentWidget = parent;
@@ -397,4 +399,6 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
 
 int NongDropdownLayer::getSongID() {
     return m_currentSongID;
+}
+
 }

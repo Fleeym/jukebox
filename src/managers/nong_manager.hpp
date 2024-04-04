@@ -14,6 +14,8 @@
 
 using namespace geode::prelude;
 
+namespace jukebox {
+
 enum class SongInfoGetAction {
     CreateDefault,
     FixDefault   
@@ -190,3 +192,5 @@ public:
         return m_instance;
     }
 };
+
+}

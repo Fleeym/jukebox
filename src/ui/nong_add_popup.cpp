@@ -12,10 +12,13 @@
 #include <Geode/ui/InputNode.hpp>
 #include <ccTypes.h>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
+
 #include <system_error>
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
+
+namespace jukebox {
 
 bool NongAddPopup::setup(NongDropdownLayer* parent) {
     this->setTitle("Add Song");
@@ -258,4 +261,6 @@ void NongAddPopup::addSong(CCObject* target) {
 
     m_parentPopup->addSong(song);
     this->onClose(this);
+}
+
 }

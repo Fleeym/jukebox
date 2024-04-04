@@ -14,6 +14,8 @@
 
 using namespace geode::prelude;
 
+namespace jukebox {
+
 class NongDropdownLayer : public Popup<std::vector<int>, CustomSongWidget*, int> {
 protected:
     std::map<int, NongData> m_data;
@@ -61,3 +63,5 @@ public:
         return nullptr;
     }
 };
+
+}
