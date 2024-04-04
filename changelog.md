@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.6.0
+
+ * Expose a minimal API for interacting with NONG data (Thanks to [Flafy](https://github.com/FlafyDev))
+
 ## v2.5.2
 
  * Fix dailies and weeklies setting their song name to "Unknown"
