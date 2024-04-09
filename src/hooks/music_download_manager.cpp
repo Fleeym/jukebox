@@ -22,7 +22,7 @@ class $modify(MusicDownloadManager) {
     void onGetSongInfoCompleted(gd::string p1, gd::string p2) {
         MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
         auto songID = std::stoi(p2);
-        GetSongInfoEvent(this->getSongInfoObject(songID)).post();
+        GetSongInfoEvent(this->getSongInfoObject(songID), songID).post();
     }
 
     SongInfoObject* getSongInfoObject(int id) {

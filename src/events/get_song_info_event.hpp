@@ -10,10 +10,12 @@ using namespace geode::prelude;
 class GetSongInfoEvent : public Event {
 protected:
     SongInfoObject* m_songInfo;
+    int m_songID;
 public:
-    GetSongInfoEvent(SongInfoObject* object)
-        : m_songInfo(object) {}
+    GetSongInfoEvent(SongInfoObject* object, int songID)
+        : m_songInfo(object), m_songID(songID) {}
     SongInfoObject* getObject() { return m_songInfo; }
+    int getID() { return m_songID; }
 };
 
 class GetSongInfoEventFilter : public EventFilter<GetSongInfoEvent> {

@@ -176,6 +176,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 NongManager::get()->createDefault(kv.first);
                 result = NongManager::get()->getNongs(kv.first);
                 if (!result.has_value()) {
+                    log::info("No nongs for {}", kv.first);
                     // its downloading
                     allDownloaded = false;
                     continue;

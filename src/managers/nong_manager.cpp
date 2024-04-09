@@ -444,11 +444,9 @@ void NongManager::createDefaultCallback(SongInfoObject* obj) {
 
 ListenerResult NongManager::onSongInfoFetched(GetSongInfoEvent* event) {
     SongInfoObject* obj = event->getObject();
-    if (obj == nullptr) {
-        return ListenerResult::Stop;
-    }
+    int id = event->getID();
 
-    auto res = this->getSongIDActions(obj->m_songID);
+    auto res = this->getSongIDActions(id);
     if (!res.has_value()) {
         return ListenerResult::Propagate;
     }
@@ -457,21 +455,28 @@ ListenerResult NongManager::onSongInfoFetched(GetSongInfoEvent* event) {
     for (auto const& action : actions) {
         switch (action) {
             case SongInfoGetAction::CreateDefault: {
-                this->createDefaultCallback(obj);
+                if (obj == nullptr) {
+                    this->createUnknownDefault(id);
+                } else {
+                    this->createDefaultCallback(obj);
+                }
                 break;
             }
             case SongInfoGetAction::FixDefault: {
+                if (obj == nullptr) {
+                    break;
+                }
                 this->fixDefault(obj);
                 break;
             }
         }
     }
-    m_getSongInfoActions.erase(obj->m_songID);
+    m_getSongInfoActions.erase(id);
     return ListenerResult::Propagate;
 }
 
 std::optional<std::vector<SongInfoGetAction>> NongManager::getSongIDActions(int songID) {
-    if (m_getSongInfoActions.contains(songID)) {
+    if (!m_getSongInfoActions.contains(songID)) {
         return std::nullopt;
     }
 

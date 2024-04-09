@@ -25,7 +25,7 @@ class NongManager : public CCObject {
 protected:
     inline static NongManager* m_instance = nullptr;
     NongState m_state;
-    std::map<int, std::function<void(int)>> m_getSongInfoCallbacks;
+    std::unordered_map<int, std::function<void(int)>> m_getSongInfoCallbacks;
     std::unordered_map<int, std::vector<SongInfoGetAction>> m_getSongInfoActions;
     EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener = { this, &NongManager::onSongInfoFetched };
 
