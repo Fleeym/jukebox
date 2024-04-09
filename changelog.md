@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.7.0
+
+ * Fix a bug that made the nong menu inaccessible on levels with multiple songs, out of which one was invalid (not found on NG) - go play Golden Hope 8)
+ * Add a song ID label to the multiple song list of the nong menu
+
 ## v2.6.0
 
  * Expose a minimal API for interacting with NONG data (Thanks to [Flafy](https://github.com/FlafyDev))
