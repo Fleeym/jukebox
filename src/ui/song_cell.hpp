@@ -1,8 +1,11 @@
 #pragma once
 
-#include "../types/song_info.hpp"
+#include <Geode/c++stl/gdstdlib.hpp>
+#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+
 #include "list_cell.hpp"
 #include "nong_dropdown_layer.hpp"
+#include "../types/song_info.hpp"
 
 using namespace geode::prelude;
 
@@ -15,6 +18,7 @@ protected:
     SongInfo m_active;
     CCLabelBMFont* m_songNameLabel;
     CCLabelBMFont* m_authorNameLabel;
+    CCLabelBMFont* m_songIDLabel;
     int m_songID;
 
     NongDropdownLayer* m_parentPopup;

@@ -1,5 +1,11 @@
 #include "song_cell.hpp"
 
+#include <Geode/utils/cocos.hpp>
+#include <ccTypes.h>
+#include <Geode/c++stl/gdstdlib.hpp>
+#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <fmt/format.h>
+
 namespace jukebox {
 
 bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCSize const& size) {
@@ -23,6 +29,16 @@ bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCS
     author->setPosition(ccp(12.f, 15.f));
     m_authorNameLabel = author;
     this->addChild(author);
+    auto idLabel = CCLabelBMFont::create(
+        fmt::format("#{}", id).c_str(),
+        "chatFont.fnt"
+    );
+    idLabel->setPosition({ size.width - 5.f, 0 + 3.f });
+    idLabel->setAnchorPoint({ 1.0f, 0.0f });
+    idLabel->setColor(ccColor3B(51, 51, 51));
+    idLabel->setScale(0.6f);
+    m_songIDLabel = idLabel;
+    this->addChild(idLabel);
     auto menu = CCMenu::create();
     auto spr = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
     spr->setFlipX(true);
