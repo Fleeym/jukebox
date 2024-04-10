@@ -35,7 +35,9 @@ jobs:
         with:
           bindings: fleeym/sapphire-bindings
           bindings-ref: nongd
+          export-pdb: true
           combine: true
+          build-config: RelWithDebInfo
           target: ${{matrix.config.target}}
   package:
     name: Package builds
