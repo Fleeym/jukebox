@@ -15,8 +15,8 @@ jobs:
           - name: Windows
             os: windows-latest
           
-          # - name: macOS
-          #   os: macos-latest
+          - name: macOS
+            os: macos-latest
           - name: Android32
             os: ubuntu-latest
             target: Android32
@@ -31,13 +31,11 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Build the mod
-        uses: Prevter/build-geode-mod@main
+        uses: geode-sdk/build-geode-mod@main
         with:
           bindings: fleeym/sapphire-bindings
           bindings-ref: nongd
-          export-pdb: true
           combine: true
-          build-config: Release
           target: ${{matrix.config.target}}
   package:
     name: Package builds
@@ -45,7 +43,7 @@ jobs:
     needs: ['build']
 
     steps:
-      - uses: Prevter/build-geode-mod/combine@main
+      - uses: geode-sdk/build-geode-mod/combine@main
         id: build
       
       - uses: actions/upload-artifact@v3
