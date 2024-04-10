@@ -37,7 +37,7 @@ jobs:
           bindings-ref: nongd
           export-pdb: true
           combine: true
-          build-config: RelWithDebInfo
+          build-config: Release
           target: ${{matrix.config.target}}
   package:
     name: Package builds
