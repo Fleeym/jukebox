@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.7.1
+
+ * Fix bugs
+
 ## v2.7.0
 
  * Fix a bug that made the nong menu inaccessible on levels with multiple songs, out of which one was invalid (not found on NG) - go play Golden Hope 8)
