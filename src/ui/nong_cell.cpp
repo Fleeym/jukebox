@@ -130,24 +130,18 @@ void NongCell::onFixDefault(CCObject* target) {
         "No",
         "Yes",
         [this](FLAlertLayer* alert, bool btn2) {
-            if (btn2) {
-                NongManager::get()->markAsInvalidDefault(m_parentPopup->getSongID());
-
-                m_parentPopup->updateParentWidget(m_songInfo);
-                // TODO I swear to god I'll regret this some day
-                this->retain();
-                m_parentPopup->retain();
-                m_parentPopup->m_mainLayer->retain();
+            if (btn2 && !NongManager::get()->isFixingDefault(m_parentPopup->getSongID())) {
                 this->template addEventListener<GetSongInfoEventFilter>(
                     [this](auto song) {
-                        m_parentPopup->refreshList();
+                        if (m_parentPopup) {
+                            m_parentPopup->refreshList();
+                        }
                         FLAlertLayer::create("Success", "Default song data was refetched successfully!", "Ok")->show();
-                        this->release();
-                        m_parentPopup->release();
-                        m_parentPopup->m_mainLayer->release();
                         return ListenerResult::Propagate;
                     }, m_parentPopup->getSongID()
                 );
+                NongManager::get()->markAsInvalidDefault(m_parentPopup->getSongID());
+                NongManager::get()->prepareCorrectDefault(m_parentPopup->getSongID());
             }
         }
     );

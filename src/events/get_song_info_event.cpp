@@ -5,12 +5,12 @@
 
 ListenerResult GetSongInfoEventFilter::handle(MiniFunction<Callback> fn, GetSongInfoEvent* event) {
     if (event->getObject() == nullptr) {
-        return ListenerResult::Stop;
+        return ListenerResult::Propagate;
     }
 
     if (event->getObject()->m_songID == m_songID) {
         fn(event->getObject());
-        return ListenerResult::Stop;
+        return ListenerResult::Propagate;
     }
     return ListenerResult::Propagate;
 }

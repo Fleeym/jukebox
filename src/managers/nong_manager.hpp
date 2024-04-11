@@ -4,8 +4,8 @@
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
 #include <optional>
-#include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "../types/song_info.hpp"
@@ -26,10 +26,10 @@ protected:
     inline static NongManager* m_instance = nullptr;
     NongState m_state;
     std::unordered_map<int, std::function<void(int)>> m_getSongInfoCallbacks;
-    std::unordered_map<int, std::vector<SongInfoGetAction>> m_getSongInfoActions;
+    std::unordered_map<int, std::unordered_set<SongInfoGetAction>> m_getSongInfoActions;
     EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener = { this, &NongManager::onSongInfoFetched };
 
-    std::optional<std::vector<SongInfoGetAction>> getSongIDActions(int songID);
+    std::optional<std::unordered_set<SongInfoGetAction>> getSongIDActions(int songID);
     void addSongIDAction(int songID, SongInfoGetAction action);
     void createDefaultCallback(SongInfoObject* obj);
     void setDefaultState();

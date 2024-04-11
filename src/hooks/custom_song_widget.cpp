@@ -40,11 +40,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool unk,
         bool isMusicLibrary
     ) {
-        log::info("Calling init...");
         if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect, showPlayMusic, showDownload, isRobtopSong, unk, isMusicLibrary)) {
             return false;
         }
-        log::info("Init called");
         if (isRobtopSong) {
             return true;
         }
@@ -146,6 +144,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
             NongManager::get()->prepareCorrectDefault(id);
             this->template addEventListener<GetSongInfoEventFilter>(
                 [this, id](SongInfoObject* obj) {
+                    if (!NongManager::get()->isFixingDefault(id)) {
+                        return ListenerResult::Propagate;
+                    }
                     log::info("update song object");
                     log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, obj->m_songID);
                     NongManager::get()->fixDefault(obj);

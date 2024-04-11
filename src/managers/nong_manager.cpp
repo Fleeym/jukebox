@@ -465,30 +465,23 @@ ListenerResult NongManager::onSongInfoFetched(GetSongInfoEvent* event) {
     }
 
     auto actions = res.value();
-    for (auto const& action : actions) {
-        switch (action) {
-            case SongInfoGetAction::CreateDefault: {
-                if (obj == nullptr) {
-                    this->createUnknownDefault(id);
-                } else {
-                    this->createDefaultCallback(obj);
-                }
-                break;
-            }
-            case SongInfoGetAction::FixDefault: {
-                if (obj == nullptr) {
-                    break;
-                }
-                this->fixDefault(obj);
-                break;
-            }
+    if (actions.contains(SongInfoGetAction::CreateDefault)) {
+        if (obj == nullptr) {
+            this->createUnknownDefault(id);
+        } else {
+            this->createDefaultCallback(obj);
+        }
+    }
+    if (actions.contains(SongInfoGetAction::FixDefault)) {
+        if (obj != nullptr) {
+            this->fixDefault(obj);
         }
     }
     m_getSongInfoActions.erase(id);
     return ListenerResult::Propagate;
 }
 
-std::optional<std::vector<SongInfoGetAction>> NongManager::getSongIDActions(int songID) {
+std::optional<std::unordered_set<SongInfoGetAction>> NongManager::getSongIDActions(int songID) {
     if (!m_getSongInfoActions.contains(songID)) {
         return std::nullopt;
     }
@@ -507,13 +500,11 @@ void NongManager::addSongIDAction(int songID, SongInfoGetAction action) {
         return;
     }
 
-    for (auto const& existingAction : m_getSongInfoActions[songID]) {
-        if (action == existingAction) {
-            return;
-        }
+    if (m_getSongInfoActions[songID].contains(action)) {
+        return;
     }
 
-    m_getSongInfoActions[songID].push_back(action);
+    m_getSongInfoActions[songID].insert(action);
 }
 
 }
