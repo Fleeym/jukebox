@@ -30,6 +30,9 @@ class $modify(MusicDownloadManager) {
         if (og == nullptr) {
             return og;
         }
+        if (NongManager::get()->hasActions(id)) {
+            return og;
+        }
         auto active = NongManager::get()->getActiveNong(id);
         if (active.has_value()) {
             auto value = active.value();

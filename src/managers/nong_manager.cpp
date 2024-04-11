@@ -21,11 +21,6 @@ std::optional<NongData> NongManager::getNongs(int songID) {
         return std::nullopt;
     }
 
-    auto actions = this->getSongIDActions(songID);
-    if (actions.has_value()) {
-        return std::nullopt;
-    }
-
     return m_state.m_nongs[songID];
 }
 
@@ -51,6 +46,24 @@ std::optional<SongInfo> NongManager::getActiveNong(int songID) {
     }
 
     return std::nullopt;
+}
+
+bool NongManager::hasActions(int songID) {
+    return m_getSongInfoActions.contains(songID);
+}
+
+bool NongManager::isFixingDefault(int songID) {
+    if (!m_getSongInfoActions.contains(songID)) {
+        return false;
+    }
+
+    for (auto action : m_getSongInfoActions[songID]) {
+        if (action == SongInfoGetAction::FixDefault) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 std::optional<SongInfo> NongManager::getDefaultNong(int songID) {

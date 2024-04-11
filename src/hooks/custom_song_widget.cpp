@@ -40,9 +40,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool unk,
         bool isMusicLibrary
     ) {
+        log::info("Calling init...");
         if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect, showPlayMusic, showDownload, isRobtopSong, unk, isMusicLibrary)) {
             return false;
         }
+        log::info("Init called");
         if (isRobtopSong) {
             return true;
         }
@@ -123,10 +125,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 NongManager::get()->createUnknownDefault(obj->m_songID);
             }
         }
-        std::optional<NongData> result = NongManager::get()->getNongs(obj->m_songID);
+        int id = obj->m_songID;
+        std::optional<NongData> result = NongManager::get()->getNongs(id);
         if (!result.has_value()) {
-            NongManager::get()->createDefault(obj->m_songID);
-            result = NongManager::get()->getNongs(obj->m_songID);
+            NongManager::get()->createDefault(id);
+            result = NongManager::get()->getNongs(id);
             if (!result.has_value()) {
                 return;
             }
@@ -134,22 +137,29 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         NongData nongData = result.value();
 
-        SongInfo active = NongManager::get()->getActiveNong(obj->m_songID).value();
-        if (!nongData.defaultValid && active.path == nongData.defaultPath) {
-            NongManager::get()->fixDefault(obj);
-            m_sliderGroove->setVisible(false);
-            nongData = NongManager::get()->getNongs(obj->m_songID).value();
-        }
-        if (!nongData.defaultValid && active.path == nongData.defaultPath) {
-            NongManager::get()->prepareCorrectDefault(obj->m_songID);
+        SongInfo active = NongManager::get()->getActiveNong(id).value();
+        if (
+            !nongData.defaultValid 
+            && active.path == nongData.defaultPath
+            && !NongManager::get()->isFixingDefault(id)
+        ) {
+            NongManager::get()->prepareCorrectDefault(id);
             this->template addEventListener<GetSongInfoEventFilter>(
-                [this](SongInfoObject* obj) {
+                [this, id](SongInfoObject* obj) {
+                    log::info("update song object");
+                    log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, obj->m_songID);
+                    NongManager::get()->fixDefault(obj);
+                    m_sliderGroove->setVisible(false);
+                    m_fields->nongs = NongManager::get()->getNongs(id).value();
                     this->createSongLabels();
                     return ListenerResult::Propagate;
                 },
-                obj->m_songID
+                id
             );
-            nongData = NongManager::get()->getNongs(obj->m_songID).value();
+            auto result = NongManager::get()->getNongs(id);
+            if (result) {
+                nongData = result.value();
+            }
         }
         m_fields->nongs = nongData;
         this->createSongLabels();
@@ -192,7 +202,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
     void createSongLabels() {
         int songID = m_songInfoObject->m_songID;
-        auto active = NongManager::get()->getActiveNong(songID).value();
+        auto res = NongManager::get()->getActiveNong(songID);
+        if (!res) {
+            return;
+        }
+        SongInfo active = res.value();
         if (m_fields->menu != nullptr) {
             m_fields->menu->removeFromParent();
         }

@@ -158,6 +158,20 @@ public:
     void createUnknownDefault(int songID);
 
     /**
+     * Checks if a song ID has actions associated to it 
+     * 
+     * @param songID the id of the song
+    */
+    bool hasActions(int songID);
+
+    /**
+     * Checks if the default song is being fixed for a song ID 
+     *
+     * @param songID the id of the song
+    */
+    bool isFixingDefault(int songID);
+
+    /**
      * Returns the savefile path
      * 
      * @return the path of the JSON
