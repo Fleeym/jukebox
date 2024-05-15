@@ -44,6 +44,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect, showPlayMusic, showDownload, isRobtopSong, unk, isMusicLibrary)) {
             return false;
         }
+        // log::info("{}, {}, {}, {}, {}", songInfo->m_songName, songInfo->m_artistName, songInfo->m_songUrl, songInfo->m_isUnkownSong, songInfo->m_songID);
         // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool1, m_isMusicLibrary);
         
         m_songLabel->setVisible(false);
@@ -148,8 +149,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
                     if (!NongManager::get()->isFixingDefault(id)) {
                         return ListenerResult::Propagate;
                     }
-                    log::info("update song object");
-                    log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, id);
+                    // log::info("update song object");
+                    // log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, id);
                     NongManager::get()->fixDefault(obj);
                     m_sliderGroove->setVisible(false);
                     m_fields->nongs = NongManager::get()->getNongs(id).value();
@@ -284,7 +285,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 ss << displayId;
     			labelText = "SongID: " + ss.str() + "  Size: " + sizeText;
     		} else {
-    			labelText = "SongID: NONG  Size: " + sizeText;
+                std::string display = "NONG";
+                if (songID < 0) {
+                    display = "(R) NONG";
+                }
+    			labelText = "SongID: " + display + "  Size: " + sizeText;
     		}
 
             auto label = CCLabelBMFont::create(labelText.c_str(), "bigFont.fnt");
