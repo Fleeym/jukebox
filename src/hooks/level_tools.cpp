@@ -1,11 +1,17 @@
-#include "Geode/binding/SongInfoObject.hpp"
-#include <Geode/modify/LevelTools.hpp>
+#include <Geode/binding/LevelSelectLayer.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/binding/LevelTools.hpp>
+#include <Geode/modify/LevelTools.hpp>
+#include <Geode/modify/LevelSelectLayer.hpp>
 #include <Geode/modify/Modify.hpp>
+#include <Geode/cocos/CCDirector.h>
+#include <Geode/utils/cocos.hpp>
 
 #include "../managers/nong_manager.hpp"
 
 using namespace geode::prelude;
+
+bool g_disableTitleOverride = false;
 
 class $modify(LevelTools) {
     static SongInfoObject* getSongObject(int id) {
@@ -24,11 +30,23 @@ class $modify(LevelTools) {
     }
 
     static gd::string getAudioTitle(int id) {
+        if (g_disableTitleOverride) {
+            return LevelTools::getAudioTitle(id);
+        }
         int searchID = -id - 1;
         auto active = jukebox::NongManager::get()->getActiveNong(searchID);
         if (active.has_value()) {
             return active.value().songName;
         }
         return LevelTools::getAudioTitle(id);
+    }
+};
+
+class $modify(LevelSelectLayer) {
+    bool init(int p0) {
+        g_disableTitleOverride = true;
+        bool ret = LevelSelectLayer::init(p0);
+        g_disableTitleOverride = false;
+        return ret;
     }
 };
