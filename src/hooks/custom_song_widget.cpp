@@ -1,20 +1,20 @@
-#include <Geode/binding/CustomSongWidget.hpp>
-#include <Geode/modify/CustomSongWidget.hpp>
-#include <Geode/modify/LevelInfoLayer.hpp>
-#include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/LevelEditorLayer.hpp>
-#include <Geode/loader/Event.hpp>
-#include <Geode/utils/cocos.hpp>
-#include <Geode/ui/GeodeUI.hpp>
 #include <Geode/binding/LevelTools.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/loader/Log.hpp>
+#include <Geode/loader/Event.hpp>
+#include <Geode/modify/CustomSongWidget.hpp>
+#include <Geode/modify/LevelInfoLayer.hpp>
+#include <Geode/ui/GeodeUI.hpp>
+#include <Geode/utils/cocos.hpp>
 #include <sstream>
 
 #include "../types/song_info.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
-#include "Geode/loader/Log.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -106,7 +106,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
         CustomSongWidget::updateSongObject(obj);
         int id = obj->m_songID;
         if (m_isRobtopSong) {
-            SongInfoObject* test = LevelTools::getSongObject(id);
             id++;
             id = -id;
         }
