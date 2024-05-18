@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.8.0
+
+ * Add support for main level songs
+
 ## v2.7.1
 
  * Fix bugs
