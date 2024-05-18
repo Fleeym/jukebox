@@ -31,7 +31,7 @@ protected:
 
     std::optional<std::unordered_set<SongInfoGetAction>> getSongIDActions(int songID);
     void addSongIDAction(int songID, SongInfoGetAction action);
-    void createDefaultCallback(SongInfoObject* obj);
+    void createDefaultCallback(SongInfoObject* obj, int songID = 0);
     void setDefaultState();
     void backupCurrentJSON();
 public:

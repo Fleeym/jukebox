@@ -1,5 +1,7 @@
+#include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/cocos/platform/CCFileUtils.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
@@ -227,7 +229,12 @@ void NongManager::createDefault(int songID) {
     if (m_state.m_nongs.contains(songID)) {
         return;
     }
-    SongInfoObject* songInfo = MusicDownloadManager::sharedState()->getSongInfoObject(songID);
+    SongInfoObject* songInfo = nullptr;
+    if (songID < 0) {
+        songInfo = LevelTools::getSongObject((-songID) - 1);
+    } else {
+        songInfo = MusicDownloadManager::sharedState()->getSongInfoObject(songID);
+    }
     if (songInfo == nullptr && !m_getSongInfoCallbacks.contains(songID)) {
         MusicDownloadManager::sharedState()->getSongInfo(songID, true);
         this->addSongIDAction(songID, SongInfoGetAction::CreateDefault);
@@ -237,7 +244,7 @@ void NongManager::createDefault(int songID) {
         return;
     }
 
-    this->createDefaultCallback(songInfo);
+    this->createDefaultCallback(songInfo, songID);
 }
 
 void NongManager::createUnknownDefault(int songID) {
@@ -437,11 +444,24 @@ void NongManager::fixDefault(SongInfoObject* obj) {
     this->saveNongs(nongs, obj->m_songID);
 }
 
-void NongManager::createDefaultCallback(SongInfoObject* obj) {
-    if (auto nongs = NongManager::get()->getNongs(obj->m_songID)) {
+void NongManager::createDefaultCallback(SongInfoObject* obj, int songID) {
+    int id = obj->m_songID;
+    if (songID != 0) {
+        id = songID;
+    }
+    if (auto nongs = NongManager::get()->getNongs(songID)) {
         return;
     }
-    fs::path songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID)));
+
+    fs::path songPath;
+    if (id < 0) {
+        gd::string filename = LevelTools::getAudioFileName((-id) - 1);
+        fs::path gdDir = fs::path(CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
+        songPath = gdDir / "Resources" / filename.c_str();
+    } else {
+        songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID)));
+    }
+
     NongData data;
     SongInfo defaultSong;
     defaultSong.authorName = obj->m_artistName;
@@ -452,7 +472,7 @@ void NongManager::createDefaultCallback(SongInfoObject* obj) {
     data.defaultPath = songPath;
     data.songs.push_back(defaultSong);
     data.defaultValid = true;
-    m_state.m_nongs[obj->m_songID] = data;
+    m_state.m_nongs[id] = data;
 }
 
 ListenerResult NongManager::onSongInfoFetched(GetSongInfoEvent* event) {

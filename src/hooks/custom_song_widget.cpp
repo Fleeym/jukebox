@@ -1,19 +1,20 @@
-#include <Geode/binding/CustomSongWidget.hpp>
-#include <Geode/modify/CustomSongWidget.hpp>
-#include <Geode/modify/LevelInfoLayer.hpp>
-#include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/LevelEditorLayer.hpp>
+#include <Geode/binding/LevelTools.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/loader/Log.hpp>
 #include <Geode/loader/Event.hpp>
-#include <Geode/utils/cocos.hpp>
+#include <Geode/modify/CustomSongWidget.hpp>
+#include <Geode/modify/LevelInfoLayer.hpp>
 #include <Geode/ui/GeodeUI.hpp>
+#include <Geode/utils/cocos.hpp>
 #include <sstream>
 
 #include "../types/song_info.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
-#include "Geode/loader/Log.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -43,9 +44,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect, showPlayMusic, showDownload, isRobtopSong, unk, isMusicLibrary)) {
             return false;
         }
-        if (isRobtopSong) {
-            return true;
-        }
+        // log::info("{}, {}, {}, {}, {}", songInfo->m_songName, songInfo->m_artistName, songInfo->m_songUrl, songInfo->m_isUnkownSong, songInfo->m_songID);
         // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool1, m_isMusicLibrary);
         
         m_songLabel->setVisible(false);
@@ -105,7 +104,12 @@ class $modify(JBSongWidget, CustomSongWidget) {
         // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool1, m_isMusicLibrary);
 
         CustomSongWidget::updateSongObject(obj);
-        if (obj->m_songID == 0) {
+        int id = obj->m_songID;
+        if (m_isRobtopSong) {
+            id++;
+            id = -id;
+        }
+        if (id == 0) {
             this->restoreUI();
             return;
         }
@@ -113,17 +117,13 @@ class $modify(JBSongWidget, CustomSongWidget) {
             this->restoreUI();
             return;
         }
-        if (m_isRobtopSong) {
-            return;
-        }
         m_songLabel->setVisible(false);
         if (obj->m_songUrl.empty() && obj->m_artistName.empty()) {
             // we have an invalid songID
-            if (!NongManager::get()->getNongs(obj->m_songID).has_value()) {
-                NongManager::get()->createUnknownDefault(obj->m_songID);
+            if (!NongManager::get()->getNongs(id).has_value()) {
+                NongManager::get()->createUnknownDefault(id);
             }
         }
-        int id = obj->m_songID;
         std::optional<NongData> result = NongManager::get()->getNongs(id);
         if (!result.has_value()) {
             NongManager::get()->createDefault(id);
@@ -137,7 +137,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         SongInfo active = NongManager::get()->getActiveNong(id).value();
         if (
-            !nongData.defaultValid 
+            !m_isRobtopSong
+            && !nongData.defaultValid 
             && active.path == nongData.defaultPath
             && !NongManager::get()->isFixingDefault(id)
         ) {
@@ -147,8 +148,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
                     if (!NongManager::get()->isFixingDefault(id)) {
                         return ListenerResult::Propagate;
                     }
-                    log::info("update song object");
-                    log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, obj->m_songID);
+                    // log::info("update song object");
+                    // log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, id);
                     NongManager::get()->fixDefault(obj);
                     m_sliderGroove->setVisible(false);
                     m_fields->nongs = NongManager::get()->getNongs(id).value();
@@ -171,7 +172,15 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
     void updateSongInfo() {
         CustomSongWidget::updateSongInfo();
-        if (m_isRobtopSong || m_songInfoObject == nullptr || m_songInfoObject->m_songID == 0) {
+        if (m_songInfoObject == nullptr) {
+            return;
+        }
+        int id = m_songInfoObject->m_songID;
+        if (m_isRobtopSong) {
+            id++;
+            id = -id;
+        }
+        if (id == 0) {
             return;
         }
         if (!m_fields->fetchedAssetInfo && m_songs.size() != 0) {
@@ -187,7 +196,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 NongManager::get()->createDefault(kv.first);
                 result = NongManager::get()->getNongs(kv.first);
                 if (!result.has_value()) {
-                    log::info("No nongs for {}", kv.first);
                     // its downloading
                     allDownloaded = false;
                     continue;
@@ -203,6 +211,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
     void createSongLabels() {
         int songID = m_songInfoObject->m_songID;
+        if (m_isRobtopSong) {
+            songID++;
+            songID = -songID;
+        }
         auto res = NongManager::get()->getActiveNong(songID);
         if (!res) {
             return;
@@ -263,9 +275,20 @@ class $modify(JBSongWidget, CustomSongWidget) {
     		}
     		std::string labelText;
     		if (active.path == data.defaultPath) {
-    			labelText = "SongID: " + std::to_string(songID) + "  Size: " + sizeText;
+                std::stringstream ss;
+                int displayId = songID;
+                if (displayId < 0) {
+                    displayId = (-displayId) - 1;
+                    ss << "(R) ";
+                }
+                ss << displayId;
+    			labelText = "SongID: " + ss.str() + "  Size: " + sizeText;
     		} else {
-    			labelText = "SongID: NONG  Size: " + sizeText;
+                std::string display = "NONG";
+                if (songID < 0) {
+                    display = "(R) NONG";
+                }
+    			labelText = "SongID: " + display + "  Size: " + sizeText;
     		}
 
             auto label = CCLabelBMFont::create(labelText.c_str(), "bigFont.fnt");
@@ -294,6 +317,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
 		auto scene = CCDirector::sharedDirector()->getRunningScene();
         std::vector<int> ids;
+        int id = m_songInfoObject->m_songID;
+        if (m_isRobtopSong) {
+            id++;
+            id = -id;
+        }
         if (m_songs.size() > 1) {
             for (auto const& kv : m_songs) {
                 if (!NongManager::get()->getNongs(kv.first).has_value()) {
@@ -302,9 +330,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 ids.push_back(kv.first);
             }
         } else {
-            ids.push_back(m_songInfoObject->m_songID);
+            ids.push_back(id);
         }
-		auto layer = NongDropdownLayer::create(ids, this, m_songInfoObject->m_songID);
+		auto layer = NongDropdownLayer::create(ids, this, id);
         layer->m_noElasticity = true;
 		// based robtroll
 		layer->setZOrder(106);
