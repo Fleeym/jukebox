@@ -1,5 +1,7 @@
+#include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/cocos/platform/CCFileUtils.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
@@ -13,8 +15,6 @@
 #include <string>
 
 #include "nong_manager.hpp"
-#include "Geode/binding/LevelTools.hpp"
-#include "Geode/cocos/platform/CCFileUtils.h"
 
 namespace jukebox {
 
