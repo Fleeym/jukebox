@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Geode/loader/Mod.hpp"
 #include <matjson.hpp>
 #include <string>
 #include <filesystem>
@@ -39,7 +40,16 @@ struct matjson::Serialize<jukebox::NongData> {
             if (jsonSong.contains("levelName")) {
                 levelName = jsonSong["levelName"].as_string();
             }
-            auto path = fs::path(jsonSong["path"].as_string());
+            std::string filename = "";
+            if (!jsonSong.contains("filename") && jsonSong.contains("path")) {
+                auto path = fs::path(jsonSong["path"].as_string());
+                filename = path.filename().string();
+            } else if (jsonSong.contains("filename")) {
+                filename = jsonSong["filename"].as_string();
+            }
+
+            static const fs::path nongDir = fs::path(geode::Mod::get()->getSaveDir());
+            fs::path path = nongDir / "nongs" / filename;
 
             jukebox::SongInfo song = {
                 .path = path,
@@ -68,6 +78,7 @@ struct matjson::Serialize<jukebox::NongData> {
         for (auto song : value.songs) {
             auto obj = matjson::Object();
             obj["path"] = song.path.string();
+            obj["filename"] = song.path.filename().string();
             obj["songName"] = song.songName;
             obj["authorName"] = song.authorName;
             obj["songUrl"] = song.songUrl;

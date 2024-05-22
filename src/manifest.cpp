@@ -2,6 +2,6 @@
 
 namespace jukebox {
     int getManifestVersion() {
-        return 2;
+        return 3;
     }
 }
