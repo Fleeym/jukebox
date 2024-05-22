@@ -45,8 +45,10 @@ struct matjson::Serialize<jukebox::NongData> {
             defaultFilename = LevelTools::getAudioFileName(-songID - 1);
         } else {
             if (songID < 10000000) {
+                // newgrounds songs
                 defaultFilename = fmt::format("{}.mp3", songID);
             } else {
+                // music library songs
                 defaultFilename = fmt::format("{}.ogg", songID);
             }
         }
@@ -99,7 +101,6 @@ struct matjson::Serialize<jukebox::NongData> {
             } else {
                 filename = "nongd:invalid";
             }
-
 
             fs::path path;
             if (filename == defaultFilename) {
