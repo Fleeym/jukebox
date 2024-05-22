@@ -328,6 +328,9 @@ fs::path NongManager::getJsonPath() {
 }
 
 void NongManager::loadSongs() {
+    if (m_initialized) {
+        return;
+    }
     auto path = this->getJsonPath();
     if (!fs::exists(path)) {
         this->setDefaultState();
@@ -360,6 +363,7 @@ void NongManager::loadSongs() {
         return;
     }
     m_state = matjson::Serialize<NongState>::from_json(json.value());
+    m_initialized = true;
 }
 
 void NongManager::backupCurrentJSON() {

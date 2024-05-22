@@ -30,7 +30,10 @@ class $modify(LevelTools) {
     }
 
     static gd::string getAudioTitle(int id) {
-        if (g_disableTitleOverride) {
+        if (
+            g_disableTitleOverride ||
+            !jukebox::NongManager::get()->initialized()
+        ) {
             return LevelTools::getAudioTitle(id);
         }
         int searchID = -id - 1;

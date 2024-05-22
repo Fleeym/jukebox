@@ -28,6 +28,7 @@ protected:
     std::unordered_map<int, std::function<void(int)>> m_getSongInfoCallbacks;
     std::unordered_map<int, std::unordered_set<SongInfoGetAction>> m_getSongInfoActions;
     EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener = { this, &NongManager::onSongInfoFetched };
+    bool m_initialized = false;
 
     std::optional<std::unordered_set<SongInfoGetAction>> getSongIDActions(int songID);
     void addSongIDAction(int songID, SongInfoGetAction action);
@@ -35,6 +36,8 @@ protected:
     void setDefaultState();
     void backupCurrentJSON();
 public:
+    bool initialized() { return m_initialized; }
+
     /**
      * Only used once, on game launch. Reads the json and loads it into memory.
     */

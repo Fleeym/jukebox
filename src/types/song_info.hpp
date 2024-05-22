@@ -1,6 +1,9 @@
 #pragma once
 
+#include "Geode/binding/LevelTools.hpp"
+#include "Geode/cocos/platform/CCFileUtils.h"
 #include "Geode/loader/Mod.hpp"
+#include <fmt/format.h>
 #include <matjson.hpp>
 #include <string>
 #include <filesystem>
@@ -27,12 +30,57 @@ struct NongData {
 
 template<>
 struct matjson::Serialize<jukebox::NongData> {
-    static jukebox::NongData from_json(matjson::Value const& value) {
+    static jukebox::NongData from_json(matjson::Value const& value, int jukeboxID) {
+        bool mainSong = jukeboxID < 0;
         std::vector<jukebox::SongInfo> songs;
         auto jsonSongs = value["songs"].as_array();
         bool valid = true;
         if (value.contains("defaultValid")) {
             valid = value["defaultValid"].as_bool();
+        }
+
+        std::string defaultFilename = "";
+        if (mainSong) {
+            defaultFilename = LevelTools::getAudioFileName(-jukeboxID - 1);
+        } else {
+            if (jukeboxID < 10000000) {
+                defaultFilename = fmt::format("{}.mp3", jukeboxID);
+            } else {
+                defaultFilename = fmt::format("{}.ogg", jukeboxID);
+            }
+        }
+
+        std::string activeFilename = "";
+        if (!value.contains("activeFilename") && value.contains("active")) {
+            auto path = fs::path(value["active"].as_string());
+            activeFilename = path.filename().string();
+        } else if (value.contains("activeFilename")) {
+            activeFilename = value["activeFilename"].as_string();
+        } else {
+            activeFilename = "nongd:invalid";
+        }
+
+        static const fs::path nongDir = fs::path(geode::Mod::get()->getSaveDir());
+        static const fs::path customSongPath = fs::path(
+            cocos2d::CCFileUtils::get()->getWritablePath().c_str()
+        );
+        static const fs::path gdDir = fs::path(
+            cocos2d::CCFileUtils::get()->getWritablePath2().c_str()
+        );
+
+
+        fs::path active;
+        fs::path defaultPath;
+        if (mainSong) {
+            defaultPath = gdDir / "Resources" / defaultFilename;
+        } else {
+            defaultPath = customSongPath / defaultFilename;
+        }
+
+        if (activeFilename == defaultFilename) {
+            active = defaultPath;
+        } else {
+            active = nongDir / "nongs" / activeFilename;
         }
 
         for (auto jsonSong : jsonSongs) {
@@ -46,10 +94,20 @@ struct matjson::Serialize<jukebox::NongData> {
                 filename = path.filename().string();
             } else if (jsonSong.contains("filename")) {
                 filename = jsonSong["filename"].as_string();
+            } else {
+                filename = "nongd:invalid";
             }
 
-            static const fs::path nongDir = fs::path(geode::Mod::get()->getSaveDir());
-            fs::path path = nongDir / "nongs" / filename;
+            fs::path path;
+            if (filename == defaultFilename) {
+                if (mainSong) {
+                    path = gdDir / "Resources" / filename;
+                } else {
+                    path = customSongPath / filename;
+                }
+            } else {
+                path = nongDir / "nongs" / filename;
+            }
 
             jukebox::SongInfo song = {
                 .path = path,
@@ -62,8 +120,8 @@ struct matjson::Serialize<jukebox::NongData> {
         }
 
         return jukebox::NongData {
-            .active = fs::path(value["active"].as_string()),
-            .defaultPath = fs::path(value["defaultPath"].as_string()),
+            .active = active,
+            .defaultPath = defaultPath,
             .songs = songs,
             .defaultValid = valid
         };
@@ -75,6 +133,7 @@ struct matjson::Serialize<jukebox::NongData> {
         ret["active"] = value.active.string();
         ret["defaultPath"] = value.defaultPath.string();
         ret["defaultValid"] = value.defaultValid;
+        ret["activeFilename"] = value.active.filename().string();
         for (auto song : value.songs) {
             auto obj = matjson::Object();
             obj["path"] = song.path.string();
