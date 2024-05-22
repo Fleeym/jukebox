@@ -31,8 +31,8 @@ struct NongData {
 
 template<>
 struct matjson::Serialize<jukebox::NongData> {
-    static jukebox::NongData from_json(matjson::Value const& value, int jukeboxID) {
-        bool mainSong = jukeboxID < 0;
+    static jukebox::NongData from_json(matjson::Value const& value, int songID) {
+        bool mainSong = songID < 0;
         std::vector<jukebox::SongInfo> songs;
         auto jsonSongs = value["songs"].as_array();
         bool valid = true;
@@ -42,12 +42,12 @@ struct matjson::Serialize<jukebox::NongData> {
 
         std::string defaultFilename = "";
         if (mainSong) {
-            defaultFilename = LevelTools::getAudioFileName(-jukeboxID - 1);
+            defaultFilename = LevelTools::getAudioFileName(-songID - 1);
         } else {
-            if (jukeboxID < 10000000) {
-                defaultFilename = fmt::format("{}.mp3", jukeboxID);
+            if (songID < 10000000) {
+                defaultFilename = fmt::format("{}.mp3", songID);
             } else {
-                defaultFilename = fmt::format("{}.ogg", jukeboxID);
+                defaultFilename = fmt::format("{}.ogg", songID);
             }
         }
 
