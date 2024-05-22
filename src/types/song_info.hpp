@@ -7,6 +7,7 @@
 #include <matjson.hpp>
 #include <string>
 #include <filesystem>
+#include <system_error>
 namespace fs = std::filesystem;
 
 namespace jukebox {
@@ -68,7 +69,6 @@ struct matjson::Serialize<jukebox::NongData> {
             cocos2d::CCFileUtils::get()->getWritablePath2().c_str()
         );
 
-
         fs::path active;
         fs::path defaultPath;
         if (mainSong) {
@@ -82,6 +82,8 @@ struct matjson::Serialize<jukebox::NongData> {
         } else {
             active = nongDir / "nongs" / activeFilename;
         }
+
+        bool activeFound = false;
 
         for (auto jsonSong : jsonSongs) {
             std::string levelName = "";
@@ -98,6 +100,7 @@ struct matjson::Serialize<jukebox::NongData> {
                 filename = "nongd:invalid";
             }
 
+
             fs::path path;
             if (filename == defaultFilename) {
                 if (mainSong) {
@@ -109,6 +112,14 @@ struct matjson::Serialize<jukebox::NongData> {
                 path = nongDir / "nongs" / filename;
             }
 
+            if (filename != "nongd:invalid" && filename == activeFilename) {
+                activeFound = true;
+                std::error_code ec;
+                if (!fs::exists(path, ec) || ec) {
+                    activeFound = false;
+                }
+            }
+
             jukebox::SongInfo song = {
                 .path = path,
                 .songName = jsonSong["songName"].as_string(),
@@ -117,6 +128,10 @@ struct matjson::Serialize<jukebox::NongData> {
                 .levelName = levelName
             };
             songs.push_back(song);
+        }
+
+        if (!activeFound) {
+            active = defaultPath;
         }
 
         return jukebox::NongData {
