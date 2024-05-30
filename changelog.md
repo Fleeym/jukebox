@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.9.0
+
+ * Add jukebox::getActiveNong, jukebox::deleteNong and jukebox::getDefaultNong to the API (thanks Flaafy!)
+ * Add a Ref CustomSongWidget param in jukebox::setActiveNong for updating the UI (thanks Flaafy!)
+ * Bump Geode version to v2.0.0-beta.27
+
 ## v2.8.0
 
  * Add support for main level songs
