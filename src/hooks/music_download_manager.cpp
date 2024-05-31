@@ -18,7 +18,11 @@ class $modify(MusicDownloadManager) {
 		if (!fs::exists(value.path)) {
             return MusicDownloadManager::pathForSong(id);
 		}
+        #ifdef GEODE_IS_WINDOWS
         return geode::utils::string::wideToUtf8(value.path.c_str());
+        #else
+        return value.path.string();
+        #endif
 	}
     void onGetSongInfoCompleted(gd::string p1, gd::string p2) {
         MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
