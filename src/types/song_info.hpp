@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Geode/binding/LevelTools.hpp"
-#include "Geode/cocos/platform/CCFileUtils.h"
-#include "Geode/loader/Mod.hpp"
+#include <Geode/binding/LevelTools.hpp>
+#include <Geode/cocos/platform/CCFileUtils.h>
+#include <Geode/loader/Mod.hpp>
 #include <fmt/format.h>
 #include <matjson.hpp>
 #include <string>
