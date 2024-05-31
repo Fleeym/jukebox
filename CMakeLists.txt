@@ -6,6 +6,7 @@ project(jukebox VERSION 2.9.0)
 
 file(GLOB SOURCES
     src/ui/*.cpp
+    src/ui/list/*.cpp
     src/managers/*.cpp
     src/hooks/*.cpp
     src/events/*.cpp

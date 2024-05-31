@@ -1,27 +1,55 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
+#include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/base_nodes/Layout.hpp>
+#include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/cocos.hpp>
+#include <fmt/format.h>
 
 #include "nong_cell.hpp"
-#include "../managers/nong_manager.hpp"
 
 namespace jukebox {
 
-bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
-    if (!JBListCell::init(parentPopup, size)) return false;
+bool NongCell::init(
+    int songID,
+    SongInfo info,
+    bool isDefault,
+    bool selected, 
+    CCSize const& size,
+    std::function<void()> onSelect,
+    std::function<void()> onFixDefault,
+    std::function<void()> onDelete
+) {
+    if (!CCNode::init()) {
+        return false;
+    }
 
+    m_songID = songID;
     m_songInfo = info;
-    m_parentPopup = parentPopup;
     m_isDefault = isDefault;
     m_isActive = selected;
+    m_onSelect = onSelect;
+    m_onFixDefault = onFixDefault;
+    m_onDelete = onDelete;
+
+    this->setContentSize(size);
+    this->setAnchorPoint(CCPoint { 0.5f, 0.5f });
 
     CCMenuItemSpriteExtra* button;
 
+    auto bg = CCScale9Sprite::create("square02b_001.png");
+    bg->setColor({ 0, 0, 0 });
+    bg->setOpacity(75);
+    bg->setScale(0.3f);
+    bg->setContentSize(size / bg->getScale());
+    this->addChildAtPosition(bg, Anchor::Center);
+
     if (selected) {
-        auto sprite = ButtonSprite::create("Set", "goldFont.fnt", "GJ_button_02.png");
+        auto sprite = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
         sprite->setScale(0.7f);
         button = CCMenuItemSpriteExtra::create(
             sprite,
@@ -29,7 +57,7 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
             nullptr
         );
     } else {
-        auto sprite = ButtonSprite::create("Set");
+        auto sprite = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
         sprite->setScale(0.7f);
         button = CCMenuItemSpriteExtra::create(
             sprite,
@@ -42,6 +70,8 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
 
     auto menu = CCMenu::create();
     menu->addChild(button);
+    menu->setAnchorPoint(CCPoint { 1.0f, 0.5f });
+    menu->setContentSize(CCSize { 50.f, 30.f });
 
     if (!isDefault) {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
@@ -53,7 +83,6 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
         );
         deleteButton->setID("delete-button");
         menu->addChild(deleteButton);
-        deleteButton->setPositionX(38.f);
     } else {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
         sprite->setScale(0.8f);
@@ -66,14 +95,17 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
             menu_selector(NongCell::onFixDefault)
         );
         fixButton->setID("fix-button");
-        fixButton->setPositionX(38.f);
         menu->addChild(fixButton);
     }
 
-    menu->setAnchorPoint(ccp(0, 0));
-    menu->setPosition(ccp(267.f, 30.f));
+    menu->setLayout(
+        RowLayout::create()
+            ->setGap(5.f)
+            ->setAxisAlignment(AxisAlignment::Even)
+    );
+    menu->updateLayout();
     menu->setID("button-menu");
-    this->addChild(menu);
+    this->addChildAtPosition(menu, Anchor::Right, CCPoint { -5.0f, 0.0f });
 
     m_songInfoLayer = CCLayer::create();
 
@@ -121,53 +153,56 @@ bool NongCell::init(SongInfo info, NongDropdownLayer* parentPopup, CCSize const&
 
 void NongCell::onFixDefault(CCObject* target) {
     if (!m_isActive) {
-        FLAlertLayer::create("Error", "Set the default song as <cr>active</c> first", "Ok")->show();
+        FLAlertLayer::create("Error", "Set this NONG as <cr>active</c> first", "Ok")->show();
         return;
     }
     createQuickPopup(
         "Fix default",
-        "Do you want to refetch song info <cb>for the default song</c>? Use this <cr>ONLY</c> if it gets renamed by accident!",
+        "Do you want to refetch song info <cb>for the default NONG</c>? Use this <cr>ONLY</c> if it gets renamed by accident!",
         "No",
         "Yes",
         [this](FLAlertLayer* alert, bool btn2) {
-            if (btn2 && !NongManager::get()->isFixingDefault(m_parentPopup->getSongID())) {
-                this->template addEventListener<GetSongInfoEventFilter>(
-                    [this](auto song) {
-                        if (m_parentPopup) {
-                            m_parentPopup->refreshList();
-                        }
-                        FLAlertLayer::create("Success", "Default song data was refetched successfully!", "Ok")->show();
-                        return ListenerResult::Propagate;
-                    }, m_parentPopup->getSongID()
-                );
-                NongManager::get()->markAsInvalidDefault(m_parentPopup->getSongID());
-                NongManager::get()->prepareCorrectDefault(m_parentPopup->getSongID());
+            if (btn2) {
+                m_onFixDefault();
             }
         }
     );
 }
 
 void NongCell::onSet(CCObject* target) {
-    m_parentPopup->setActiveSong(this->m_songInfo);
+    m_onSelect();
 }
 
 void NongCell::deleteSong(CCObject* target) {
-    FLAlertLayer::create(this, "Are you sure?", "Are you sure you want to delete <cy>" + this->m_songInfo.songName + "</c> from your NONGs?", "No", "Yes")->show();
+    createQuickPopup(
+        "Are you sure?",
+        fmt::format("Are you sure you want to delete <cy>{}</c> from your NONGs?", m_songInfo.songName),
+        "No",
+        "Yes",
+        [this] (FLAlertLayer* self, bool btn2) {
+            if (btn2) {
+                m_onDelete();
+            }
+        }
+    );
 }
 
-NongCell* NongCell::create(SongInfo info, NongDropdownLayer* parentPopup, CCSize const& size, bool selected, bool isDefault) {
+NongCell* NongCell::create(
+    int songID,
+    SongInfo info,
+    bool isDefault,
+    bool selected, 
+    CCSize const& size,
+    std::function<void()> onSelect,
+    std::function<void()> onFixDefault,
+    std::function<void()> onDelete
+) {
     auto ret = new NongCell();
-    if (ret && ret->init(info, parentPopup, size, selected, isDefault)) {
+    if (ret && ret->init(songID, info, isDefault, selected, size, onSelect, onFixDefault, onDelete)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);
     return nullptr;
-}
-
-void NongCell::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
-    if (btn2) {
-        m_parentPopup->deleteSong(m_songInfo);
-    }
 }
 
 }
