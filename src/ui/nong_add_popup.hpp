@@ -3,7 +3,7 @@
 #include <Geode/c++stl/gdstdlib.hpp>
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/ui/InputNode.hpp>
+#include <Geode/ui/TextInput.hpp>
 
 #include "nong_dropdown_layer.hpp"
 
@@ -21,9 +21,9 @@ protected:
     CCMenu* m_selectSongMenu;
     CCMenu* m_addSongMenu;
 
-    InputNode* m_songNameInput;
-    InputNode* m_artistNameInput;
-    InputNode* m_levelNameInput;
+    TextInput* m_songNameInput;
+    TextInput* m_artistNameInput;
+    TextInput* m_levelNameInput;
 
     fs::path m_songPath;
     CCNode* m_selectedContainer;

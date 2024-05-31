@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.5.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(jukebox VERSION 2.0.0)
+project(jukebox VERSION 2.9.0)
 
 file(GLOB SOURCES
     src/ui/*.cpp
+    src/ui/list/*.cpp
     src/managers/*.cpp
     src/hooks/*.cpp
     src/events/*.cpp

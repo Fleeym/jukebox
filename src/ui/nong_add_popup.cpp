@@ -9,7 +9,7 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/MiniFunction.hpp>
 #include <Geode/utils/string.hpp>
-#include <Geode/ui/InputNode.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <ccTypes.h>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
 
@@ -17,6 +17,7 @@
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
+#include "Geode/utils/file.hpp"
 
 namespace jukebox {
 
@@ -128,9 +129,17 @@ void NongAddPopup::addPathLabel(std::string const& path) {
 }
 
 void NongAddPopup::openFile(CCObject* target) {
+    #ifdef GEODE_IS_WINDOWS
+    file::FilePickOptions::Filter filter = {
+        .description = "Songs",
+        .files = { ".mp3" }
+    };
+    #else
+    file::FilePickOptions::Filter filter = {};
+    #endif
     file::FilePickOptions options = {
         std::nullopt,
-        {}
+        {filter}
     };
 
     auto callback = [this](ghc::filesystem::path result) {
@@ -153,28 +162,28 @@ void NongAddPopup::openFile(CCObject* target) {
 void NongAddPopup::createInputs() {
     auto inputParent = CCNode::create();
     inputParent->setID("input-parent");
-    auto songInput = geode::InputNode::create(250.f, "Song name*", "bigFont.fnt");
+    auto songInput = TextInput::create(250.f, "Song name*", "bigFont.fnt");
     songInput->setID("song-name-input");
-    songInput->getInput()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
-    songInput->getInput()->setMaxLabelScale(0.7f);
-    songInput->getInput()->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
-    songInput->getInput()->setLabelPlaceholderScale(0.7f);
+    songInput->setCommonFilter(CommonFilter::Any);
+    songInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    songInput->getInputNode()->setMaxLabelScale(0.7f);
+    songInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_songNameInput = songInput;
 
-    auto artistInput = InputNode::create(250.f, "Artist name*", "bigFont.fnt");
+    auto artistInput = TextInput::create(250.f, "Artist name*", "bigFont.fnt");
     artistInput->setID("artist-name-input");
-    artistInput->getInput()->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
-    artistInput->getInput()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
-    artistInput->getInput()->setMaxLabelScale(0.7f);
-    artistInput->getInput()->setLabelPlaceholderScale(0.7f);
+    artistInput->setCommonFilter(CommonFilter::Any);
+    artistInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    artistInput->getInputNode()->setMaxLabelScale(0.7f);
+    artistInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_artistNameInput = artistInput;
 
-    auto levelNameInput = InputNode::create(250.f, "Level name", "bigFont.fnt");
+    auto levelNameInput = TextInput::create(250.f, "Level name", "bigFont.fnt");
     levelNameInput->setID("artist-name-input");
-    levelNameInput->getInput()->setAllowedChars("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890(),.-_+");
-    levelNameInput->getInput()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
-    levelNameInput->getInput()->setMaxLabelScale(0.7f);
-    levelNameInput->getInput()->setLabelPlaceholderScale(0.7f);
+    levelNameInput->setCommonFilter(CommonFilter::Any);
+    levelNameInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    levelNameInput->getInputNode()->setMaxLabelScale(0.7f);
+    levelNameInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_levelNameInput = levelNameInput;
 
     uint32_t inputs = 3;

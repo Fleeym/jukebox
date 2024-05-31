@@ -1,5 +1,6 @@
 #include "song_cell.hpp"
 
+#include "GUI/CCControlExtension/CCScale9Sprite.h"
 #include <Geode/utils/cocos.hpp>
 #include <ccTypes.h>
 #include <Geode/c++stl/gdstdlib.hpp>
@@ -8,15 +9,29 @@
 
 namespace jukebox {
 
-bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCSize const& size) {
-    if (!JBListCell::init(parentPopup, size)) return false;
-    m_parentPopup = parentPopup;
-    m_songID = id;
-    for (auto const& song : data.songs) {
-        if (song.path == data.active) {
-            m_active = song;
-        }
+bool SongCell::init(
+    int id,
+    const SongInfo& songInfo,
+    const CCSize& size,
+    std::function<void()> selectCallback
+) {
+    if (!CCNode::init()) {
+        return false;
     }
+    m_songID = id;
+    m_active = songInfo;
+    m_callback = selectCallback;
+
+    this->setContentSize(size);
+    this->setAnchorPoint(CCPoint { 0.5f, 0.5f });
+
+    auto bg = CCScale9Sprite::create("square02b_001.png");
+    bg->setColor({ 0, 0, 0 });
+    bg->setOpacity(75);
+    bg->setScale(0.3f);
+    bg->setContentSize(size / bg->getScale());
+    this->addChildAtPosition(bg, Anchor::Center);
+
     auto label = CCLabelBMFont::create(m_active.songName.c_str(), "bigFont.fnt");
     label->setAnchorPoint(ccp(0, 0.5f));
     label->limitLabelWidth(240.f, 0.8f, 0.1f);
@@ -35,7 +50,7 @@ bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCS
     );
     idLabel->setPosition({ size.width - 5.f, 0 + 3.f });
     idLabel->setAnchorPoint({ 1.0f, 0.0f });
-    idLabel->setColor(ccColor3B(51, 51, 51));
+    idLabel->setColor(ccColor3B(230, 230, 230));
     idLabel->setScale(0.6f);
     m_songIDLabel = idLabel;
     this->addChild(idLabel);
@@ -46,7 +61,7 @@ bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCS
     auto btn = CCMenuItemSpriteExtra::create(
         spr,
         this, 
-        menu_selector(JBSongCell::onSelectSong)
+        menu_selector(SongCell::onSelectSong)
     );
     menu->addChild(btn);
     this->addChild(menu);
@@ -54,8 +69,8 @@ bool JBSongCell::init(NongData data, int id, NongDropdownLayer* parentPopup, CCS
     return true;
 }
 
-void JBSongCell::onSelectSong(CCObject*) {
-    m_parentPopup->onSelectSong(m_songID);
+void SongCell::onSelectSong(CCObject*) {
+    m_callback();
 }
 
 }
