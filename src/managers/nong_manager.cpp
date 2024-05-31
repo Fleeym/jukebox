@@ -323,7 +323,7 @@ void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::fu
 }
 
 fs::path NongManager::getJsonPath() {
-    auto savedir = fs::path(Mod::get()->getSaveDir().string());
+    auto savedir = fs::path(Mod::get()->getSaveDir().c_str());
     return savedir / "nong_data.json";
 }
 

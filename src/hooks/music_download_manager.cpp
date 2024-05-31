@@ -1,5 +1,6 @@
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/modify/MusicDownloadManager.hpp>
+#include <Geode/utils/string.hpp>
 
 #include "../managers/nong_manager.hpp"
 #include "../types/song_info.hpp"
@@ -11,13 +12,13 @@ class $modify(MusicDownloadManager) {
 	gd::string pathForSong(int id) {
         auto active = NongManager::get()->getActiveNong(id);
         if (!active.has_value()) {
-		    return MusicDownloadManager::pathForSong(id);
+            return MusicDownloadManager::pathForSong(id);
         }
         auto value = active.value();
 		if (!fs::exists(value.path)) {
-		    return MusicDownloadManager::pathForSong(id);
+            return MusicDownloadManager::pathForSong(id);
 		}
-		return value.path.string();
+        return geode::utils::string::wideToUtf8(value.path.c_str());
 	}
     void onGetSongInfoCompleted(gd::string p1, gd::string p2) {
         MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
