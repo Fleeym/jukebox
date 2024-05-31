@@ -333,7 +333,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
             ids.push_back(id);
         }
 		auto layer = NongDropdownLayer::create(ids, this, id);
-        layer->m_noElasticity = true;
 		// based robtroll
 		layer->setZOrder(106);
         layer->show();
