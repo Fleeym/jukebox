@@ -22,7 +22,7 @@ struct matjson::Serialize<jukebox::NongState> {
         auto nongs = value["nongs"].as_object();
         for (auto const& kv : nongs) {
             int id = stoi(kv.first);
-            jukebox::NongData data = matjson::Serialize<jukebox::NongData>::from_json(kv.second);
+            jukebox::NongData data = matjson::Serialize<jukebox::NongData>::from_json(kv.second, id);
             ret.m_nongs[id] = data;
         }
 

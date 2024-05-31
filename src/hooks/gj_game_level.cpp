@@ -1,6 +1,7 @@
 #include <Geode/modify/GJGameLevel.hpp>
 #include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/modify/Modify.hpp>
+#include <Geode/utils/string.hpp>
 
 #include <filesystem>
 
@@ -23,6 +24,10 @@ class $modify(GJGameLevel) {
         if (!std::filesystem::exists(value.path)) {
             return GJGameLevel::getAudioFileName();
         }
+        #ifdef GEODE_IS_WINDOWS
+        return geode::utils::string::wideToUtf8(value.path.c_str());
+        #else
         return value.path.string();
+        #endif
     }
 };

@@ -132,7 +132,7 @@ void NongAddPopup::openFile(CCObject* target) {
     #ifdef GEODE_IS_WINDOWS
     file::FilePickOptions::Filter filter = {
         .description = "Songs",
-        .files = { ".mp3" }
+        .files = { "*.mp3" }
     };
     #else
     file::FilePickOptions::Filter filter = {};

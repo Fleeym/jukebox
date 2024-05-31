@@ -323,11 +323,14 @@ void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::fu
 }
 
 fs::path NongManager::getJsonPath() {
-    auto savedir = fs::path(Mod::get()->getSaveDir().string());
+    auto savedir = fs::path(Mod::get()->getSaveDir().c_str());
     return savedir / "nong_data.json";
 }
 
 void NongManager::loadSongs() {
+    if (m_initialized) {
+        return;
+    }
     auto path = this->getJsonPath();
     if (!fs::exists(path)) {
         this->setDefaultState();
@@ -360,6 +363,7 @@ void NongManager::loadSongs() {
         return;
     }
     m_state = matjson::Serialize<NongState>::from_json(json.value());
+    m_initialized = true;
 }
 
 void NongManager::backupCurrentJSON() {
