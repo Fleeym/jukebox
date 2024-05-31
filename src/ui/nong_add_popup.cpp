@@ -17,6 +17,7 @@
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
+#include "Geode/utils/file.hpp"
 
 namespace jukebox {
 
@@ -128,9 +129,17 @@ void NongAddPopup::addPathLabel(std::string const& path) {
 }
 
 void NongAddPopup::openFile(CCObject* target) {
+    #ifdef GEODE_IS_WINDOWS
+    file::FilePickOptions::Filter filter = {
+        .description = "Songs",
+        .files = { ".mp3" }
+    };
+    #else
+    file::FilePickOptions::Filter filter = {};
+    #endif
     file::FilePickOptions options = {
         std::nullopt,
-        {}
+        {filter}
     };
 
     auto callback = [this](ghc::filesystem::path result) {
