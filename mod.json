@@ -4,8 +4,8 @@
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
-		"win": "2.204",
-		"android": "2.205"
+		"win": "2.206",
+		"android": "2.206"
 	},
 	"developer": "Fleym",
 	"description": "A simple song manager for Geometry Dash",

@@ -151,7 +151,7 @@ public:
      * 
      * @param songID the id of the song
     */
-    void createDefault(int songID);
+    void createDefault(SongInfoObject* object, int songID, bool robtop);
 
     /**
      * Creates a default with name unknown and artist unknown. Used for invalid song ids.

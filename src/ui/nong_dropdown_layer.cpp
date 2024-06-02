@@ -25,11 +25,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     m_defaultSongID = defaultSongID;
     for (auto const& id : m_songIDS) {
         auto result = NongManager::get()->getNongs(id);
-        if (!result.has_value()) {
-            NongManager::get()->createDefault(id);
-            NongManager::get()->writeJson();
-            result = NongManager::get()->getNongs(id);
-        }
         auto value = result.value();
         m_data[id] = value;
     }
@@ -296,7 +291,7 @@ void NongDropdownLayer::updateParentWidget(SongInfo const& song) {
     if (song.songUrl != "local") {
         m_parentWidget->m_songInfoObject->m_songUrl = song.songUrl;
     }
-    m_parentWidget->updateSongObject(this->m_parentWidget->m_songInfoObject);
+    m_parentWidget->updateSongInfo();
 }
 
 void NongDropdownLayer::deleteSong(SongInfo const& song) {

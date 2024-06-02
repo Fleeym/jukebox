@@ -225,26 +225,23 @@ void NongManager::deleteNong(SongInfo const& song, int songID) {
     this->saveNongs(newData, songID);
 }
 
-void NongManager::createDefault(int songID) {
-    if (m_state.m_nongs.contains(songID)) {
+void NongManager::createDefault(SongInfoObject* object, int songID, bool robtop) {
+    if ((!object && !robtop) || m_state.m_nongs.contains(songID)) {
         return;
     }
-    SongInfoObject* songInfo = nullptr;
-    if (songID < 0) {
-        songInfo = LevelTools::getSongObject((-songID) - 1);
-    } else {
-        songInfo = MusicDownloadManager::sharedState()->getSongInfoObject(songID);
+    if (!robtop) {
+        object = MusicDownloadManager::sharedState()->getSongInfoObject(songID);
     }
-    if (songInfo == nullptr && !m_getSongInfoCallbacks.contains(songID)) {
+    if (!robtop && object == nullptr && !m_getSongInfoCallbacks.contains(songID)) {
         MusicDownloadManager::sharedState()->getSongInfo(songID, true);
         this->addSongIDAction(songID, SongInfoGetAction::CreateDefault);
         return;
     }
-    if (songInfo == nullptr) {
+    if (object == nullptr && !robtop) {
         return;
     }
 
-    this->createDefaultCallback(songInfo, songID);
+    this->createDefaultCallback(object, songID);
 }
 
 void NongManager::createUnknownDefault(int songID) {

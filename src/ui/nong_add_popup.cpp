@@ -17,6 +17,7 @@
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
+#include "Geode/cocos/cocoa/CCString.h"
 #include "Geode/utils/file.hpp"
 
 namespace jukebox {

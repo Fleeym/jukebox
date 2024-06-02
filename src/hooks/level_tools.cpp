@@ -14,20 +14,21 @@ using namespace geode::prelude;
 bool g_disableTitleOverride = false;
 
 class $modify(LevelTools) {
-    static SongInfoObject* getSongObject(int id) {
-        SongInfoObject* og = LevelTools::getSongObject(id);
-        if (og == nullptr) {
-            return og;
-        }
-        int searchId = -id - 1;
-        auto active = jukebox::NongManager::get()->getActiveNong(searchId);
-        if (active.has_value()) {
-            auto value = active.value();
-            og->m_songName = value.songName;
-            og->m_artistName = value.authorName;
-        }
-        return og;
-    }
+    // Inlined in 2.206, commented for now
+    // static SongInfoObject* getSongObject(int id) {
+    //     SongInfoObject* og = LevelTools::getSongObject(id);
+    //     if (og == nullptr) {
+    //         return og;
+    //     }
+    //     int searchId = -id - 1;
+    //     auto active = jukebox::NongManager::get()->getActiveNong(searchId);
+    //     if (active.has_value()) {
+    //         auto value = active.value();
+    //         og->m_songName = value.songName;
+    //         og->m_artistName = value.authorName;
+    //     }
+    //     return og;
+    // }
 
     static gd::string getAudioTitle(int id) {
         if (

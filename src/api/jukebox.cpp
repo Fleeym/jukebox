@@ -27,7 +27,7 @@ namespace jukebox {
       if (song.songUrl != "local") {
           widget->m_songInfoObject->m_songUrl = song.songUrl;
       }
-      widget->updateSongObject(widget->m_songInfoObject);
+      widget->updateSongInfo();
     }
   }
 
