@@ -13,11 +13,13 @@
 #include <ccTypes.h>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
 
+#include <filesystem>
 #include <system_error>
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
-#include "Geode/cocos/cocoa/CCString.h"
+#include "Geode/utils/Result.hpp"
+#include "Geode/utils/Task.hpp"
 #include "Geode/utils/file.hpp"
 
 namespace jukebox {
@@ -143,20 +145,43 @@ void NongAddPopup::openFile(CCObject* target) {
         {filter}
     };
 
-    auto callback = [this](std::filesystem::path result) {
-        #ifdef GEODE_IS_WINDOWS
-        auto strPath = geode::utils::string::wideToUtf8(result.c_str());
-        #else
-        std::string strPath = result.c_str();
-        #endif
-        this->addPathLabel(strPath);
-        m_songPath = result;
+    auto callback = [this](Result<std::filesystem::path> result) {
     };
     auto failedCallback = []() {
         FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
     };
 
-    file::pickFile(file::PickMode::OpenFile, options, callback, failedCallback);
+    m_pickListener.bind(this, &NongAddPopup::onFileOpen);
+    m_pickListener.setFilter(file::pick(file::PickMode::OpenFile, options));
+}
+
+void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event) {
+    if (event->isCancelled()) {
+        FLAlertLayer::create(
+            "Error",
+            "Failed to open file (Task Cancelled)",
+            "Ok"
+        )->show();
+        return;
+    }
+    if (auto result = event->getValue()) {
+        if (result->isErr()) {
+            FLAlertLayer::create(
+                "Error",
+                fmt::format("Failed to open file. Error: {}", result->err()),
+                "Ok"
+            )->show();
+            return;
+        }
+        auto path = result->unwrap();
+        #ifdef GEODE_IS_WINDOWS
+        auto strPath = geode::utils::string::wideToUtf8(path.c_str());
+        #else
+        std::string strPath = path.c_str();
+        #endif
+        this->addPathLabel(strPath);
+        m_songPath = path;
+    }
 }
 
 void NongAddPopup::createInputs() {
