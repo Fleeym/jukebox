@@ -143,15 +143,14 @@ void NongAddPopup::openFile(CCObject* target) {
         {filter}
     };
 
-    auto callback = [this](ghc::filesystem::path result) {
-        auto path = fs::path(result.c_str());
+    auto callback = [this](std::filesystem::path result) {
         #ifdef GEODE_IS_WINDOWS
         auto strPath = geode::utils::string::wideToUtf8(result.c_str());
         #else
         std::string strPath = result.c_str();
         #endif
         this->addPathLabel(strPath);
-        m_songPath = path;
+        m_songPath = result;
     };
     auto failedCallback = []() {
         FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
@@ -242,7 +241,7 @@ void NongAddPopup::addSong(CCObject* target) {
     }
 
     auto unique = jukebox::random_string(16);
-    auto destination = fs::path(Mod::get()->getSaveDir().c_str()) / "nongs";
+    auto destination = Mod::get()->getSaveDir() / "nongs";
     if (!fs::exists(destination)) {
         fs::create_directory(destination);
     }

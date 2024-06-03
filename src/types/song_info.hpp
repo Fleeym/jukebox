@@ -63,7 +63,7 @@ struct matjson::Serialize<jukebox::NongData> {
             activeFilename = "nongd:invalid";
         }
 
-        static const fs::path nongDir = fs::path(geode::Mod::get()->getSaveDir());
+        static const fs::path nongDir = geode::Mod::get()->getSaveDir();
         static const fs::path customSongPath = fs::path(
             cocos2d::CCFileUtils::get()->getWritablePath().c_str()
         );

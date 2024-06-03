@@ -320,7 +320,7 @@ void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::fu
 }
 
 fs::path NongManager::getJsonPath() {
-    auto savedir = fs::path(Mod::get()->getSaveDir().c_str());
+    auto savedir = Mod::get()->getSaveDir();
     return savedir / "nong_data.json";
 }
 
@@ -364,7 +364,7 @@ void NongManager::loadSongs() {
 }
 
 void NongManager::backupCurrentJSON() {
-    auto savedir = fs::path(Mod::get()->getSaveDir());
+    auto savedir = Mod::get()->getSaveDir();
     auto backups = savedir / "backups";
     if (!fs::exists(backups)) {
         std::error_code ec;
@@ -460,7 +460,7 @@ void NongManager::createDefaultCallback(SongInfoObject* obj, int songID) {
         fs::path gdDir = fs::path(CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
         songPath = gdDir / "Resources" / filename.c_str();
     } else {
-        songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID)));
+        songPath = fs::path(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID).c_str());
     }
 
     NongData data;
