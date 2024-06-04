@@ -10,6 +10,7 @@ using namespace jukebox;
 
 class $modify(MusicDownloadManager) {
 	gd::string pathForSong(int id) {
+        NongManager::get()->m_currentlyPreparingNong = std::nullopt;
         auto active = NongManager::get()->getActiveNong(id);
         if (!active.has_value()) {
             return MusicDownloadManager::pathForSong(id);
@@ -18,6 +19,7 @@ class $modify(MusicDownloadManager) {
 		if (!fs::exists(value.path)) {
             return MusicDownloadManager::pathForSong(id);
 		}
+        NongManager::get()->m_currentlyPreparingNong = active;
         #ifdef GEODE_IS_WINDOWS
         return geode::utils::string::wideToUtf8(value.path.c_str());
         #else

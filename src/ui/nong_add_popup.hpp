@@ -27,6 +27,7 @@ protected:
     TextInput* m_songNameInput;
     TextInput* m_artistNameInput;
     TextInput* m_levelNameInput;
+    TextInput* m_startOffsetInput;
 
     fs::path m_songPath;
     CCNode* m_selectedContainer;

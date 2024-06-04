@@ -19,6 +19,7 @@ struct SongInfo {
     std::string authorName;
     std::string songUrl;
     std::string levelName;
+    int startOffset = 0;
 };
 
 struct NongData {
@@ -128,7 +129,8 @@ struct matjson::Serialize<jukebox::NongData> {
                 .songName = jsonSong["songName"].as_string(),
                 .authorName = jsonSong["authorName"].as_string(),
                 .songUrl = jsonSong["songUrl"].as_string(),
-                .levelName = levelName
+                .levelName = levelName,
+                .startOffset = jsonSong.try_get<int>("startOffset").value_or(0)
             };
             songs.push_back(song);
         }
@@ -160,6 +162,7 @@ struct matjson::Serialize<jukebox::NongData> {
             obj["authorName"] = song.authorName;
             obj["songUrl"] = song.songUrl;
             obj["levelName"] = song.levelName;
+            obj["startOffset"] = song.startOffset;
 
             array.push_back(obj);
         }
