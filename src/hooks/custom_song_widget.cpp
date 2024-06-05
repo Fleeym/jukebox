@@ -20,16 +20,18 @@ using namespace geode::prelude;
 using namespace jukebox;
 
 class $modify(JBSongWidget, CustomSongWidget) {
-    NongData nongs;
-    CCMenu* menu;
-    CCMenuItemSpriteExtra* songNameLabel;
-    CCLabelBMFont* sizeIdLabel;
-    std::string songIds = "";
-    std::string sfxIds = "";
-    bool fetchedAssetInfo = false;
-    bool firstRun = true;
-    bool searching = false;
-    std::unordered_map<int, NongData> assetNongData;
+    struct Fields {
+        NongData nongs;
+        CCMenu* menu;
+        CCMenuItemSpriteExtra* songNameLabel;
+        CCLabelBMFont* sizeIdLabel;
+        std::string songIds = "";
+        std::string sfxIds = "";
+        bool fetchedAssetInfo = false;
+        bool firstRun = true;
+        bool searching = false;
+        std::unordered_map<int, NongData> assetNongData;
+    };
 
     bool init(
         SongInfoObject* songInfo,
