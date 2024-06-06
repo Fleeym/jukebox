@@ -31,6 +31,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool firstRun = true;
         bool searching = false;
         std::unordered_map<int, NongData> assetNongData;
+        EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
     };
 
     bool init(
@@ -57,9 +58,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
         )) {
             return false;
         }
-        log::info("CSW INIT");
+        // log::info("CSW INIT");
         // log::info("{}, {}, {}, {}, {}", songInfo->m_songName, songInfo->m_artistName, songInfo->m_songUrl, songInfo->m_isUnkownSong, songInfo->m_songID);
-        log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}, int: {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, unk, m_isMusicLibrary, unkInt);
+        // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}, int: {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, unk, m_isMusicLibrary, unkInt);
         m_songLabel->setVisible(false);
         this->setupJBSW();
         m_fields->firstRun = false;
@@ -91,11 +92,16 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if ((m_fields->songIds.empty() && m_fields->sfxIds.empty()) || !flag) {
             return;
         }
-        NongManager::get()->getMultiAssetSizes(m_fields->songIds, m_fields->sfxIds, [this](std::string result) {
-            std::stringstream ss;
-            ss << "Songs: " << m_songs.size() << "  SFX: " << m_sfx.size() << "  Size: " << result;
-            m_songIDLabel->setString(ss.str().c_str());
+
+        m_fields->m_multiAssetListener.bind([this](NongManager::MultiAssetSizeTask::Event* e) {
+            if (!m_songIDLabel) {
+                return;
+            }
+            if (const std::string* value = e->getValue()) {
+                m_songIDLabel->setString(fmt::format("Songs: {}  SFX: {}  Size: {}", m_songs.size(), m_sfx.size(), *value).c_str());
+            }
         });
+        m_fields->m_multiAssetListener.setFilter(NongManager::get()->getMultiAssetSizes(m_fields->songIds, m_fields->sfxIds));
     }
 
     void restoreUI() {

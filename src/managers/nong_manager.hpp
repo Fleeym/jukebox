@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Geode/utils/web.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <Geode/utils/Task.hpp>
 
 #include "../types/song_info.hpp"
 #include "../types/nong_state.hpp"
@@ -36,6 +36,8 @@ protected:
     void setDefaultState();
     void backupCurrentJSON();
 public:
+    using MultiAssetSizeTask = Task<std::string>;
+
     bool initialized() { return m_initialized; }
 
     /**
@@ -138,13 +140,12 @@ public:
 
     /**
      * Calculates the total size of multiple assets, then writes it to a string.
-     * Runs on a separate thread. Returns the result in the provided callback.
+     * Runs on a separate thread. Returns a task that will resolve to the total size.
      * 
      * @param songs string of song ids, separated by commas
      * @param sfx string of sfx ids, separated by commas
-     * @param callback callback that handles the computed string
     */
-    void getMultiAssetSizes(std::string songs, std::string sfx, std::function<void(std::string)> callback);
+    MultiAssetSizeTask getMultiAssetSizes(std::string songs, std::string sfx);
 
     /**
      * Fetches song info for an id and creates the default entry in the json.

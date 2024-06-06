@@ -5,6 +5,7 @@
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/utils/Task.hpp>
 #include <chrono>
 #include <fmt/chrono.h>
 #include <filesystem>
@@ -226,7 +227,7 @@ void NongManager::deleteNong(SongInfo const& song, int songID) {
 }
 
 void NongManager::createDefault(SongInfoObject* object, int songID, bool robtop) {
-    if ((!object && !robtop) || m_state.m_nongs.contains(songID)) {
+    if (m_state.m_nongs.contains(songID)) {
         return;
     }
     if (!robtop) {
@@ -275,10 +276,11 @@ std::string NongManager::getFormattedSize(SongInfo const& song) {
     return ss.str();
 }
 
-void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::function<void(std::string)> callback) {
+NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(std::string songs, std::string sfx) {
     fs::path resources = fs::path(CCFileUtils::get()->getWritablePath2().c_str()) / "Resources";
     fs::path songDir = fs::path(CCFileUtils::get()->getWritablePath().c_str());
-    std::thread([this, songs, sfx, callback, resources, songDir]() {
+
+    return MultiAssetSizeTask::run([this, songs, sfx, resources, songDir](auto progress, auto hasBeenCanceled) -> MultiAssetSizeTask::Result {
         float sum = 0.f;
         std::istringstream stream(songs);
         std::string s;
@@ -288,7 +290,7 @@ void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::fu
             if (!result.has_value()) {
                 continue;
             }
-            auto path = result.value().path;
+            auto path = result->path;
             if (path.string().starts_with("songs/")) {
                 path = resources / path;
             }
@@ -302,12 +304,13 @@ void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::fu
             ss << "s" << s << ".ogg";
             std::string filename = ss.str();
             auto localPath = resources / "sfx" / filename;
-            if (fs::exists(localPath)) {
+            std::error_code _ec;
+            if (fs::exists(localPath, _ec)) {
                 sum += fs::file_size(localPath);
                 continue;
             }
             auto path = songDir / filename;
-            if (fs::exists(path)) {
+            if (fs::exists(path, _ec)) {
                 sum += fs::file_size(path);
             }
         }
@@ -315,8 +318,8 @@ void NongManager::getMultiAssetSizes(std::string songs, std::string sfx, std::fu
         double toMegabytes = sum / 1024.f / 1024.f;
         std::stringstream ss;
         ss << std::setprecision(3) << toMegabytes << "MB";
-        callback(ss.str());
-    }).detach();
+        return ss.str();
+    }, fmt::format("Multiasset: {}|{}", songs, sfx));
 }
 
 fs::path NongManager::getJsonPath() {
