@@ -71,8 +71,9 @@ public:
      * 
      * @param song the song to remove
      * @param songID the id of the song
+     * @param deleteFile whether to delete the corresponding audio file created by Jukebox
     */
-    void deleteNong(SongInfo const& song, int songID);
+    void deleteNong(SongInfo const& song, int songID, bool deleteFile = true);
 
     /**
      * Fetches all NONG data for a certain songID

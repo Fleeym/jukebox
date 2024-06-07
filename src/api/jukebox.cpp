@@ -35,8 +35,8 @@ namespace jukebox {
     return NongManager::get()->getActiveNong(songID);
   }
 
-  JUKEBOX_DLL void deleteNong(SongInfo const& song, int songID) {
-    NongManager::get()->deleteNong(song, songID);
+  JUKEBOX_DLL void deleteNong(SongInfo const& song, int songID, bool deleteFile) {
+    NongManager::get()->deleteNong(song, songID, deleteFile);
   }
 
   JUKEBOX_DLL std::optional<SongInfo> getDefaultNong(int songID) {

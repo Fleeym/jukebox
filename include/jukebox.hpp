@@ -43,8 +43,9 @@ namespace jukebox {
      * 
      * @param song the song to delete
      * @param songID the id of the replaced song
+     * @param deleteFile whether to delete the corresponding audio file created by Jukebox
     */
-    JUKEBOX_DLL void deleteNong(SongInfo const& song, int songID);
+    JUKEBOX_DLL void deleteNong(SongInfo const& song, int songID, bool deleteFile = true);
 
     /**
      * Sets the song of the songID as the default song provided by GD
