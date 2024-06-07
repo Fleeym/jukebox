@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Geode/loader/Log.hpp"
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/cocos/platform/CCFileUtils.h>
 #include <Geode/loader/Mod.hpp>
@@ -42,6 +43,7 @@ struct matjson::Serialize<jukebox::NongData> {
 
         std::string defaultFilename = "";
         if (mainSong) {
+            geode::log::info("{}", songID);
             defaultFilename = LevelTools::getAudioFileName(-songID - 1);
         } else {
             if (songID < 10000000) {
