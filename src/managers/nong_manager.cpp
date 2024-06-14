@@ -194,7 +194,7 @@ void NongManager::deleteAll(int songID) {
     this->saveNongs(newData, songID);
 }
 
-void NongManager::deleteNong(SongInfo const& song, int songID) {
+void NongManager::deleteNong(SongInfo const& song, int songID, bool deleteFile) {
     std::vector<SongInfo> newSongs;
     auto result = this->getNongs(songID);
     if(!result.has_value()) {
@@ -206,7 +206,7 @@ void NongManager::deleteNong(SongInfo const& song, int songID) {
             if (song.path == existingData.active) {
                 existingData.active = existingData.defaultPath;
             }
-            if (song.songUrl != "local" && existingData.defaultPath != song.path && fs::exists(song.path)) {
+            if (deleteFile && existingData.defaultPath != song.path && fs::exists(song.path)) {
                 std::error_code ec;
                 fs::remove(song.path, ec);
                 if (ec) {
