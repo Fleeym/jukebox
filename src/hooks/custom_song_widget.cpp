@@ -121,6 +121,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
     void setupJBSW() {
         SongInfoObject* obj = m_songInfoObject;
+        if (obj == nullptr) return;
         if (!m_fields->fetchedAssetInfo && m_songs.size() != 0) {
             this->getMultiAssetSongInfo();
         }
