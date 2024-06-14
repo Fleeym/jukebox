@@ -249,7 +249,9 @@ void NongDropdownLayer::setActiveSong(SongInfo const& song) {
     }
     int id = m_currentSongID.value();
     auto songs = m_data[id];
-    if (!fs::exists(song.path)) {
+    auto defaultNong = NongManager::get()->getDefaultNong(id);
+    auto isDefault = defaultNong.has_value() && defaultNong->path == song.path;
+    if (!isDefault && !fs::exists(song.path)) {
         FLAlertLayer::create("Failed", "Failed to set song: file not found", "Ok")->show();
         return;
     }
