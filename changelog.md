@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.10.0
+
+ * Redesign the NONG UI
+ * Make a fix for non-ascii user dirs on Windows
+ * Fix crash on editor settings (thanks Flafy)
+ * Fix delete song for default songs (thanks Flafy)
+ * Fix deleting songs not actually working (thanks Flafy)
+ * 2.206 support
+ * Bump to Geode v3.0.0-beta.1
+ * Whatever other migrations were needed in the process
+
 ## v2.9.0
 
  * Add jukebox::getActiveNong, jukebox::deleteNong and jukebox::getDefaultNong to the API (thanks Flaafy!)
