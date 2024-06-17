@@ -15,6 +15,8 @@
 #include "../types/song_info.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
+#include "Geode/cocos/base_nodes/Layout.hpp"
+#include "Geode/cocos/cocoa/CCGeometry.h"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -241,31 +243,30 @@ class $modify(JBSongWidget, CustomSongWidget) {
 		auto menu = CCMenu::create();
 		menu->setID("song-name-menu");
 		auto label = CCLabelBMFont::create(active.songName.c_str(), "bigFont.fnt");
-        if (!m_isMusicLibrary) {
-		    label->limitLabelWidth(220.f, 0.8f, 0.1f);
-        } else {
-		    label->limitLabelWidth(130.f, 0.4f, 0.1f);
-        }
+        // if (!m_isMusicLibrary) {
+		//     label->limitLabelWidth(220.f, 0.8f, 0.1f);
+        // } else {
+		//     label->limitLabelWidth(130.f, 0.4f, 0.1f);
+        // }
 		auto songNameMenuLabel = CCMenuItemSpriteExtra::create(
 			label,
 			this,
             menu_selector(JBSongWidget::addNongLayer)
 		);
 		songNameMenuLabel->setTag(songID);
-// 		// I am not even gonna try and understand why this works, but this places the label perfectly in the menu
 		auto labelScale = label->getScale();
 		songNameMenuLabel->setID("song-name-label");
-		songNameMenuLabel->setPosition(ccp(0.f, 0.f));
-		songNameMenuLabel->setAnchorPoint(ccp(0.f, 0.5f));
         m_fields->songNameLabel = songNameMenuLabel;
 		menu->addChild(songNameMenuLabel);
-		menu->setContentSize(ccp(label->getContentSize().width * labelScale, 25.f));
-        if (!m_isMusicLibrary) {
-		    menu->setPosition(ccp(-140.f, 27.5f));
-        } else {
-		    menu->setPosition(ccp(-150.f, 9.f));
-        }
-		songNameMenuLabel->setContentSize({ label->getContentSize().width * labelScale, labelScale * 30 });
+        menu->setLayout(
+            RowLayout::create()
+                ->setDefaultScaleLimits(0.1f, 1.0f)
+                ->setAxisAlignment(AxisAlignment::Start)
+        );
+        menu->setAnchorPoint(m_songLabel->getAnchorPoint());
+        menu->setContentSize(m_songLabel->getScaledContentSize());
+        menu->setPosition(m_songLabel->getPosition());
+        menu->updateLayout();
         m_fields->menu = menu;
 		this->addChild(menu);
         if (m_songs.size() == 0 && m_sfx.size() == 0 && !m_isMusicLibrary) {
