@@ -129,7 +129,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
         int id = obj->m_songID;
         if (m_isRobtopSong) {
-            log::info("whaT?????");
             id++;
             id = -id;
         }
@@ -195,9 +194,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void updateSongInfo() {
-        log::info("update song object");
-        log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool2, m_isMusicLibrary);
-
+        // log::info("update song object");
+        // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool2, m_isMusicLibrary);
         CustomSongWidget::updateSongInfo();
         if (!m_fields->firstRun) {
             this->setupJBSW();
@@ -231,7 +229,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             songID++;
             songID = -songID;
         }
-        log::info("createsonglabel");
+        // log::info("createsonglabel");
         auto res = NongManager::get()->getActiveNong(songID);
         if (!res) {
             return;
