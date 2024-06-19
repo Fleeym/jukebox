@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.10.1
+
+ * Fix visual bugs
+ * Remove debug logs
+
 ## v2.10.0
 
  * Redesign the NONG UI
