@@ -33,7 +33,7 @@ jobs:
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
-          sdk: 'v3.0.0-beta.1'
+          sdk: 'v3.0.0-beta.2'
           combine: true
           target: ${{matrix.config.target}}
   package:
