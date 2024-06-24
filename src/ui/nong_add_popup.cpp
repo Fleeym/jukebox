@@ -230,6 +230,7 @@ void NongAddPopup::createInputs() {
 void NongAddPopup::addSong(CCObject* target) {
     auto artistName = std::string(m_artistNameInput->getString());
     auto songName = std::string(m_songNameInput->getString());
+    std::string levelName = m_levelNameInput->getString();
     #ifdef GEODE_IS_WINDOWS
     if (wcslen(m_songPath.c_str()) == 0) {
     #else
@@ -291,6 +292,7 @@ void NongAddPopup::addSong(CCObject* target) {
         .songName = songName,
         .authorName = artistName,
         .songUrl = "local",
+        .levelName = levelName
     };
 
     m_parentPopup->addSong(song);
