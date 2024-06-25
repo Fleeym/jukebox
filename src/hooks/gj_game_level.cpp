@@ -12,6 +12,7 @@ using namespace geode::prelude;
 
 class $modify(GJGameLevel) {
     gd::string getAudioFileName() {
+        jukebox::NongManager::get()->m_currentlyPreparingNong = std::nullopt;
         if (m_songID != 0) {
             return GJGameLevel::getAudioFileName();
         }
@@ -24,6 +25,7 @@ class $modify(GJGameLevel) {
         if (!std::filesystem::exists(value.path)) {
             return GJGameLevel::getAudioFileName();
         }
+        jukebox::NongManager::get()->m_currentlyPreparingNong = value;
         #ifdef GEODE_IS_WINDOWS
         return geode::utils::string::wideToUtf8(value.path.c_str());
         #else

@@ -211,6 +211,14 @@ void NongAddPopup::createInputs() {
     levelNameInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_levelNameInput = levelNameInput;
 
+    auto startOffsetInput = TextInput::create(250.f, "Start offset", "bigFont.fnt");
+    startOffsetInput->setID("start-offset-input");
+    startOffsetInput->setCommonFilter(CommonFilter::Int);
+    startOffsetInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    startOffsetInput->getInputNode()->setMaxLabelScale(0.7f);
+    startOffsetInput->getInputNode()->setLabelPlaceholderScale(0.7f);
+    m_startOffsetInput = startOffsetInput;
+
     uint32_t inputs = 3;
     uint32_t gaps = 2;
     float inputHeight = songInput->getContentSize().height;
@@ -218,6 +226,7 @@ void NongAddPopup::createInputs() {
     inputParent->addChild(songInput);
     inputParent->addChild(artistInput);
     inputParent->addChild(levelNameInput);
+    inputParent->addChild(startOffsetInput);
     auto layout = ColumnLayout::create();
     layout->setAxisReverse(true);
     inputParent->setContentSize({ 250.f, inputs * inputHeight + gaps * layout->getGap()});
@@ -231,6 +240,7 @@ void NongAddPopup::addSong(CCObject* target) {
     auto artistName = std::string(m_artistNameInput->getString());
     auto songName = std::string(m_songNameInput->getString());
     std::string levelName = m_levelNameInput->getString();
+    auto startOffsetStr = m_startOffsetInput->getString();
     #ifdef GEODE_IS_WINDOWS
     if (wcslen(m_songPath.c_str()) == 0) {
     #else
@@ -266,6 +276,12 @@ void NongAddPopup::addSong(CCObject* target) {
         return;
     }
 
+    int startOffset = 0;
+
+    if (startOffsetStr != "") {
+        startOffset = std::stoi(startOffsetStr);
+    }
+
     auto unique = jukebox::random_string(16);
     auto destination = Mod::get()->getSaveDir() / "nongs";
     if (!fs::exists(destination)) {
@@ -292,7 +308,8 @@ void NongAddPopup::addSong(CCObject* target) {
         .songName = songName,
         .authorName = artistName,
         .songUrl = "local",
-        .levelName = levelName
+        .levelName = levelName,
+        .startOffset = startOffset,
     };
 
     m_parentPopup->addSong(song);

@@ -256,6 +256,7 @@ void NongManager::createUnknownDefault(int songID) {
     defaultSong.songName = "Unknown";
     defaultSong.path = songPath;
     defaultSong.songUrl = "";
+    defaultSong.startOffset = 0;
     data.active = songPath;
     data.defaultPath = songPath;
     data.songs.push_back(defaultSong);

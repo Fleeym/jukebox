@@ -37,6 +37,7 @@ protected:
     void backupCurrentJSON();
 public:
     using MultiAssetSizeTask = Task<std::string>;
+    std::optional<SongInfo> m_currentlyPreparingNong;
 
     bool initialized() { return m_initialized; }
 
