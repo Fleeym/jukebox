@@ -1,4 +1,5 @@
 #include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/binding/FMODAudioEngine.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
@@ -7,6 +8,7 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/base_nodes/Layout.hpp>
 #include <Geode/loader/Log.hpp>
+#include <Geode/ui/Popup.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/MiniFunction.hpp>
 #include <Geode/utils/Result.hpp>
@@ -17,10 +19,33 @@
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
 
 #include <filesystem>
+#include <fmt/core.h>
+#include <fmod.hpp>
+#include <fmod_common.h>
+#include <optional>
+#include <sstream>
 #include <system_error>
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
+
+std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
+    std::string ret = "";
+    #ifdef GEODE_IS_WINDOWS
+    if (tag.datatype == FMOD_TAGDATATYPE_STRING_UTF16) {
+        return geode::utils::string::wideToUtf8(
+            reinterpret_cast<const wchar_t*>(tag.data)
+        );
+    } else if (tag.datatype == FMOD_TAGDATATYPE_STRING_UTF16BE) {
+        return std::nullopt;
+    }
+    #endif
+
+    return std::string(
+        reinterpret_cast<const char*>(tag.data),
+        tag.datalen
+    );
+}
 
 namespace jukebox {
 
@@ -135,7 +160,7 @@ void NongAddPopup::openFile(CCObject* target) {
     #ifdef GEODE_IS_WINDOWS
     file::FilePickOptions::Filter filter = {
         .description = "Songs",
-        .files = { "*.mp3" }
+        .files = { "*.mp3", "*.flac", "*.wav", "*.ogg" }
     };
     #else
     file::FilePickOptions::Filter filter = {};
@@ -179,6 +204,65 @@ void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event)
         #else
         std::string strPath = path.c_str();
         #endif
+
+        std::string extension = path.extension().string();
+
+        if (
+            extension != ".mp3"
+            && extension != ".ogg"
+            && extension != ".wav"
+            && extension != ".flac"
+        ) {
+            FLAlertLayer::create("Error", "The selected file must be one of the following: <cb>mp3, wav, flac, ogg</c>.", "Ok")->show();
+            return;
+        }
+
+        auto meta = this->tryParseMetadata(path);
+        if (meta && (meta->artist.has_value() || meta->name.has_value())) {
+            auto artistName = m_artistNameInput->getString();
+            auto songName = m_songNameInput->getString();
+
+            if (artistName.size() > 0 || songName.size() > 0) {
+                // We should ask before replacing stuff
+                std::stringstream ss;
+
+                ss << "Found metadata for the imported song: ";
+                if (meta->name.has_value()) {
+                    ss << fmt::format("Name: \"{}\". ", meta->name.value());
+                }
+                if (meta->artist.has_value()) {
+                    ss << fmt::format("Artist: \"{}\". ", meta->artist.value());
+                }
+
+                ss << "Do you want to set those values for the song?";
+
+                createQuickPopup(
+                    "Metadata found",
+                    ss.str(),
+                    "No",
+                    "Yes",
+                    [this, meta](auto, bool btn2) {
+                        if (!btn2) {
+                            return;
+                        }
+                        if (meta->artist.has_value()) {
+                            m_artistNameInput->setString(meta->artist.value());
+                        }
+                        if (meta->name.has_value()) {
+                            m_songNameInput->setString(meta->name.value());
+                        }
+                    }
+                );
+            } else {
+                if (meta->artist.has_value()) {
+                    m_artistNameInput->setString(meta->artist.value());
+                }
+                if (meta->name.has_value()) {
+                    m_songNameInput->setString(meta->name.value());
+                }
+            }
+        }
+
         this->addPathLabel(strPath);
         m_songPath = path;
     }
@@ -263,8 +347,15 @@ void NongAddPopup::addSong(CCObject* target) {
         return;
     }
 
-    if (m_songPath.extension().string() != ".mp3") {
-        FLAlertLayer::create("Error", "The selected file must be an MP3.", "Ok")->show();
+    std::string extension = m_songPath.extension().string();
+
+    if (
+        extension != ".mp3"
+        && extension != ".ogg"
+        && extension != ".wav"
+        && extension != ".flac"
+    ) {
+        FLAlertLayer::create("Error", "The selected file must be one of the following: <cb>mp3, wav, flac, ogg</c>.", "Ok")->show();
         return;
     }
 
@@ -289,7 +380,7 @@ void NongAddPopup::addSong(CCObject* target) {
     if (!fs::exists(destination)) {
         fs::create_directory(destination);
     }
-    unique += ".mp3";
+    unique += m_songPath.extension().string();
     destination = destination / unique;
     bool result;
     std::error_code error_code;
@@ -316,6 +407,54 @@ void NongAddPopup::addSong(CCObject* target) {
 
     m_parentPopup->addSong(song);
     this->onClose(this);
+}
+
+std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(
+    std::filesystem::path path
+) {
+    // Thanks to undefined06855 for most of this stuff
+    // https://github.com/undefined06855/EditorMusic/blob/main/src/AudioManager.cpp
+
+    NongAddPopup::ParsedMetadata ret {};
+    FMOD::Sound* sound;
+    FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
+
+    system->createSound(
+        path.string().c_str(),
+        FMOD_LOOP_NORMAL,
+        nullptr,
+        &sound
+    );
+
+    if (!sound) {
+        return std::nullopt;
+    }
+
+    FMOD_TAG nameTag = {};
+    FMOD_TAG artistTag = {};
+    FMOD_RESULT nameResult;
+    FMOD_RESULT artistResult;
+
+    const std::string extension = path.extension().string();
+    if (extension == ".mp3") {
+        nameResult = sound->getTag("TIT2", 0, &nameTag);
+        artistResult = sound->getTag("TPE1", 0, &artistTag);
+    } else if (extension == ".ogg" || extension == ".flac") {
+        nameResult = sound->getTag("TITLE", 0, &nameTag);
+        artistResult = sound->getTag("ARTIST", 0, &artistTag);
+    } else if (extension == ".wav") {
+        nameResult = sound->getTag("INAM", 0, &nameTag);
+        artistResult = sound->getTag("IART", 0, &artistTag);
+    }
+
+    if (nameResult != FMOD_ERR_TAGNOTFOUND) {
+        ret.name = parseFromFMODTag(nameTag);
+    }
+    if (artistResult != FMOD_ERR_TAGNOTFOUND) {
+        ret.artist = parseFromFMODTag(artistTag);
+    }
+
+    return ret;
 }
 
 }

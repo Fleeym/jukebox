@@ -4,6 +4,7 @@
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/ui/TextInput.hpp>
+#include <optional>
 
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Result.hpp"
@@ -18,6 +19,11 @@ class NongDropdownLayer;
 
 class NongAddPopup : public Popup<NongDropdownLayer*> {
 protected:
+    struct ParsedMetadata {
+        std::optional<std::string> name;
+        std::optional<std::string> artist;
+    };
+
     NongDropdownLayer* m_parentPopup;
     CCMenuItemSpriteExtra* m_selectSongButton;
     CCMenuItemSpriteExtra* m_addSongButton;
@@ -43,6 +49,7 @@ protected:
     CCSize getPopupSize();
     void openFile(CCObject*);
     void addSong(CCObject*);
+    std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
 public:
     static NongAddPopup* create(NongDropdownLayer* parent);
 };
