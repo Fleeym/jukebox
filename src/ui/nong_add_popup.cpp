@@ -118,8 +118,8 @@ void NongAddPopup::addPathLabel(std::string const& path) {
     bgSprite->setID("song-path-bg");
     bgSprite->setColor({ 0, 0, 0 });
     bgSprite->setOpacity(75);
-    bgSprite->setContentSize({ 250.f, 55.f });
-    bgSprite->setScaleY(0.4f);
+    bgSprite->setScale(0.4f);
+    bgSprite->setContentSize(CCPoint { 250.f, 25.f } / bgSprite->getScale());
     container->setContentSize(bgSprite->getScaledContentSize());
     bgSprite->setPosition(container->getScaledContentSize() / 2);
     label->setPosition(container->getScaledContentSize() / 2);
