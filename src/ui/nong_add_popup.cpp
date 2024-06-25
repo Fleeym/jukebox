@@ -7,8 +7,11 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/base_nodes/Layout.hpp>
 #include <Geode/loader/Log.hpp>
+#include <Geode/utils/file.hpp>
 #include <Geode/utils/MiniFunction.hpp>
+#include <Geode/utils/Result.hpp>
 #include <Geode/utils/string.hpp>
+#include <Geode/utils/Task.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <ccTypes.h>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
@@ -18,9 +21,6 @@
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
-#include "Geode/utils/Result.hpp"
-#include "Geode/utils/Task.hpp"
-#include "Geode/utils/file.hpp"
 
 namespace jukebox {
 
@@ -211,7 +211,7 @@ void NongAddPopup::createInputs() {
     levelNameInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_levelNameInput = levelNameInput;
 
-    auto startOffsetInput = TextInput::create(250.f, "Start offset", "bigFont.fnt");
+    auto startOffsetInput = TextInput::create(250.f, "Start offset (ms)", "bigFont.fnt");
     startOffsetInput->setID("start-offset-input");
     startOffsetInput->setCommonFilter(CommonFilter::Int);
     startOffsetInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
@@ -219,21 +219,23 @@ void NongAddPopup::createInputs() {
     startOffsetInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_startOffsetInput = startOffsetInput;
 
-    uint32_t inputs = 3;
-    uint32_t gaps = 2;
     float inputHeight = songInput->getContentSize().height;
 
     inputParent->addChild(songInput);
     inputParent->addChild(artistInput);
     inputParent->addChild(levelNameInput);
     inputParent->addChild(startOffsetInput);
-    auto layout = ColumnLayout::create();
-    layout->setAxisReverse(true);
-    inputParent->setContentSize({ 250.f, inputs * inputHeight + gaps * layout->getGap()});
+    inputParent->setContentSize({ 250.f, 100.f });
     inputParent->setAnchorPoint({ 0.5f, 1.0f });
-    inputParent->setPosition(m_mainLayer->getContentSize().width / 2, m_mainLayer->getContentSize().height - 40.f);
-    inputParent->setLayout(layout);
-    m_mainLayer->addChild(inputParent);
+    inputParent->setLayout(
+        ColumnLayout::create()
+            ->setAxisReverse(true)
+    );
+    m_mainLayer->addChildAtPosition(
+        inputParent,
+        Anchor::Top,
+        { 0.0f, -40.f }
+    );
 }
 
 void NongAddPopup::addSong(CCObject* target) {
