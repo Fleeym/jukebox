@@ -28,6 +28,20 @@
 			"type": "bool",
 			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny big of lag after picking a song file.",
 			"default": true
+		},
+		"use-yt-dlp": {
+			"name": "Use yt-dlp",
+			"type": "bool",
+			"default": false,
+			"description": "Use yt-dlp to download YouTube songs. Disabling uses cobalt.",
+			"platforms": ["win"]
+		},
+		"yt-dlp-path": {
+			"name": "yt-dlp path",
+			"type": "path",
+			"description": "Path for the yt-dlp binary, used to download songs.",
+			"default": "",
+			"platforms": ["win"]
 		}
 	},
 	"api": {

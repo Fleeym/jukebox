@@ -7,6 +7,8 @@
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/base_nodes/Layout.hpp>
+#include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Popup.hpp>
@@ -29,6 +31,7 @@
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
+#include "youtube_link_popup.hpp"
 
 std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     std::string ret = "";
@@ -62,14 +65,24 @@ bool NongAddPopup::setup(NongDropdownLayer* parent) {
         this,
         menu_selector(NongAddPopup::openFile)
     );
+    m_youtubeButton = CCMenuItemSpriteExtra::create(
+        CCSprite::createWithSpriteFrameName("gj_ytIcon_001.png"),
+        this,
+        menu_selector(NongAddPopup::onYoutubePopup)
+    );
     m_selectSongMenu = CCMenu::create();
     m_selectSongMenu->setID("select-file-menu");
     m_selectSongButton->setID("select-file-button");
-    m_selectSongMenu->addChild(this->m_selectSongButton);
-    m_selectSongMenu->setContentSize(m_selectSongButton->getScaledContentSize());
+    m_youtubeButton->setID("youtube-button");
+    m_selectSongMenu->addChild(m_selectSongButton);
+    m_selectSongMenu->addChild(m_youtubeButton);
+    m_selectSongMenu->setContentSize({ 30.0f, 100.0f });
     m_selectSongMenu->setAnchorPoint({1.0f, 0.0f});
     m_selectSongMenu->setPosition(m_mainLayer->getContentSize().width - 10.f, 10.f);
-    m_selectSongMenu->setLayout(ColumnLayout::create());
+    m_selectSongMenu->setLayout(
+        ColumnLayout::create()
+            ->setAxisAlignment(AxisAlignment::Start)
+    );
 
     m_addSongButton = CCMenuItemSpriteExtra::create(
         ButtonSprite::create("Add"),
@@ -97,10 +110,13 @@ bool NongAddPopup::setup(NongDropdownLayer* parent) {
     layout->setAxisReverse(true);
     layout->setAxisAlignment(AxisAlignment::End);
     selectedContainer->setContentSize({ 250.f, 50.f });
-    selectedContainer->setPosition(m_mainLayer->getContentSize().width / 2, m_mainLayer->getContentSize().height / 2 - 25.f);
     selectedContainer->setAnchorPoint({0.5f, 1.0f});
     selectedContainer->setLayout(layout);
-    m_mainLayer->addChild(selectedContainer);
+    m_mainLayer->addChildAtPosition(
+        selectedContainer,
+        Anchor::Center,
+        { 0.0f, -25.0f }
+    );
 
     m_mainLayer->addChild(this->m_selectSongMenu);
     m_mainLayer->addChild(this->m_addSongMenu);
@@ -180,6 +196,16 @@ void NongAddPopup::openFile(CCObject* target) {
 
     m_pickListener.bind(this, &NongAddPopup::onFileOpen);
     m_pickListener.setFilter(file::pick(file::PickMode::OpenFile, options));
+}
+
+void NongAddPopup::onYoutubePopup(CCObject* target) {
+    YoutubeLinkPopup::create([this](std::string url) {
+        this->startYoutubeDownload(std::move(url));
+    })->show();
+}
+
+void NongAddPopup::startYoutubeDownload(std::string&& url) {
+    // Haha now do this!
 }
 
 void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event) {

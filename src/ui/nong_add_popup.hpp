@@ -6,6 +6,7 @@
 #include <Geode/ui/TextInput.hpp>
 #include <optional>
 
+#include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Result.hpp"
 #include "Geode/utils/Task.hpp"
@@ -26,6 +27,7 @@ protected:
 
     NongDropdownLayer* m_parentPopup;
     CCMenuItemSpriteExtra* m_selectSongButton;
+    CCMenuItemSpriteExtra* m_youtubeButton;
     CCMenuItemSpriteExtra* m_addSongButton;
     CCMenu* m_selectSongMenu;
     CCMenu* m_addSongMenu;
@@ -48,7 +50,9 @@ protected:
 
     CCSize getPopupSize();
     void openFile(CCObject*);
+    void onYoutubePopup(CCObject*);
     void addSong(CCObject*);
+    void startYoutubeDownload(std::string&& url);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
 public:
     static NongAddPopup* create(NongDropdownLayer* parent);
