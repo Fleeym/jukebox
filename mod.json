@@ -22,6 +22,12 @@
 			"type": "bool",
 			"description": "Fixes multi asset levels showing 0.0B size (experimental, might cause lag when downloading assets)",
 			"default": false
+		},
+		"autocomplete-metadata": {
+			"name": "Autocomplete metadata",
+			"type": "bool",
+			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny big of lag after picking a song file.",
+			"default": true
 		}
 	},
 	"api": {

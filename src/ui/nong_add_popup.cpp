@@ -8,6 +8,7 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/base_nodes/Layout.hpp>
 #include <Geode/loader/Log.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/MiniFunction.hpp>
@@ -37,6 +38,7 @@ std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
             reinterpret_cast<const wchar_t*>(tag.data)
         );
     } else if (tag.datatype == FMOD_TAGDATATYPE_STRING_UTF16BE) {
+        // I'm a big endian hater, whachu gonna do?
         return std::nullopt;
     }
     #endif
@@ -217,48 +219,50 @@ void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event)
             return;
         }
 
-        auto meta = this->tryParseMetadata(path);
-        if (meta && (meta->artist.has_value() || meta->name.has_value())) {
-            auto artistName = m_artistNameInput->getString();
-            auto songName = m_songNameInput->getString();
+        if (Mod::get()->getSettingValue<bool>("autocomplete-metadata")) {
+            auto meta = this->tryParseMetadata(path);
+            if (meta && (meta->artist.has_value() || meta->name.has_value())) {
+                auto artistName = m_artistNameInput->getString();
+                auto songName = m_songNameInput->getString();
 
-            if (artistName.size() > 0 || songName.size() > 0) {
-                // We should ask before replacing stuff
-                std::stringstream ss;
+                if (artistName.size() > 0 || songName.size() > 0) {
+                    // We should ask before replacing stuff
+                    std::stringstream ss;
 
-                ss << "Found metadata for the imported song: ";
-                if (meta->name.has_value()) {
-                    ss << fmt::format("Name: \"{}\". ", meta->name.value());
-                }
-                if (meta->artist.has_value()) {
-                    ss << fmt::format("Artist: \"{}\". ", meta->artist.value());
-                }
-
-                ss << "Do you want to set those values for the song?";
-
-                createQuickPopup(
-                    "Metadata found",
-                    ss.str(),
-                    "No",
-                    "Yes",
-                    [this, meta](auto, bool btn2) {
-                        if (!btn2) {
-                            return;
-                        }
-                        if (meta->artist.has_value()) {
-                            m_artistNameInput->setString(meta->artist.value());
-                        }
-                        if (meta->name.has_value()) {
-                            m_songNameInput->setString(meta->name.value());
-                        }
+                    ss << "Found metadata for the imported song: ";
+                    if (meta->name.has_value()) {
+                        ss << fmt::format("Name: \"{}\". ", meta->name.value());
                     }
-                );
-            } else {
-                if (meta->artist.has_value()) {
-                    m_artistNameInput->setString(meta->artist.value());
-                }
-                if (meta->name.has_value()) {
-                    m_songNameInput->setString(meta->name.value());
+                    if (meta->artist.has_value()) {
+                        ss << fmt::format("Artist: \"{}\". ", meta->artist.value());
+                    }
+
+                    ss << "Do you want to set those values for the song?";
+
+                    createQuickPopup(
+                        "Metadata found",
+                        ss.str(),
+                        "No",
+                        "Yes",
+                        [this, meta](auto, bool btn2) {
+                            if (!btn2) {
+                                return;
+                            }
+                            if (meta->artist.has_value()) {
+                                m_artistNameInput->setString(meta->artist.value());
+                            }
+                            if (meta->name.has_value()) {
+                                m_songNameInput->setString(meta->name.value());
+                            }
+                        }
+                    );
+                } else {
+                    if (meta->artist.has_value()) {
+                        m_artistNameInput->setString(meta->artist.value());
+                    }
+                    if (meta->name.has_value()) {
+                        m_songNameInput->setString(meta->name.value());
+                    }
                 }
             }
         }
