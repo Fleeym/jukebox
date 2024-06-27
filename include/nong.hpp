@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "platform.hpp"
 
@@ -155,6 +156,38 @@ public:
     }
     std::optional<std::filesystem::path> path() const {
         return m_path;
+    }
+};
+
+class JUKEBOX_DLL NongData {
+private:
+    int m_songID;
+    std::unique_ptr<LocalSong> m_default;
+    std::vector<std::unique_ptr<LocalSong>> m_locals {};
+    std::vector<std::unique_ptr<YTSong>> m_youtube {};
+    std::vector<std::unique_ptr<HostedSong>> m_hosted {};
+public:
+    NongData(int songID, LocalSong defaultSong)
+        : m_songID(songID),
+        m_default(std::make_unique<LocalSong>(defaultSong))
+    {}
+
+    int songID() const {
+        return m_songID;
+    }
+
+    LocalSong* defaultSong() const {
+        return m_default.get();
+    }
+
+    std::vector<std::unique_ptr<LocalSong>>& locals() {
+        return m_locals;
+    }
+    std::vector<std::unique_ptr<YTSong>>& youtube() {
+        return m_youtube;
+    }
+    std::vector<std::unique_ptr<HostedSong>>& hosted() {
+        return m_hosted;
     }
 };
 
