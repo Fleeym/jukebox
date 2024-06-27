@@ -3,21 +3,13 @@
 #include <Geode/binding/MusicDownloadManager.hpp>
 
 #include <filesystem>
-#include <memory>
 
 namespace jukebox {
-
-SongMetadata* LocalSong::metadata() const {
-    return m_metadata.get();
-}
-
-std::filesystem::path LocalSong::path() const {
-    return m_path;
-}
 
 LocalSong LocalSong::createUnknown(int songID) {
     return LocalSong {
         SongMetadata {
+            songID,
             "Unknown",
             ""
         },
@@ -30,6 +22,7 @@ LocalSong LocalSong::createUnknown(int songID) {
 LocalSong LocalSong::fromSongObject(SongInfoObject* obj) {
     return LocalSong {
         SongMetadata {
+            obj->m_songID,
             obj->m_songName,
             obj->m_artistName
         },
