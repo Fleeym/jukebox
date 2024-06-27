@@ -84,7 +84,7 @@ public:
      * @param songID the id of the song
      * @return the data from the JSON or nullopt if it wasn't created yet
     */
-    std::optional<NongData> getNongs(int songID);
+    std::optional<Nongs> getNongs(int songID);
 
     /**
      * Fetches the active song from the songID JSON
@@ -117,7 +117,7 @@ public:
      * @param data the data to save
      * @param songID the id of the song
     */
-    void saveNongs(NongData const& data, int songID);
+    void saveNongs(Nongs const& data, int songID);
 
     /**
      * Writes song data to the JSON

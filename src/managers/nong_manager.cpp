@@ -19,7 +19,7 @@
 
 namespace jukebox {
 
-std::optional<NongData> NongManager::getNongs(int songID) {
+std::optional<Nongs> NongManager::getNongs(int songID) {
     if (!m_state.m_nongs.contains(songID)) {
         return std::nullopt;
     }
@@ -114,7 +114,7 @@ std::vector<SongInfo> NongManager::validateNongs(int songID) {
     }
 
     if (invalidSongs.size() > 0) {
-        NongData newData = {
+        Nongs newData = {
             .active = currentData.active,
             .defaultPath = currentData.defaultPath,
             .songs = validSongs,
@@ -134,7 +134,7 @@ int NongManager::getStoredIDCount() {
     return m_state.m_nongs.size();
 }
 
-void NongManager::saveNongs(NongData const& data, int songID) {
+void NongManager::saveNongs(Nongs const& data, int songID) {
     m_state.m_nongs[songID] = data;
     this->writeJson();
 }
@@ -186,7 +186,7 @@ void NongManager::deleteAll(int songID) {
         newSongs.push_back(savedSong);
     }
 
-    NongData newData = {
+    Nongs newData = {
         .active = existingData.defaultPath,
         .defaultPath = existingData.defaultPath,
         .songs = newSongs,
@@ -218,7 +218,7 @@ void NongManager::deleteNong(SongInfo const& song, int songID, bool deleteFile) 
         }
         newSongs.push_back(savedSong);
     }
-    NongData newData = {
+    Nongs newData = {
         .active = existingData.active,
         .defaultPath = existingData.defaultPath,
         .songs = newSongs,
@@ -250,7 +250,7 @@ void NongManager::createUnknownDefault(int songID) {
         return;
     }
     fs::path songPath = fs::path(std::string(MusicDownloadManager::sharedState()->pathForSong(songID)));
-    NongData data;
+    Nongs data;
     SongInfo defaultSong;
     defaultSong.authorName = "";
     defaultSong.songName = "Unknown";
@@ -467,7 +467,7 @@ void NongManager::createDefaultCallback(SongInfoObject* obj, int songID) {
         songPath = fs::path(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID).c_str());
     }
 
-    NongData data;
+    Nongs data;
     SongInfo defaultSong;
     defaultSong.authorName = obj->m_artistName;
     defaultSong.songName = obj->m_songName;

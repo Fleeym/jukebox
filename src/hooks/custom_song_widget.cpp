@@ -23,7 +23,7 @@ using namespace jukebox;
 
 class $modify(JBSongWidget, CustomSongWidget) {
     struct Fields {
-        NongData nongs;
+        Nongs nongs;
         CCMenu* menu;
         CCMenuItemSpriteExtra* songNameLabel;
         CCLabelBMFont* sizeIdLabel;
@@ -32,7 +32,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool fetchedAssetInfo = false;
         bool firstRun = true;
         bool searching = false;
-        std::unordered_map<int, NongData> assetNongData;
+        std::unordered_map<int, Nongs> assetNongData;
         EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
     };
 
@@ -147,7 +147,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 NongManager::get()->createUnknownDefault(id);
             }
         }
-        std::optional<NongData> result = NongManager::get()->getNongs(id);
+        std::optional<Nongs> result = NongManager::get()->getNongs(id);
         if (!result.has_value()) {
             NongManager::get()->createDefault(m_songInfoObject, id, m_isRobtopSong);
             result = NongManager::get()->getNongs(id);
@@ -156,7 +156,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }
         }
 
-        NongData nongData = result.value();
+        Nongs nongData = result.value();
 
         SongInfo active = NongManager::get()->getActiveNong(id).value();
         if (

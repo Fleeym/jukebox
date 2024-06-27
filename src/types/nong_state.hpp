@@ -9,7 +9,7 @@ namespace jukebox {
 
 struct NongState {
     int m_manifestVersion;
-    std::map<int, NongData> m_nongs;
+    std::map<int, Nongs> m_nongs;
 };
 
 }
@@ -22,7 +22,7 @@ struct matjson::Serialize<jukebox::NongState> {
         auto nongs = value["nongs"].as_object();
         for (auto const& kv : nongs) {
             int id = stoi(kv.first);
-            jukebox::NongData data = matjson::Serialize<jukebox::NongData>::from_json(kv.second, id);
+            jukebox::Nongs data = matjson::Serialize<jukebox::Nongs>::from_json(kv.second, id);
             ret.m_nongs[id] = data;
         }
 
@@ -34,7 +34,7 @@ struct matjson::Serialize<jukebox::NongState> {
         auto nongs = matjson::Object();
         ret["version"] = jukebox::getManifestVersion();
         for (auto const& kv : value.m_nongs) {
-            nongs[std::to_string(kv.first)] = matjson::Serialize<jukebox::NongData>::to_json(kv.second);
+            nongs[std::to_string(kv.first)] = matjson::Serialize<jukebox::Nongs>::to_json(kv.second);
         }
         ret["nongs"] = nongs;
         return ret;

@@ -9,7 +9,7 @@ namespace jukebox {
   }
 
   JUKEBOX_DLL void setActiveNong(SongInfo const& song, int songID, const std::optional<Ref<CustomSongWidget>>& customSongWidget) {
-    NongData data = NongManager::get()->getNongs(songID).value();
+    Nongs data = NongManager::get()->getNongs(songID).value();
 
     if (!fs::exists(song.path)) {
         return;

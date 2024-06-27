@@ -22,7 +22,7 @@ struct SongInfo {
     int startOffset = 0;
 };
 
-struct NongData {
+struct Nongs {
     fs::path active;
     fs::path defaultPath;
     std::vector<SongInfo> songs;
@@ -32,8 +32,8 @@ struct NongData {
 }
 
 template<>
-struct matjson::Serialize<jukebox::NongData> {
-    static jukebox::NongData from_json(matjson::Value const& value, int songID) {
+struct matjson::Serialize<jukebox::Nongs> {
+    static jukebox::Nongs from_json(matjson::Value const& value, int songID) {
         bool mainSong = songID < 0;
         std::vector<jukebox::SongInfo> songs;
         auto jsonSongs = value["songs"].as_array();
@@ -139,7 +139,7 @@ struct matjson::Serialize<jukebox::NongData> {
             active = defaultPath;
         }
 
-        return jukebox::NongData {
+        return jukebox::Nongs {
             .active = active,
             .defaultPath = defaultPath,
             .songs = songs,
@@ -147,7 +147,7 @@ struct matjson::Serialize<jukebox::NongData> {
         };
     }
 
-    static matjson::Value to_json(jukebox::NongData const& value) {
+    static matjson::Value to_json(jukebox::Nongs const& value) {
         auto ret = matjson::Object();
         auto array = matjson::Array();
         ret["active"] = value.active.string();

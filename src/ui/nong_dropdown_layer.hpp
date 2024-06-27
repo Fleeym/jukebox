@@ -18,7 +18,7 @@ namespace jukebox {
 
 class NongDropdownLayer : public Popup<std::vector<int>, CustomSongWidget*, int> {
 protected:
-    std::unordered_map<int, NongData> m_data;
+    std::unordered_map<int, Nongs> m_data;
     std::vector<int> m_songIDS;
     std::optional<int> m_currentSongID = std::nullopt;
     int m_defaultSongID;

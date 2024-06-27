@@ -19,7 +19,7 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool NongList::init(
-    std::unordered_map<int, NongData>& data,
+    std::unordered_map<int, Nongs>& data,
     const cocos2d::CCSize& size,
     std::function<void(int, const SongInfo&)> onSetActive,
     std::function<void(int)> onFixDefault,
@@ -131,7 +131,7 @@ void NongList::build() {
         if (!m_data.contains(id)) {
             return;
         }
-        NongData data = m_data.at(id);
+        Nongs data = m_data.at(id);
         auto active = NongManager::get()->getActiveNong(id);
         auto defaultRes = NongManager::get()->getDefaultNong(id);
         if (!defaultRes) {
@@ -194,7 +194,7 @@ void NongList::scrollToTop() {
     );
 }
 
-void NongList::setData(std::unordered_map<int, NongData>& data) {
+void NongList::setData(std::unordered_map<int, Nongs>& data) {
     m_data = data;
 }
 
@@ -227,7 +227,7 @@ void NongList::onSelectSong(int songId) {
 }
 
 NongList* NongList::create(
-    std::unordered_map<int, NongData>& data,
+    std::unordered_map<int, Nongs>& data,
     const cocos2d::CCSize& size,
     std::function<void(int, const SongInfo&)> onSetActive,
     std::function<void(int)> onFixDefault,
