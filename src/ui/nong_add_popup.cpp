@@ -200,11 +200,11 @@ void NongAddPopup::openFile(CCObject* target) {
 
 void NongAddPopup::onYoutubePopup(CCObject* target) {
     YoutubeLinkPopup::create([this](std::string url) {
-        this->startYoutubeDownload(std::move(url));
+        this->startYoutubeDownload(url);
     })->show();
 }
 
-void NongAddPopup::startYoutubeDownload(std::string&& url) {
+void NongAddPopup::startYoutubeDownload(const std::string& url) {
     // Haha now do this!
 }
 

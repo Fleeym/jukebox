@@ -52,7 +52,7 @@ protected:
     void openFile(CCObject*);
     void onYoutubePopup(CCObject*);
     void addSong(CCObject*);
-    void startYoutubeDownload(std::string&& url);
+    void startYoutubeDownload(const std::string& url);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
 public:
     static NongAddPopup* create(NongDropdownLayer* parent);
