@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Geode/binding/SongInfoObject.hpp"
+#include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 
 #include <cstdint>
@@ -8,9 +8,11 @@
 #include <memory>
 #include <optional>
 
+#include "platform.hpp"
+
 namespace jukebox {
 
-struct SongMetadata {
+struct JUKEBOX_DLL SongMetadata {
     std::string m_name;
     std::string m_artist;
     std::optional<std::string> m_level;
@@ -28,19 +30,19 @@ struct SongMetadata {
     {}
 };
 
-class LocalNong {
+class JUKEBOX_DLL LocalSong {
 private:
     std::unique_ptr<SongMetadata> m_metadata;
     std::filesystem::path m_path;
 public:
-    LocalNong(
+    LocalSong(
         SongMetadata&& metadata,
         const std::filesystem::path& path
     ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
         m_path(path) 
     {}
 
-    LocalNong(const LocalNong& other) 
+    LocalSong(const LocalSong& other) 
         : m_path(other.m_path) {
         m_metadata = std::make_unique<SongMetadata>(SongMetadata {
             other.m_metadata->m_name,
@@ -54,9 +56,9 @@ public:
     std::filesystem::path path() const;
 
     // Might not be used
-    static LocalNong createUnknown(int songID);
+    static LocalSong createUnknown(int songID);
 
-    static LocalNong fromSongObject(SongInfoObject* obj);
+    static LocalSong fromSongObject(SongInfoObject* obj);
 };
 
 }

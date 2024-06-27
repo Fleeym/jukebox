@@ -1,21 +1,22 @@
 #include "../include/nong.hpp"
-#include "Geode/binding/MusicDownloadManager.hpp"
+
+#include <Geode/binding/MusicDownloadManager.hpp>
 
 #include <filesystem>
 #include <memory>
 
 namespace jukebox {
 
-SongMetadata* LocalNong::metadata() const {
+SongMetadata* LocalSong::metadata() const {
     return m_metadata.get();
 }
 
-std::filesystem::path LocalNong::path() const {
+std::filesystem::path LocalSong::path() const {
     return m_path;
 }
 
-LocalNong LocalNong::createUnknown(int songID) {
-    return LocalNong {
+LocalSong LocalSong::createUnknown(int songID) {
+    return LocalSong {
         SongMetadata {
             "Unknown",
             ""
@@ -26,8 +27,8 @@ LocalNong LocalNong::createUnknown(int songID) {
     };
 }
 
-LocalNong LocalNong::fromSongObject(SongInfoObject* obj) {
-    return LocalNong {
+LocalSong LocalSong::fromSongObject(SongInfoObject* obj) {
+    return LocalSong {
         SongMetadata {
             obj->m_songName,
             obj->m_artistName

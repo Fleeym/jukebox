@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../src/types/song_info.hpp"
-#include "export.hpp"
+#include "platform.hpp"
 #include <optional>
 
 
