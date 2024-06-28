@@ -10,6 +10,7 @@
 
 #include "../types/song_info.hpp"
 #include "../types/nong_state.hpp"
+#include "../types/index.hpp"
 #include "../events/get_song_info_event.hpp"
 
 using namespace geode::prelude;
@@ -28,6 +29,7 @@ protected:
     std::unordered_map<int, std::function<void(int)>> m_getSongInfoCallbacks;
     std::unordered_map<int, std::unordered_set<SongInfoGetAction>> m_getSongInfoActions;
     EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener = { this, &NongManager::onSongInfoFetched };
+    std::vector<Index> m_indexes;
     bool m_initialized = false;
 
     std::optional<std::unordered_set<SongInfoGetAction>> getSongIDActions(int songID);
@@ -200,6 +202,11 @@ public:
      * @param songID id of the song
     */
     void markAsInvalidDefault(int songID);
+
+    // /**
+    //  * Get the indexes used by Jukebox
+    // */
+    // std::vector<Index> getIndexes();
 
     ListenerResult onSongInfoFetched(GetSongInfoEvent* event);
 
