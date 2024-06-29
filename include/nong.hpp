@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Geode/binding/SongInfoObject.hpp"
+#include "Geode/utils/Result.hpp"
 
 #include "platform.hpp"
 
@@ -161,8 +162,14 @@ public:
 };
 
 class JUKEBOX_DLL Nongs {
+public:
+    struct ActiveSong {
+        std::filesystem::path path = {};
+        SongMetadata* metadata = nullptr;
+    };
 private:
     int m_songID;
+    std::unique_ptr<ActiveSong> m_active = std::make_unique<ActiveSong>();
     std::unique_ptr<LocalSong> m_default;
     std::vector<std::unique_ptr<LocalSong>> m_locals {};
     std::vector<std::unique_ptr<YTSong>> m_youtube {};
@@ -180,6 +187,16 @@ public:
     LocalSong* defaultSong() const {
         return m_default.get();
     }
+
+    ActiveSong* active() const {
+        return m_active.get();
+    }
+
+    /**
+     * Returns Err if there is no NONG with the given path for the song ID
+     * Otherwise, returns ok
+     */
+    geode::Result<> setActive(const std::filesystem::path& path);
 
     std::vector<std::unique_ptr<LocalSong>>& locals() {
         return m_locals;

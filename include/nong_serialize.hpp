@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <fmt/core.h>
 #include <matjson.hpp>
 #include <memory>
@@ -197,7 +198,7 @@ struct matjson::Serialize<jukebox::Nongs> {
         const matjson::Value& value,
         int songID
     ) {
-        if (!value.contains("default") || !value.is_object()) {
+        if (!value.contains("default") || !value["default"].is_object()) {
             return geode::Err("Invalid nongs object for id {}", songID);
         }
 
@@ -210,46 +211,73 @@ struct matjson::Serialize<jukebox::Nongs> {
             return geode::Err("womp womp");
         }
 
+        std::filesystem::path active;
+
+        bool foundActive = false;
+
         jukebox::Nongs nongs = {
             songID,
             std::move(defaultSong.unwrap())
         };
 
+        // If somehow active is invalid, just get the default path
+        if (!value.contains("active") || !value["active"].is_string()) {
+            active = defaultSong.unwrap().path();
+            // This cannot fail, since we just set it as active
+            auto _ = nongs.setActive(active);
+            foundActive = true;
+        } else {
+            active = value["active"].as_string();
+        }
+
         if (value.contains("locals") && value["locals"].is_array()) {
             for (auto& local : value["locals"].as_array()) {
-                auto localSong = matjson::Serialize<jukebox::LocalSong>
+                auto res = matjson::Serialize<jukebox::LocalSong>
                     ::from_json(local, songID);
                 
-                if (localSong.isErr()) {
-                    geode::log::error("{}", localSong.unwrapErr());
+                if (res.isErr()) {
+                    geode::log::error("{}", res.unwrapErr());
                     continue;
                 }
 
+                auto song = res.unwrap();
+
                 nongs.locals()
                     .push_back(
-                        std::make_unique<jukebox::LocalSong>(
-                            localSong.unwrap()
-                        )
+                        std::make_unique<jukebox::LocalSong>(song)
                     );
+
+                if (song.path() == active) {
+                    foundActive = true;
+                    auto _ = nongs.setActive(song.path());
+                }
             }
         }
 
         if (value.contains("youtube") && value["youtube"].is_array()) {
             for (auto& yt : value["youtube"].as_array()) {
-                auto ytSong = matjson::Serialize<jukebox::YTSong>
+                auto res = matjson::Serialize<jukebox::YTSong>
                     ::from_json(yt, songID);
                 
-                if (ytSong.isErr()) {
-                    geode::log::error("{}", ytSong.unwrapErr());
+                if (res.isErr()) {
+                    geode::log::error("{}", res.unwrapErr());
                     continue;
                 }
 
+                auto song = res.unwrap();
+
                 nongs.youtube()
                     .push_back(
-                        std::make_unique<jukebox::YTSong>(
-                            ytSong.unwrap()
-                        )
+                        std::make_unique<jukebox::YTSong>(song)
                     );
+
+                if (
+                    song.path().has_value() 
+                    && song.path().value() == active
+                ) {
+                    foundActive = true;
+                    auto _ = nongs.setActive(song.path().value());
+                }
             }
         }
 
@@ -257,14 +285,30 @@ struct matjson::Serialize<jukebox::Nongs> {
             for (auto& hosted : value["hosted"].as_array()) {
                 auto res = matjson::Serialize<jukebox::HostedSong>
                     ::from_json(hosted, songID);
-                
+
+                if (res.isErr()) {
+                    geode::log::error("{}", res.unwrapErr());
+                }
+
+                auto song = res.unwrap();
+
                 nongs.hosted()
                     .push_back(
-                        std::make_unique<jukebox::HostedSong>(
-                            res.unwrap()
-                        )
+                        std::make_unique<jukebox::HostedSong>(song)
                     );
+
+                if (
+                    song.path().has_value() 
+                    && song.path().value() == active
+                ) {
+                    foundActive = true;
+                    auto _ = nongs.setActive(song.path().value());
+                }
             }
+        }
+
+        if (!foundActive) {
+            auto _ = nongs.setActive(defaultSong.unwrap().path());
         }
 
         return geode::Ok(std::move(nongs));
