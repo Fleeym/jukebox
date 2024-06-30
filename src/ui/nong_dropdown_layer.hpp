@@ -6,7 +6,7 @@
 #include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/ui/ListView.hpp>
 
-#include "../types/song_info.hpp"
+#include "../../../include/nong.hpp"
 #include "list/nong_list.hpp"
 #include "nong_add_popup.hpp"
 #include "list/nong_cell.hpp"
@@ -33,7 +33,6 @@ protected:
 
     bool setup(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) override;
     void createList();
-    SongInfo getActiveSong();
     CCSize getCellSize() const;
     void deleteAllNongs(CCObject*);
     void fetchSongFileHub(CCObject*);

@@ -6,7 +6,6 @@
 #include <filesystem>
 
 #include "../managers/nong_manager.hpp"
-#include "../types/song_info.hpp"
 
 using namespace geode::prelude;
 
@@ -17,19 +16,19 @@ class $modify(GJGameLevel) {
             return GJGameLevel::getAudioFileName();
         }
         int id = (-m_audioTrack) - 1;
-        auto active = jukebox::NongManager::get()->getActiveNong(id);
-        if (!active.has_value()) {
+        auto res = jukebox::NongManager::get()->getNongs(id);
+        if (!res.has_value()) {
             return GJGameLevel::getAudioFileName();
         }
-        jukebox::SongInfo value = active.value();
-        if (!std::filesystem::exists(value.path)) {
+        auto active = res.value()->active();
+        if (!std::filesystem::exists(active->path)) {
             return GJGameLevel::getAudioFileName();
         }
-        jukebox::NongManager::get()->m_currentlyPreparingNong = value;
+        jukebox::NongManager::get()->m_currentlyPreparingNong = res.value();
         #ifdef GEODE_IS_WINDOWS
-        return geode::utils::string::wideToUtf8(value.path.c_str());
+        return geode::utils::string::wideToUtf8(active->path.c_str());
         #else
-        return value.path.string();
+        return active->path.string();
         #endif
     }
 };

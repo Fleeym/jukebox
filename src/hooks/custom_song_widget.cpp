@@ -12,7 +12,6 @@
 #include <Geode/utils/cocos.hpp>
 #include <sstream>
 
-#include "../types/song_info.hpp"
 #include "../managers/nong_manager.hpp"
 #include "../ui/nong_dropdown_layer.hpp"
 #include "Geode/cocos/base_nodes/Layout.hpp"
@@ -23,16 +22,15 @@ using namespace jukebox;
 
 class $modify(JBSongWidget, CustomSongWidget) {
     struct Fields {
-        Nongs nongs;
+        Nongs* nongs;
         CCMenu* menu;
         CCMenuItemSpriteExtra* songNameLabel;
         CCLabelBMFont* sizeIdLabel;
         std::string songIds = "";
         std::string sfxIds = "";
-        bool fetchedAssetInfo = false;
         bool firstRun = true;
         bool searching = false;
-        std::unordered_map<int, Nongs> assetNongData;
+        std::unordered_map<int, Nongs*> assetNongData;
         EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
     };
 
@@ -73,9 +71,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         CustomSongWidget::updateWithMultiAssets(p1, p2, p3);
         m_fields->songIds = std::string(p1);
         m_fields->sfxIds = std::string(p2);
-        if (m_fields->fetchedAssetInfo) {
-            this->fixMultiAssetSize();
-        }
+        this->fixMultiAssetSize();
         if (m_isRobtopSong) {
             return;
         }
@@ -84,9 +80,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
     void updateMultiAssetInfo(bool p) {
         CustomSongWidget::updateMultiAssetInfo(p);
-        if (m_fields->fetchedAssetInfo) {
-            this->fixMultiAssetSize();
-        }
+        this->fixMultiAssetSize();
     }
 
     void fixMultiAssetSize() {
@@ -124,7 +118,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
     void setupJBSW() {
         SongInfoObject* obj = m_songInfoObject;
         if (obj == nullptr) return;
-        if (!m_fields->fetchedAssetInfo && m_songs.size() != 0) {
+        if (m_songs.size() != 0) {
             this->getMultiAssetSongInfo();
         }
         int id = obj->m_songID;
@@ -141,54 +135,14 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         m_songLabel->setVisible(false);
-        if (obj->m_songUrl.empty() && obj->m_artistName.empty()) {
-            // we have an invalid songID
-            if (!NongManager::get()->getNongs(id).has_value()) {
-                NongManager::get()->createUnknownDefault(id);
-            }
-        }
-        std::optional<Nongs> result = NongManager::get()->getNongs(id);
-        if (!result.has_value()) {
-            NongManager::get()->createDefault(m_songInfoObject, id, m_isRobtopSong);
-            result = NongManager::get()->getNongs(id);
-            if (!result.has_value()) {
-                return;
-            }
-        }
+        NongManager::get()->initSongID(obj, obj->m_songID, m_isRobtopSong);
+        std::optional<Nongs*> result = NongManager::get()->getNongs(id);
 
-        Nongs nongData = result.value();
+        auto nongs = result.value();
 
-        SongInfo active = NongManager::get()->getActiveNong(id).value();
-        if (
-            !m_isRobtopSong
-            && !nongData.defaultValid 
-            && active.path == nongData.defaultPath
-            && !NongManager::get()->isFixingDefault(id)
-        ) {
-            NongManager::get()->prepareCorrectDefault(id);
-            this->template addEventListener<GetSongInfoEventFilter>(
-                [this, id](SongInfoObject* obj) {
-                    if (!NongManager::get()->isFixingDefault(id)) {
-                        return ListenerResult::Propagate;
-                    }
-                    // log::info("update song object");
-                    // log::info("{}, {}, {}, {}, {}", obj->m_songName, obj->m_artistName, obj->m_songUrl, obj->m_isUnkownSong, id);
-                    NongManager::get()->fixDefault(obj);
-                    m_sliderGroove->setVisible(false);
-                    m_fields->nongs = NongManager::get()->getNongs(id).value();
-                    this->createSongLabels();
-                    return ListenerResult::Propagate;
-                },
-                id
-            );
-            auto result = NongManager::get()->getNongs(id);
-            if (result) {
-                nongData = result.value();
-            }
-        }
-        m_fields->nongs = nongData;
+        m_fields->nongs = nongs;
         this->createSongLabels();
-        if (active.path != nongData.defaultPath) {
+        if (nongs->isDefaultActive()) {
             m_deleteBtn->setVisible(false);
         }
     }
@@ -203,23 +157,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void getMultiAssetSongInfo() {
-        bool allDownloaded = true;
         for (auto const& kv : m_songs) {
+            NongManager::get()->initSongID(nullptr, kv.first, false);
             auto result = NongManager::get()->getNongs(kv.first);
-            if (!result.has_value()) {
-                NongManager::get()->createDefault(nullptr, kv.first, false);
-                result = NongManager::get()->getNongs(kv.first);
-                if (!result.has_value()) {
-                    // its downloading
-                    allDownloaded = false;
-                    continue;
-                }
-            }
             auto value = result.value();
             m_fields->assetNongData[kv.first] = value;
-        }
-        if (allDownloaded) {
-            m_fields->fetchedAssetInfo = true;
         }
     }
 
@@ -229,23 +171,21 @@ class $modify(JBSongWidget, CustomSongWidget) {
             songID++;
             songID = -songID;
         }
-        // log::info("createsonglabel");
-        auto res = NongManager::get()->getActiveNong(songID);
+        auto res = NongManager::get()->getNongs(songID);
         if (!res) {
             return;
         }
-        SongInfo active = res.value();
+        auto nongs = res.value();
+        auto active = nongs->active();
         if (m_fields->menu != nullptr) {
             m_fields->menu->removeFromParent();
         }
 		auto menu = CCMenu::create();
 		menu->setID("song-name-menu");
-		auto label = CCLabelBMFont::create(active.songName.c_str(), "bigFont.fnt");
-        // if (!m_isMusicLibrary) {
-		//     label->limitLabelWidth(220.f, 0.8f, 0.1f);
-        // } else {
-		//     label->limitLabelWidth(130.f, 0.4f, 0.1f);
-        // }
+		auto label = CCLabelBMFont::create(
+            active->metadata->m_name.c_str(),
+            "bigFont.fnt"
+        );
 		auto songNameMenuLabel = CCMenuItemSpriteExtra::create(
 			label,
 			this,
@@ -273,22 +213,26 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }
             auto data = NongManager::get()->getNongs(songID).value();
 
-    		if (!fs::exists(active.path) && active.path == data.defaultPath) {
+            // TODO this might be fuckery
+            if (
+                !std::filesystem::exists(active->path) 
+                && nongs->isDefaultActive()
+            ) {
                 m_songIDLabel->setVisible(true);
-    			return;
                 geode::cocos::handleTouchPriority(this);
-    		} else if (m_songIDLabel) {
-    			m_songIDLabel->setVisible(false);
-    		}
+                return;
+            } else if (m_songIDLabel) {
+                m_songIDLabel->setVisible(false);
+            }
 
-    		std::string sizeText;
-    		if (fs::exists(active.path)) {
-    			sizeText = NongManager::get()->getFormattedSize(active);
-    		} else {
-    			sizeText = "NA";
-    		}
-    		std::string labelText;
-    		if (active.path == data.defaultPath) {
+            std::string sizeText;
+            if (std::filesystem::exists(active->path)) {
+                sizeText = NongManager::get()->getFormattedSize(active->path);
+            } else {
+                sizeText = "NA";
+            }
+            std::string labelText;
+            if (nongs->isDefaultActive()) {
                 std::stringstream ss;
                 int displayId = songID;
                 if (displayId < 0) {
@@ -296,16 +240,19 @@ class $modify(JBSongWidget, CustomSongWidget) {
                     ss << "(R) ";
                 }
                 ss << displayId;
-    			labelText = "SongID: " + ss.str() + "  Size: " + sizeText;
-    		} else {
+                labelText = "SongID: " + ss.str() + "  Size: " + sizeText;
+            } else {
                 std::string display = "NONG";
                 if (songID < 0) {
                     display = "(R) NONG";
                 }
-    			labelText = "SongID: " + display + "  Size: " + sizeText;
-    		}
+                labelText = "SongID: " + display + "  Size: " + sizeText;
+            }
 
-            auto label = CCLabelBMFont::create(labelText.c_str(), "bigFont.fnt");
+            auto label = CCLabelBMFont::create(
+                labelText.c_str(),
+                "bigFont.fnt"
+            );
             label->setID("nongd-id-and-size-label");
             label->setPosition(ccp(-139.f, -31.f));
             label->setAnchorPoint({0, 0.5f});
@@ -323,11 +270,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
 	void addNongLayer(CCObject* target) {
-        if (m_songs.size() > 1 && !m_fields->fetchedAssetInfo) {
+        if (m_songs.size() != 0) {
             this->getMultiAssetSongInfo();
-            if (!m_fields->fetchedAssetInfo) {
-                return;
-            }
         }
 		auto scene = CCDirector::sharedDirector()->getRunningScene();
         std::vector<int> ids;

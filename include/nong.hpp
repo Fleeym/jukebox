@@ -6,6 +6,7 @@
 #include <matjson.hpp>
 #include <memory>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 #include "Geode/binding/SongInfoObject.hpp"
@@ -15,7 +16,7 @@
 
 namespace jukebox {
 
-struct JUKEBOX_DLL SongMetadata {
+struct JUKEBOX_DLL SongMetadata final {
     int m_gdID;
     std::string m_name;
     std::string m_artist;
@@ -36,161 +37,109 @@ struct JUKEBOX_DLL SongMetadata {
     {}
 };
 
-class JUKEBOX_DLL LocalSong {
+class JUKEBOX_DLL LocalSong final {
 private:
-    std::unique_ptr<SongMetadata> m_metadata;
-    std::filesystem::path m_path;
+    class Impl;
+
+    std::unique_ptr<Impl> m_impl;
 public:
     LocalSong(
         SongMetadata&& metadata,
         const std::filesystem::path& path
-    ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
-        m_path(path) 
-    {}
+    );
 
-    LocalSong(const LocalSong& other) 
-        : m_path(other.m_path),
-        m_metadata(std::make_unique<SongMetadata>(*other.m_metadata))
-    {}
+    LocalSong(const LocalSong& other);
 
-    LocalSong& operator=(const LocalSong& other) {
-        m_path = other.m_path;
-        m_metadata = std::make_unique<SongMetadata>(*other.m_metadata);
-
-        return *this;
-    }
+    LocalSong& operator=(const LocalSong& other);
 
     LocalSong(LocalSong&& other) = default;
     LocalSong& operator=(LocalSong&& other) = default;
 
-    SongMetadata* metadata() const {
-        return m_metadata.get();
-    }
-    std::filesystem::path path() const {
-        return m_path;
-    }
+    SongMetadata* metadata() const;
+    std::filesystem::path path() const;
 
     // Might not be used
     static LocalSong createUnknown(int songID);
     static LocalSong fromSongObject(SongInfoObject* obj);
 };
 
-class JUKEBOX_DLL YTSong {
+class JUKEBOX_DLL YTSong final {
 private:
-    std::unique_ptr<SongMetadata> m_metadata;
-    std::string m_youtubeID;
-    std::optional<std::filesystem::path> m_path;
+    class Impl;
+
+    std::unique_ptr<Impl> m_impl;
+
 public:
     YTSong(
         SongMetadata&& metadata,
-        std::string&& youtubeID,
-        std::optional<std::filesystem::path>&& path = std::nullopt
-    ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
-        m_youtubeID(youtubeID),
-        m_path(path)
-    {}
-
-    YTSong(const YTSong& other)
-        : m_youtubeID(other.m_youtubeID),
-        m_path(other.m_path),
-        m_metadata(std::make_unique<SongMetadata>(*other.m_metadata))
-    {}
-
-    YTSong& operator=(const YTSong& other) {
-        m_youtubeID = other.m_youtubeID;
-        m_path = other.m_path;
-        m_metadata = std::make_unique<SongMetadata>(*other.m_metadata);
-
-        return *this;
-    }
+        std::string youtubeID,
+        std::optional<std::filesystem::path> path = std::nullopt
+    );
+    YTSong(const YTSong& other);
+    YTSong& operator=(const YTSong& other);
 
     YTSong(YTSong&& other) = default;
     YTSong& operator=(YTSong&& other) = default;
 
-    SongMetadata* metadata() const {
-        return m_metadata.get();
-    }
-    std::string youtubeID() const {
-        return m_youtubeID;
-    }
-    std::optional<std::filesystem::path> path() const {
-        return m_path;
-    }
+    ~YTSong() = default;
+
+    SongMetadata* metadata() const;
+    std::string youtubeID() const;
+    std::optional<std::filesystem::path> path() const;
 };
 
-class JUKEBOX_DLL HostedSong {
+class JUKEBOX_DLL HostedSong final {
 private:
-    std::unique_ptr<SongMetadata> m_metadata;
-    std::string m_url;
-    std::optional<std::filesystem::path> m_path;
+    class Impl;
+
+    std::unique_ptr<Impl> m_impl;
+
 public:
     HostedSong(
         SongMetadata&& metadata,
-        std::string&& url,
-        std::optional<std::filesystem::path>&& path = std::nullopt
-    ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
-        m_url(std::move(url)),
-        m_path(std::move(path))
-    {}
-
-    HostedSong(const HostedSong& other)
-        : m_metadata(std::make_unique<SongMetadata>(*other.m_metadata)),
-        m_path(other.m_path),
-        m_url(other.m_url)
-    {}
-
-    HostedSong& operator=(const HostedSong& other) {
-        m_metadata = std::make_unique<SongMetadata>(*other.m_metadata);
-        m_path = other.m_path;
-        m_url = other.m_url;
-
-        return *this;
-    }
+        std::string url,
+        std::optional<std::filesystem::path> path = std::nullopt
+    );
+    HostedSong(const HostedSong& other);
+    HostedSong& operator=(const HostedSong& other);
 
     HostedSong(HostedSong&& other) = default;
     HostedSong& operator=(HostedSong&& other) = default;
 
-    SongMetadata* metadata() const {
-        return m_metadata.get();
-    }
-    std::string url() const {
-        return m_url;
-    }
-    std::optional<std::filesystem::path> path() const {
-        return m_path;
-    }
+    ~HostedSong() = default;
+
+    SongMetadata* metadata() const;
+    std::string url() const;
+    std::optional<std::filesystem::path> path() const;
 };
 
-class JUKEBOX_DLL Nongs {
+class JUKEBOX_DLL Nongs final {
 public:
     struct ActiveSong {
         std::filesystem::path path = {};
         SongMetadata* metadata = nullptr;
     };
 private:
-    int m_songID;
-    std::unique_ptr<ActiveSong> m_active = std::make_unique<ActiveSong>();
-    std::unique_ptr<LocalSong> m_default;
-    std::vector<std::unique_ptr<LocalSong>> m_locals {};
-    std::vector<std::unique_ptr<YTSong>> m_youtube {};
-    std::vector<std::unique_ptr<HostedSong>> m_hosted {};
+    class Impl;
+
+    std::unique_ptr<Impl> m_impl;
 public:
-    Nongs(int songID, LocalSong&& defaultSong)
-        : m_songID(songID),
-        m_default(std::make_unique<LocalSong>(defaultSong))
-    {}
+    Nongs(int songID, LocalSong&& defaultSong);
 
-    int songID() const {
-        return m_songID;
-    }
+    // No copies for this one
+    Nongs(const Nongs&) = delete;
+    Nongs& operator=(const Nongs&) = delete;
 
-    LocalSong* defaultSong() const {
-        return m_default.get();
-    }
+    Nongs(Nongs&&) = default;
+    Nongs& operator=(Nongs&&) = default;
 
-    ActiveSong* active() const {
-        return m_active.get();
-    }
+    ~Nongs() = default;
+
+    int songID() const;
+    LocalSong* defaultSong() const;
+    ActiveSong* active() const;
+
+    bool isDefaultActive() const;
 
     /**
      * Returns Err if there is no NONG with the given path for the song ID
@@ -198,14 +147,32 @@ public:
      */
     geode::Result<> setActive(const std::filesystem::path& path);
 
-    std::vector<std::unique_ptr<LocalSong>>& locals() {
-        return m_locals;
-    }
-    std::vector<std::unique_ptr<YTSong>>& youtube() {
-        return m_youtube;
-    }
-    std::vector<std::unique_ptr<HostedSong>>& hosted() {
-        return m_hosted;
+    std::vector<std::unique_ptr<LocalSong>>& locals();
+    std::vector<std::unique_ptr<YTSong>>& youtube();
+    std::vector<std::unique_ptr<HostedSong>>& hosted();
+
+    // Remove all custom nongs and set the default song as active
+    void resetToDefault();
+
+    geode::Result<LocalSong*> add(LocalSong song);
+    geode::Result<YTSong*> add(YTSong song);
+    geode::Result<HostedSong*> add(HostedSong song);
+
+    void remove(LocalSong* song);
+    void remove(YTSong* song);
+    void remove(HostedSong* song);
+};
+
+class JUKEBOX_DLL Manifest {
+    friend class NongManager;
+private:
+    int m_version = s_latestVersion;
+    std::unordered_map<int, std::unique_ptr<Nongs>> m_nongs = {};
+public:
+    constexpr static inline int s_latestVersion = 4;
+
+    int version() const {
+        return m_version;
     }
 };
 

@@ -225,17 +225,6 @@ void NongDropdownLayer::createList() {
     handleTouchPriority(this);
 }
 
-SongInfo NongDropdownLayer::getActiveSong() {
-    int id = m_currentSongID.value();
-    auto active = NongManager::get()->getActiveNong(id);
-    if (!active.has_value()) {
-        m_data[id].active = m_data[id].defaultPath;
-        NongManager::get()->saveNongs(m_data[id], id);
-        return NongManager::get()->getActiveNong(id).value();
-    }
-    return active.value();
-}
-
 CCSize NongDropdownLayer::getCellSize() const {
     return {
         320.f,

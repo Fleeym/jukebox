@@ -38,9 +38,9 @@ class $modify(LevelTools) {
             return LevelTools::getAudioTitle(id);
         }
         int searchID = -id - 1;
-        auto active = jukebox::NongManager::get()->getActiveNong(searchID);
-        if (active.has_value()) {
-            return active.value().songName;
+        auto res = jukebox::NongManager::get()->getNongs(searchID);
+        if (res.has_value()) {
+            return res.value()->active()->metadata->m_name;
         }
         return LevelTools::getAudioTitle(id);
     }
