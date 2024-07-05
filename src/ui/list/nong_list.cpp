@@ -161,10 +161,20 @@ void NongList::build() {
             )
         );
 
+        int i = 0;
         for (const SongInfo& song : data.songs) {
             if (song.path == data.defaultPath) {
                 continue;
             }
+            auto separatorTitle = CCLabelBMFont::create(i == 0 ? "Song File Hub" : "Official", "goldFont.fnt");
+            i++;
+            separatorTitle->limitLabelWidth(100.f, 0.5f, 0.2f);
+            auto separatorWrapper = CCNode::create();
+            separatorWrapper->setContentHeight(10.f);
+            separatorWrapper->addChildAtPosition(separatorTitle, Anchor::Center, {0.f, 1.f});
+            m_list->m_contentLayer->addChild(
+              separatorWrapper
+            );
             m_list->m_contentLayer->addChild(
                 jukebox::NongCell::create(
                     id, song,
