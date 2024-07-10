@@ -16,7 +16,7 @@ namespace jukebox {
 
 enum class SongInfoGetAction {
     CreateDefault,
-    FixDefault   
+    FixDefault
 };
 
 class NongManager : public CCObject {
@@ -50,12 +50,17 @@ public:
     void initSongID(SongInfoObject* obj, int id, bool robtop);
 
     /**
+     * Adjusts a song ID with respect to Robtop songs
+    */
+    int adjustSongID(int id, bool robtop);
+
+    /**
      * Execute callbacks stored for getSongInfo for a songID, if they exist
     */
     void resolveSongInfoCallback(int id);
 
     /**
-     * Gets the current manifest version stored in state 
+     * Gets the current manifest version stored in state
     */
     int getCurrentManifestVersion();
 
@@ -66,7 +71,7 @@ public:
 
     /**
      * Fetches all NONG data for a certain songID
-     * 
+     *
      * @param songID the id of the song
      * @return the data from the JSON or nullopt if it wasn't created yet
     */
@@ -74,9 +79,9 @@ public:
 
     /**
      * Formats a size in bytes to a x.xxMB string
-     * 
+     *
      * @param path the path to calculate the filesize of
-     * 
+     *
      * @return the formatted size, with the format x.xxMB
     */
     std::string getFormattedSize(const std::filesystem::path& path);
@@ -84,7 +89,7 @@ public:
     /**
      * Calculates the total size of multiple assets, then writes it to a string.
      * Runs on a separate thread. Returns a task that will resolve to the total size.
-     * 
+     *
      * @param songs string of song ids, separated by commas
      * @param sfx string of sfx ids, separated by commas
     */
@@ -96,11 +101,29 @@ public:
     */
     void refetchDefault(int songID);
 
+    /**
+     * Add NONGs
+     * @param nong NONG to add
+    */
+    Result<> addNongs(Nongs&& nong);
+
+    /**
+     * Set active song
+     * @param song active song
+    */
+    Result<> setActiveSong(const Nongs::ActiveSong& song);
+
+    /**
+     * Delete a song
+     * @param song song to delete
+    */
+    Result<> deleteSong(const Nongs::ActiveSong& song);
+
     static NongManager* get() {
         if (m_instance == nullptr) {
             m_instance = new NongManager();
+            m_instance->retain();
             m_instance->init();
-            m_instance->autorelease();
         }
 
         return m_instance;

@@ -5,7 +5,7 @@
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <functional>
 
-#include "../../types/song_info.hpp"
+#include "../../../include/nong.hpp"
 
 using namespace geode::prelude;
 
@@ -15,7 +15,7 @@ class NongDropdownLayer;
 
 class SongCell : public CCNode {
 protected:
-    SongInfo m_active;
+    SongMetadata* m_active;
     CCLabelBMFont* m_songNameLabel;
     CCLabelBMFont* m_authorNameLabel;
     CCLabelBMFont* m_songIDLabel;
@@ -25,14 +25,14 @@ protected:
 
     bool init(
         int id,
-        const SongInfo& songInfo,
+        SongMetadata* songInfo,
         const CCSize& size,
         std::function<void()> selectCallback
     );
 public:
     static SongCell* create(
         int id,
-        const SongInfo& songInfo,
+        SongMetadata* songInfo,
         const CCSize& size,
         std::function<void()> selectCallback
     ) {

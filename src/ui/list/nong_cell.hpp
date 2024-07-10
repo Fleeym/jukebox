@@ -5,7 +5,7 @@
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <functional>
 
-#include "../../types/song_info.hpp"
+#include "../../../include/nong.hpp"
 
 using namespace geode::prelude;
 
@@ -16,7 +16,7 @@ class NongDropdownLayer;
 class NongCell : public CCNode {
 protected:
     int m_songID;
-    SongInfo m_songInfo;
+    Nong m_songInfo = Nong(LocalSong::createUnknown(0));
     CCLabelBMFont* m_songNameLabel = nullptr;
     CCLabelBMFont* m_authorNameLabel = nullptr;
     CCLabelBMFont* m_levelNameLabel = nullptr;
@@ -31,9 +31,9 @@ protected:
 
     bool init(
         int songID,
-        SongInfo info,
+        Nong info,
         bool isDefault,
-        bool selected, 
+        bool selected,
         CCSize const& size,
         std::function<void()> onSelect,
         std::function<void()> onFixDefault,
@@ -42,9 +42,9 @@ protected:
 public:
     static NongCell* create(
         int songID,
-        SongInfo info,
+        Nong info,
         bool isDefault,
-        bool selected, 
+        bool selected,
         CCSize const& size,
         std::function<void()> onSelect,
         std::function<void()> onFixDefault,

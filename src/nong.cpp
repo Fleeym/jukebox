@@ -50,7 +50,7 @@ LocalSong::LocalSong(
 ) : m_impl(std::make_unique<Impl>(std::move(metadata), path))
 {}
 
-LocalSong::LocalSong(const LocalSong& other) 
+LocalSong::LocalSong(const LocalSong& other)
     : m_impl(std::make_unique<Impl>(*other.m_impl))
 {}
 
@@ -60,6 +60,10 @@ LocalSong& LocalSong::operator=(const LocalSong& other) {
 
     return *this;
 }
+
+LocalSong::LocalSong(LocalSong&&) = default;
+LocalSong& LocalSong::operator=(LocalSong&&) = default;
+LocalSong::~LocalSong() = default;
 
 SongMetadata* LocalSong::metadata() const {
     return m_impl->metadata();
@@ -156,6 +160,10 @@ YTSong& YTSong::operator=(const YTSong& other) {
     return *this;
 }
 
+YTSong::YTSong(YTSong&& other) = default;
+YTSong& YTSong::operator=(YTSong&& other) = default;
+YTSong::~YTSong() = default;
+
 SongMetadata* YTSong::metadata() const {
     return m_impl->metadata();
 }
@@ -238,6 +246,10 @@ std::optional<std::filesystem::path> HostedSong::path() const {
     return m_impl->path();
 }
 
+HostedSong::HostedSong(HostedSong&& other) = default;
+HostedSong& HostedSong::operator=(HostedSong&& other) = default;
+HostedSong::~HostedSong() = default;
+
 class Nongs::Impl {
 private:
     friend class Nongs;
@@ -273,6 +285,13 @@ public:
         m_active->path = m_default->path();
     }
 
+    Impl(int songID)
+        : Impl(songID, LocalSong::createUnknown(songID))
+    {
+        m_active->metadata = m_default->metadata();
+        m_active->path = m_default->path();
+    }
+
     geode::Result<> setActive(const std::filesystem::path& path) {
         if (m_default->path() == path) {
             m_active->path = m_default->path();
@@ -298,6 +317,64 @@ public:
 
         return Err("No song found with given path for song ID");
     }
+
+    geode::Result<> merge(Nongs&& other) {
+        if (other.songID() != m_songID) return Err("Merging with NONGs of a different song ID");
+
+        for (const auto& i : other.locals()) {
+            if (i->path() == other.defaultSong()->path()) continue;
+            m_locals.emplace_back(std::make_unique<LocalSong>(*i));
+        }
+
+        for (const auto& i : other.youtube()) {
+            m_youtube.emplace_back(std::make_unique<YTSong>(*i));
+        }
+
+        for (const auto& i : other.hosted()) {
+            m_hosted.emplace_back(std::make_unique<HostedSong>(*i));
+        }
+
+        return Ok();
+    }
+
+    geode::Result<> deleteSong(const std::filesystem::path& path) {
+        if (m_default->path() == path) {
+            return Err("Cannot delete default song");
+        }
+
+        std::error_code code;
+        std::filesystem::remove(path, code);
+        if (code) {
+            return Err(fmt::format("Failed to delete song: {}", code.message()));
+        }
+
+        for (auto i = m_locals.begin(); i != m_locals.end(); ++i) {
+            if ((*i)->path() == path) {
+                this->deletePath(path);
+                m_locals.erase(i);
+                return Ok();
+            }
+        }
+
+        for (auto i = m_youtube.begin(); i != m_youtube.end(); ++i) {
+            if ((*i)->path().has_value() && (*i)->path().value() == path) {
+                this->deletePath(path);
+                m_youtube.erase(i);
+                return Ok();
+            }
+        }
+
+        for (auto i = m_hosted.begin(); i != m_hosted.end(); ++i) {
+            if ((*i)->path().has_value() && (*i)->path().value() == path) {
+                this->deletePath(path);
+                m_hosted.erase(i);
+                return Ok();
+            }
+        }
+
+        return Err("No song found with given path for song ID");
+    }
+
 
     void resetToDefault() {
         auto _ = this->setActive(this->defaultSong()->path());
@@ -325,7 +402,7 @@ public:
         for (const auto& i : m_locals) {
             if (i->path() == song.path()) {
                 std::string err = fmt::format("Attempted to add a duplicate song for id {}", song.metadata()->m_gdID);
-                log::error(err);
+                // log::error(err);
                 return Err(err);
             }
         }
@@ -340,7 +417,7 @@ public:
         for (const auto& i : m_youtube) {
             if (i->youtubeID() == song.youtubeID()) {
                 std::string err = fmt::format("Attempted to add a duplicate song for id {}", song.metadata()->m_gdID);
-                log::error(err);
+                // log::error(err);
                 return Err(err);
             }
         }
@@ -355,7 +432,7 @@ public:
         for (const auto& i : m_hosted) {
             if (i->url() == song.url()) {
                 std::string err = fmt::format("Attempted to add a duplicate song for id {}", song.metadata()->m_gdID);
-                log::error(err);
+                // log::error(err);
                 return Err(err);
             }
         }
@@ -396,6 +473,10 @@ Nongs::Nongs(int songID, LocalSong&& defaultSong)
     ))
 {}
 
+Nongs::Nongs(int songID)
+    : m_impl(std::make_unique<Impl>(songID))
+{}
+
 bool Nongs::isDefaultActive() const {
     return m_impl->isDefaultActive();
 }
@@ -416,8 +497,28 @@ Result<> Nongs::setActive(const std::filesystem::path& path) {
     return m_impl->setActive(path);
 }
 
+Result<> Nongs::merge(Nongs&& other) {
+  return m_impl->merge(std::move(other));
+}
+
+Result<> Nongs::deleteSong(const std::filesystem::path& path) {
+    return m_impl->deleteSong(path);
+}
+
 void Nongs::resetToDefault() {
-    m_impl->resetToDefault();    
+    m_impl->resetToDefault();
+}
+
+std::vector<std::unique_ptr<LocalSong>>& Nongs::locals() {
+    return m_impl->locals();
+}
+
+std::vector<std::unique_ptr<YTSong>>& Nongs::youtube() {
+    return m_impl->youtube();
+}
+
+std::vector<std::unique_ptr<HostedSong>>& Nongs::hosted() {
+    return m_impl->hosted();
 }
 
 Result<LocalSong*> Nongs::add(LocalSong song) {
@@ -431,5 +532,117 @@ Result<YTSong*> Nongs::add(YTSong song) {
 Result<HostedSong*> Nongs::add(HostedSong song) {
     return m_impl->add(song);
 }
+
+// Nongs::Nongs(const Nongs&) = delete;
+// Nongs& Nongs::operator=(const Nongs&) = delete;
+Nongs::Nongs(Nongs&&) = default;
+Nongs& Nongs::operator=(Nongs&&) = default;
+Nongs::~Nongs() = default;
+
+class Nong::Impl {
+private:
+    friend class Nong;
+
+    enum class Type {
+        Local,
+        YT,
+        Hosted,
+    };
+
+    Type m_type;
+      std::unique_ptr<LocalSong> m_localSong;
+      std::unique_ptr<YTSong> m_ytSong;
+      std::unique_ptr<HostedSong> m_hostedSong;
+
+public:
+    Impl(const LocalSong local) : m_type(Type::Local), m_localSong(std::make_unique<LocalSong>(local)) {}
+    Impl(const YTSong yt) : m_type(Type::YT), m_ytSong(std::make_unique<YTSong>(yt)) {}
+    Impl(const HostedSong hosted) : m_type(Type::Hosted), m_hostedSong(std::make_unique<HostedSong>(hosted)) {}
+
+    Impl(const Impl&) = delete;
+    Impl& operator=(const Impl&) = delete;
+
+    void visit(
+        std::function<void(LocalSong*)> local,
+        std::function<void(YTSong*)> yt,
+        std::function<void(HostedSong*)> hosted
+    ) const {
+        switch (m_type) {
+            case Type::Local:
+                local(m_localSong.get());
+                break;
+            case Type::YT:
+                yt(m_ytSong.get());
+                break;
+            case Type::Hosted:
+                hosted(m_hostedSong.get());
+                break;
+        }
+    }
+
+    SongMetadata* metadata() const {
+        switch (m_type) {
+            case Type::Local:
+                return m_localSong->metadata();
+            case Type::YT:
+                return m_ytSong->metadata();
+            case Type::Hosted:
+                return m_hostedSong->metadata();
+        }
+    }
+
+    Nongs toNongs(int songId) const {
+        switch (m_type) {
+            case Type::Local: {
+                auto nongs = Nongs(songId);
+                nongs.add(std::move(*m_localSong));
+                return nongs;
+            }
+            case Type::YT: {
+                auto nongs = Nongs(songId);
+                nongs.add(std::move(*m_ytSong));
+                return nongs;
+            }
+            case Type::Hosted: {
+                auto nongs = Nongs(songId);
+                nongs.add(std::move(*m_hostedSong));
+                return nongs;
+            }
+        }
+    }
+};
+
+
+Nong::Nong(const LocalSong& local)
+    : m_impl(std::make_unique<Impl>(local))
+{};
+
+Nong::Nong(const YTSong& yt)
+    : m_impl(std::make_unique<Impl>(yt))
+{};
+
+Nong::Nong(const HostedSong& hosted)
+    : m_impl(std::make_unique<Impl>(hosted))
+{};
+
+SongMetadata* Nong::metadata() const {
+    return m_impl->metadata();
+};
+
+Nongs Nong::toNongs(int songId) const {
+    return m_impl->toNongs(songId);
+};
+
+void Nong::visit(
+    std::function<void(LocalSong*)> local,
+    std::function<void(YTSong*)> yt,
+    std::function<void(HostedSong*)> hosted
+) const {
+    m_impl->visit(local, yt, hosted);
+}
+
+Nong::Nong(Nong&&) = default;
+Nong& Nong::operator=(Nong&&) = default;
+Nong::~Nong() = default;
 
 }

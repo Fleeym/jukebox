@@ -16,9 +16,9 @@ namespace jukebox {
 
 bool NongCell::init(
     int songID,
-    SongInfo info,
+    Nong info,
     bool isDefault,
-    bool selected, 
+    bool selected,
     CCSize const& size,
     std::function<void()> onSelect,
     std::function<void()> onFixDefault,
@@ -29,7 +29,7 @@ bool NongCell::init(
     }
 
     m_songID = songID;
-    m_songInfo = info;
+    m_songInfo = std::move(info);
     m_isDefault = isDefault;
     m_isActive = selected;
     m_onSelect = onSelect;
@@ -108,22 +108,23 @@ bool NongCell::init(
     this->addChildAtPosition(menu, Anchor::Right, CCPoint { -5.0f, 0.0f });
 
     m_songInfoLayer = CCLayer::create();
+    auto songMetadata = m_songInfo.metadata();
 
-    if (!m_songInfo.levelName.empty()) {
-        m_levelNameLabel = CCLabelBMFont::create(m_songInfo.levelName.c_str(), "bigFont.fnt");
+    if (songMetadata->m_level.has_value()) {
+        m_levelNameLabel = CCLabelBMFont::create(songMetadata->m_level->c_str(), "bigFont.fnt");
         m_levelNameLabel->limitLabelWidth(220.f, 0.4f, 0.1f);
         m_levelNameLabel->setColor(cc3x(0x00c9ff));
         m_levelNameLabel->setID("level-name");
     }
-    
-    m_songNameLabel = CCLabelBMFont::create(m_songInfo.songName.c_str(), "bigFont.fnt");
+
+    m_songNameLabel = CCLabelBMFont::create(songMetadata->m_name.c_str(), "bigFont.fnt");
     m_songNameLabel->limitLabelWidth(220.f, 0.7f, 0.1f);
 
     if (selected) {
         m_songNameLabel->setColor(ccc3(188, 254, 206));
     }
 
-    m_authorNameLabel = CCLabelBMFont::create(m_songInfo.authorName.c_str(), "goldFont.fnt");
+    m_authorNameLabel = CCLabelBMFont::create(songMetadata->m_artist.c_str(), "goldFont.fnt");
     m_authorNameLabel->limitLabelWidth(220.f, 0.7f, 0.1f);
     m_authorNameLabel->setID("author-name");
     m_songNameLabel->setID("song-name");
@@ -176,7 +177,7 @@ void NongCell::onSet(CCObject* target) {
 void NongCell::deleteSong(CCObject* target) {
     createQuickPopup(
         "Are you sure?",
-        fmt::format("Are you sure you want to delete <cy>{}</c> from your NONGs?", m_songInfo.songName),
+        fmt::format("Are you sure you want to delete <cy>{}</c> from your NONGs?", m_songInfo.metadata()->m_name),
         "No",
         "Yes",
         [this] (FLAlertLayer* self, bool btn2) {
@@ -189,16 +190,16 @@ void NongCell::deleteSong(CCObject* target) {
 
 NongCell* NongCell::create(
     int songID,
-    SongInfo info,
+    Nong info,
     bool isDefault,
-    bool selected, 
+    bool selected,
     CCSize const& size,
     std::function<void()> onSelect,
     std::function<void()> onFixDefault,
     std::function<void()> onDelete
 ) {
     auto ret = new NongCell();
-    if (ret && ret->init(songID, info, isDefault, selected, size, onSelect, onFixDefault, onDelete)) {
+    if (ret && ret->init(songID, std::move(info), isDefault, selected, size, onSelect, onFixDefault, onDelete)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);

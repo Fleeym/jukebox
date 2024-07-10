@@ -52,8 +52,10 @@ public:
 
     LocalSong& operator=(const LocalSong& other);
 
-    LocalSong(LocalSong&& other) = default;
-    LocalSong& operator=(LocalSong&& other) = default;
+    LocalSong(LocalSong&& other);
+    LocalSong& operator=(LocalSong&& other);
+
+    ~LocalSong();
 
     SongMetadata* metadata() const;
     std::filesystem::path path() const;
@@ -78,15 +80,16 @@ public:
     YTSong(const YTSong& other);
     YTSong& operator=(const YTSong& other);
 
-    YTSong(YTSong&& other) = default;
-    YTSong& operator=(YTSong&& other) = default;
+    YTSong(YTSong&& other);
+    YTSong& operator=(YTSong&& other);
 
-    ~YTSong() = default;
+    ~YTSong();
 
     SongMetadata* metadata() const;
     std::string youtubeID() const;
     std::optional<std::filesystem::path> path() const;
 };
+
 
 class JUKEBOX_DLL HostedSong final {
 private:
@@ -103,10 +106,10 @@ public:
     HostedSong(const HostedSong& other);
     HostedSong& operator=(const HostedSong& other);
 
-    HostedSong(HostedSong&& other) = default;
-    HostedSong& operator=(HostedSong&& other) = default;
+    HostedSong(HostedSong&& other);
+    HostedSong& operator=(HostedSong&& other);
 
-    ~HostedSong() = default;
+    ~HostedSong();
 
     SongMetadata* metadata() const;
     std::string url() const;
@@ -125,15 +128,16 @@ private:
     std::unique_ptr<Impl> m_impl;
 public:
     Nongs(int songID, LocalSong&& defaultSong);
+    Nongs(int songID);
 
     // No copies for this one
     Nongs(const Nongs&) = delete;
     Nongs& operator=(const Nongs&) = delete;
 
-    Nongs(Nongs&&) = default;
-    Nongs& operator=(Nongs&&) = default;
+    Nongs(Nongs&&);
+    Nongs& operator=(Nongs&&);
 
-    ~Nongs() = default;
+    ~Nongs();
 
     int songID() const;
     LocalSong* defaultSong() const;
@@ -146,6 +150,8 @@ public:
      * Otherwise, returns ok
      */
     geode::Result<> setActive(const std::filesystem::path& path);
+    geode::Result<> merge(Nongs&&);
+    geode::Result<> deleteSong(const std::filesystem::path& path);
 
     std::vector<std::unique_ptr<LocalSong>>& locals();
     std::vector<std::unique_ptr<YTSong>>& youtube();
@@ -171,9 +177,42 @@ private:
 public:
     constexpr static inline int s_latestVersion = 4;
 
+    Manifest() = default;
+    Manifest(const Manifest&) = delete;
+    Manifest& operator=(const Manifest&) = delete;
+
     int version() const {
         return m_version;
     }
+};
+
+class JUKEBOX_DLL Nong final {
+private:
+    class Impl;
+
+    std::unique_ptr<Impl> m_impl;
+public:
+    Nong(const LocalSong& local);
+    Nong(const YTSong& yt);
+    Nong(const HostedSong& hosted);
+
+    // No copies for this one
+    Nong(const Nong&) = delete;
+    Nong& operator=(const Nong&) = delete;
+
+    Nong(Nong&&);
+    Nong& operator=(Nong&&);
+
+    ~Nong();
+
+    SongMetadata* metadata() const;
+    Nongs toNongs(int songId) const;
+
+    void visit(
+        std::function<void(LocalSong*)> local,
+        std::function<void(YTSong*)> yt,
+        std::function<void(HostedSong*)> hosted
+    ) const;
 };
 
 }

@@ -46,14 +46,14 @@ class $modify(JBSongWidget, CustomSongWidget) {
         int unkInt
     ) {
         if (!CustomSongWidget::init(
-            songInfo, 
-            songDelegate, 
-            showSongSelect, 
-            showPlayMusic, 
-            showDownload, 
-            isRobtopSong, 
-            unk, 
-            isMusicLibrary, 
+            songInfo,
+            songDelegate,
+            showSongSelect,
+            showPlayMusic,
+            showDownload,
+            isRobtopSong,
+            unk,
+            isMusicLibrary,
             unkInt
         )) {
             return false;
@@ -135,8 +135,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         m_songLabel->setVisible(false);
+        log::info("before init song id: {} {} {}", obj->m_songID, m_isRobtopSong, NongManager::get()->adjustSongID(id, m_isRobtopSong));
         NongManager::get()->initSongID(obj, obj->m_songID, m_isRobtopSong);
-        std::optional<Nongs*> result = NongManager::get()->getNongs(id);
+        log::info("after init song id: {} {} {}", obj->m_songID, m_isRobtopSong, NongManager::get()->adjustSongID(id, m_isRobtopSong));
+        std::optional<Nongs*> result = NongManager::get()->getNongs(NongManager::get()->adjustSongID(id, m_isRobtopSong));
 
         auto nongs = result.value();
 
@@ -215,7 +217,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             // TODO this might be fuckery
             if (
-                !std::filesystem::exists(active->path) 
+                !std::filesystem::exists(active->path)
                 && nongs->isDefaultActive()
             ) {
                 m_songIDLabel->setVisible(true);

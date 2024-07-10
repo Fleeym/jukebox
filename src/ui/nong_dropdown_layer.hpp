@@ -18,7 +18,6 @@ namespace jukebox {
 
 class NongDropdownLayer : public Popup<std::vector<int>, CustomSongWidget*, int> {
 protected:
-    std::unordered_map<int, Nongs> m_data;
     std::vector<int> m_songIDS;
     std::optional<int> m_currentSongID = std::nullopt;
     int m_defaultSongID;
@@ -41,10 +40,10 @@ protected:
 public:
     void onSelectSong(int songID);
     void onDiscord(CCObject*);
-    void setActiveSong(SongInfo const& song);
-    void deleteSong(SongInfo const& song);
-    void addSong(SongInfo const& song);
-    void updateParentWidget(SongInfo const& song);
+    void setActiveSong(Nongs::ActiveSong const& song);
+    void deleteSong(Nongs::ActiveSong const& song);
+    void addSong(const Nong& song);
+    void updateParentWidget(SongMetadata const& song);
     void refreshList();
 
     static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {

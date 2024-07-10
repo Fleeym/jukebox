@@ -19,25 +19,25 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool NongList::init(
-    std::unordered_map<int, Nongs>& data,
+    std::vector<int>& songIds,
     const cocos2d::CCSize& size,
-    std::function<void(int, const SongInfo&)> onSetActive,
+    std::function<void(int, const SongMetadata&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongInfo&)> onDelete,
+    std::function<void(int, const SongMetadata&)> onDelete,
     std::function<void(bool)> onListTypeChange
 ) {
     if (!CCNode::init()) {
         return false;
     }
 
-    m_data = data;
+    m_songIds = songIds;
     m_onSetActive = onSetActive;
     m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
     m_onListTypeChange = onListTypeChange;
 
-    if (m_data.size() == 1) {
-        m_currentSong = m_data.begin()->first;
+    if (m_songIds.size() == 1) {
+        m_currentSong = m_songIds.front();
     }
 
     this->setContentSize(size);
@@ -89,7 +89,7 @@ void NongList::build() {
         m_list->m_contentLayer->removeAllChildren();
     }
 
-    if (m_data.size() == 0) {
+    if (m_songIds.size() == 0) {
         return;
     }
 
@@ -102,19 +102,19 @@ void NongList::build() {
         if (m_onListTypeChange) {
             m_onListTypeChange(true);
         }
-        for (const auto& kv : m_data) {
-            SongInfo display;
-            auto active = NongManager::get()->getActiveNong(kv.first);
+        for (const auto& id : m_songIds) {
+            auto nongs = NongManager::get()->getNongs(id);
 
-            if (!active) {
+            if (!nongs) {
                 continue;
             }
 
-            int id = kv.first;
+            auto active = nongs.value()->active();
+
             m_list->m_contentLayer->addChild(
                 jukebox::SongCell::create(
                     id,
-                    active.value(),
+                    active->metadata,
                     itemSize,
                     [this, id] () {
                         this->onSelectSong(id);
@@ -128,57 +128,48 @@ void NongList::build() {
         }
         // Single item
         int id = m_currentSong.value();
-        if (!m_data.contains(id)) {
-            return;
-        }
-        Nongs data = m_data.at(id);
-        auto active = NongManager::get()->getActiveNong(id);
-        auto defaultRes = NongManager::get()->getDefaultNong(id);
-        if (!defaultRes) {
-            return;
-        }
-        if (!active) {
+
+        auto nongs = NongManager::get()->getNongs(id);
+        if (!nongs) {
             return;
         }
 
-        auto defaultSong = defaultRes.value();
+        auto defaultSong = nongs.value()->defaultSong();
+        auto active = nongs.value()->active();
 
         m_list->m_contentLayer->addChild(
             jukebox::NongCell::create(
-                id, defaultSong,
+                id, Nong(*defaultSong),
                 true,
-                defaultSong.path == data.active,
+                defaultSong->path() == active->path,
                 itemSize,
                 [this, id, defaultSong] () {
-                    m_onSetActive(id, defaultSong);
+                    m_onSetActive(id, *defaultSong->metadata());
                 },
                 [this, id] () {
                     m_onFixDefault(id);
                 },
                 [this, id, defaultSong] () {
-                    m_onDelete(id, defaultSong);
+                    m_onDelete(id, *defaultSong->metadata());
                 }
             )
         );
 
-        for (const SongInfo& song : data.songs) {
-            if (song.path == data.defaultPath) {
-                continue;
-            }
+        for (std::unique_ptr<LocalSong>& song : nongs.value()->locals()) {
             m_list->m_contentLayer->addChild(
                 jukebox::NongCell::create(
-                    id, song,
-                    song.path == data.defaultPath,
-                    song.path == data.active,
+                    id, Nong(*song),
+                    false,
+                    song->path() == defaultSong->path(),
                     itemSize,
-                    [this, id, song] () {
-                        m_onSetActive(id, song);
+                    [this, id, &song] () {
+                        m_onSetActive(id, *song->metadata());
                     },
                     [this, id] () {
                         m_onFixDefault(id);
                     },
-                    [this, id, song] () {
-                        m_onDelete(id, song);
+                    [this, id, &song] () {
+                        m_onDelete(id, *song->metadata());
                     }
                 )
             );
@@ -194,12 +185,8 @@ void NongList::scrollToTop() {
     );
 }
 
-void NongList::setData(std::unordered_map<int, Nongs>& data) {
-    m_data = data;
-}
-
 void NongList::onBack(cocos2d::CCObject* target) {
-    if (!m_currentSong.has_value() || m_data.size() < 2) {
+    if (!m_currentSong.has_value() || m_songIds.size() < 2) {
         return;
     }
 
@@ -210,13 +197,13 @@ void NongList::onBack(cocos2d::CCObject* target) {
 }
 
 void NongList::setCurrentSong(int songId) {
-    if (m_data.contains(songId)) {
+    if (std::find(m_songIds.begin(), m_songIds.end(), songId) != m_songIds.end()) {
         m_currentSong = songId;
     }
 }
 
 void NongList::onSelectSong(int songId) {
-    if (m_currentSong.has_value() || !m_data.contains(songId)) {
+    if (m_currentSong.has_value() || std::find(m_songIds.begin(), m_songIds.end(), songId) == m_songIds.end()) {
         return;
     }
 
@@ -227,15 +214,15 @@ void NongList::onSelectSong(int songId) {
 }
 
 NongList* NongList::create(
-    std::unordered_map<int, Nongs>& data,
+    std::vector<int>& songIds,
     const cocos2d::CCSize& size,
-    std::function<void(int, const SongInfo&)> onSetActive,
+    std::function<void(int, const SongMetadata&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongInfo&)> onDelete,
+    std::function<void(int, const SongMetadata&)> onDelete,
     std::function<void(bool)> onListTypeChange
 ) {
     auto ret = new NongList();
-    if (!ret->init(data, size, onSetActive, onFixDefault, onDelete, onListTypeChange)) {
+    if (!ret->init(songIds, size, onSetActive, onFixDefault, onDelete, onListTypeChange)) {
         CC_SAFE_DELETE(ret);
         return nullptr;
     }

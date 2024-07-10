@@ -12,12 +12,13 @@
 #include "nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
+namespace fs = std::filesystem;
 
 namespace jukebox {
 
 class NongDropdownLayer;
 
-class NongAddPopup : public Popup<NongDropdownLayer*> {
+class NongAddPopup : public Popup<NongDropdownLayer*, int> {
 protected:
     struct ParsedMetadata {
         std::optional<std::string> name;
@@ -25,6 +26,7 @@ protected:
     };
 
     NongDropdownLayer* m_parentPopup;
+    int m_songID;
     CCMenuItemSpriteExtra* m_selectSongButton;
     CCMenuItemSpriteExtra* m_addSongButton;
     CCMenu* m_selectSongMenu;
@@ -41,7 +43,7 @@ protected:
     CCLabelBMFont* m_songPathLabel;
     EventListener<Task<Result<std::filesystem::path>>> m_pickListener;
 
-    bool setup(NongDropdownLayer* parent) override;
+    bool setup(NongDropdownLayer* parent, int songID) override;
     void createInputs();
     void addPathLabel(std::string const& path);
     void onFileOpen(Task<Result<std::filesystem::path>>::Event* event);
@@ -51,7 +53,7 @@ protected:
     void addSong(CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
 public:
-    static NongAddPopup* create(NongDropdownLayer* parent);
+    static NongAddPopup* create(NongDropdownLayer* parent, int songID);
 };
 
 }

@@ -21,6 +21,11 @@
 namespace jukebox {
 
 std::optional<Nongs*> NongManager::getNongs(int songID) {
+    log::info("manifest: {}", m_manifest.version());
+    log::info("id: {}", songID);
+    for (const auto& [id, nong] : m_manifest.m_nongs) {
+        log::info("id: {}", id);
+    }
     if (!m_manifest.m_nongs.contains(songID)) {
         return std::nullopt;
     }
@@ -36,6 +41,10 @@ int NongManager::getStoredIDCount() {
     return m_manifest.m_nongs.size();
 }
 
+int NongManager::adjustSongID(int id, bool robtop) {
+  return robtop ? (id < 0 ? id : -id - 1) : id;
+}
+
 void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
     if (m_manifest.m_nongs.contains(id)) {
         return;
@@ -47,10 +56,10 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
     }
 
     if (obj && robtop) {
-        int adjusted = -id - 1;
+        int adjusted = adjustSongID(id, robtop);
         std::string filename = LevelTools::getAudioFileName(adjusted);
         std::filesystem::path gdDir = CCFileUtils::sharedFileUtils()->getWritablePath2();
-        m_manifest.m_nongs.insert({id, std::make_unique<Nongs>(Nongs {
+        m_manifest.m_nongs.insert({adjusted, std::make_unique<Nongs>(Nongs {
             adjusted,
             LocalSong {
                 SongMetadata {
@@ -106,7 +115,7 @@ std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
 }
 
 NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(std::string songs, std::string sfx) {
-    auto resources = std::filesystem::path(CCFileUtils::get()->getWritablePath2()) 
+    auto resources = std::filesystem::path(CCFileUtils::get()->getWritablePath2())
         / "Resources";
     auto songDir = std::filesystem::path(CCFileUtils::get()->getWritablePath());
 
@@ -231,4 +240,26 @@ void NongManager::refetchDefault(int songID) {
     MusicDownloadManager::sharedState()->clearSong(songID);
     MusicDownloadManager::sharedState()->getSongInfo(songID, true);
 }
+
+Result<> NongManager::addNongs(Nongs&& nongs) {
+    if (!m_manifest.m_nongs.contains(nongs.songID())) {
+        return Err("Song not initialized in manifest");
+    }
+    return m_manifest.m_nongs.at(nongs.songID())->merge(std::move(nongs));
 }
+
+Result<> NongManager::setActiveSong(const Nongs::ActiveSong& song) {
+    if (!m_manifest.m_nongs.contains(song.metadata->m_gdID)) {
+        return Err("Song not initialized in manifest");
+    }
+    return m_manifest.m_nongs.at(song.metadata->m_gdID)->setActive(song.path);
+}
+
+Result<> NongManager::deleteSong(const Nongs::ActiveSong& song) {
+    if (!m_manifest.m_nongs.contains(song.metadata->m_gdID)) {
+        return Err("Song not initialized in manifest");
+    }
+    return m_manifest.m_nongs.at(song.metadata->m_gdID)->deleteSong(song.path);
+}
+
+};

@@ -51,9 +51,10 @@ std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
 
 namespace jukebox {
 
-bool NongAddPopup::setup(NongDropdownLayer* parent) {
+bool NongAddPopup::setup(NongDropdownLayer* parent, int songID) {
     this->setTitle("Add Song");
     m_parentPopup = parent;
+    m_songID = songID;
 
     auto spr = CCSprite::createWithSpriteFrameName("accountBtn_myLevels_001.png");
     spr->setScale(0.7f);
@@ -109,10 +110,10 @@ bool NongAddPopup::setup(NongDropdownLayer* parent) {
     return true;
 }
 
-NongAddPopup* NongAddPopup::create(NongDropdownLayer* parent) {
+NongAddPopup* NongAddPopup::create(NongDropdownLayer* parent, int songID) {
     auto ret = new NongAddPopup();
     auto size = ret->getPopupSize();
-    if (ret && ret->initAnchored(size.width, size.height, parent)) {
+    if (ret && ret->initAnchored(size.width, size.height, parent, songID)) {
         ret->autorelease();
         return ret;
     }
@@ -159,27 +160,34 @@ void NongAddPopup::addPathLabel(std::string const& path) {
 }
 
 void NongAddPopup::openFile(CCObject* target) {
-    #ifdef GEODE_IS_WINDOWS
-    file::FilePickOptions::Filter filter = {
-        .description = "Songs",
-        .files = { "*.mp3", "*.flac", "*.wav", "*.ogg" }
-    };
-    #else
+    auto task = Task<Result<std::filesystem::path>>::run([](auto progress, auto hasBeenCancelled) -> Task<Result<std::filesystem::path>>::Result {
+        return Ok(std::filesystem::path("C:\\users\\flafy\\AppData\\Local\\GeometryDash\\10101.mp3"));
+    }, "My epic task that sums up numbers for some reason");
+
     file::FilePickOptions::Filter filter = {};
-    #endif
-    file::FilePickOptions options = {
-        std::nullopt,
-        {filter}
-    };
-
-    auto callback = [this](Result<std::filesystem::path> result) {
-    };
-    auto failedCallback = []() {
-        FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
-    };
-
     m_pickListener.bind(this, &NongAddPopup::onFileOpen);
-    m_pickListener.setFilter(file::pick(file::PickMode::OpenFile, options));
+    m_pickListener.setFilter(task);
+    // #ifdef GEODE_IS_WINDOWS
+    // file::FilePickOptions::Filter filter = {
+    //     .description = "Songs",
+    //     .files = { "*.mp3", "*.flac", "*.wav", "*.ogg" }
+    // };
+    // #else
+    // file::FilePickOptions::Filter filter = {};
+    // #endif
+    // file::FilePickOptions options = {
+    //     std::nullopt,
+    //     {filter}
+    // };
+
+    // auto callback = [this](Result<std::filesystem::path> result) {
+    // };
+    // auto failedCallback = []() {
+    //     FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
+    // };
+
+    // m_pickListener.bind(this, &NongAddPopup::onFileOpen);
+    // m_pickListener.setFilter(file::pick(file::PickMode::OpenFile, options));
 }
 
 void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event) {
@@ -231,13 +239,13 @@ void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event)
 
                     ss << "Found metadata for the imported song: ";
                     if (meta->name.has_value()) {
-                        ss << fmt::format("Name: \"{}\". ", meta->name.value());
+                        ss << fmt::format("\nName: \"{}\". ", meta->name.value());
                     }
                     if (meta->artist.has_value()) {
-                        ss << fmt::format("Artist: \"{}\". ", meta->artist.value());
+                        ss << fmt::format("\nArtist: \"{}\". ", meta->artist.value());
                     }
 
-                    ss << "Do you want to set those values for the song?";
+                    ss << "\nDo you want to set those values for the song?";
 
                     createQuickPopup(
                         "Metadata found",
@@ -400,16 +408,20 @@ void NongAddPopup::addSong(CCObject* target) {
         return;
     }
 
-    SongInfo song = {
-        .path = destination,
-        .songName = songName,
-        .authorName = artistName,
-        .songUrl = "local",
-        .levelName = levelName,
-        .startOffset = startOffset,
+    Nong nong = {
+        LocalSong {
+          SongMetadata {
+            m_songID,
+            songName,
+            artistName,
+            levelName,
+            startOffset,
+          },
+          destination,
+        },
     };
 
-    m_parentPopup->addSong(song);
+    m_parentPopup->addSong(nong);
     this->onClose(this);
 }
 
