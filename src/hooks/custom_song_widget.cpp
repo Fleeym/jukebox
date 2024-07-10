@@ -185,7 +185,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 		auto menu = CCMenu::create();
 		menu->setID("song-name-menu");
 		auto label = CCLabelBMFont::create(
-            active->metadata->m_name.c_str(),
+            active->m_metadata.m_name.c_str(),
             "bigFont.fnt"
         );
 		auto songNameMenuLabel = CCMenuItemSpriteExtra::create(
@@ -208,7 +208,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         menu->setPosition(m_songLabel->getPosition());
         menu->updateLayout();
         m_fields->menu = menu;
-		this->addChild(menu);
+    		this->addChild(menu);
         if (m_songs.size() == 0 && m_sfx.size() == 0 && !m_isMusicLibrary) {
             if (m_fields->sizeIdLabel != nullptr) {
                 m_fields->sizeIdLabel->removeFromParent();
@@ -217,7 +217,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             // TODO this might be fuckery
             if (
-                !std::filesystem::exists(active->path)
+                !std::filesystem::exists(active->m_path)
                 && nongs->isDefaultActive()
             ) {
                 m_songIDLabel->setVisible(true);
@@ -228,8 +228,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }
 
             std::string sizeText;
-            if (std::filesystem::exists(active->path)) {
-                sizeText = NongManager::get()->getFormattedSize(active->path);
+            if (std::filesystem::exists(active->m_path)) {
+                sizeText = NongManager::get()->getFormattedSize(active->m_path);
             } else {
                 sizeText = "NA";
             }

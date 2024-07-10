@@ -21,11 +21,6 @@
 namespace jukebox {
 
 std::optional<Nongs*> NongManager::getNongs(int songID) {
-    log::info("manifest: {}", m_manifest.version());
-    log::info("id: {}", songID);
-    for (const auto& [id, nong] : m_manifest.m_nongs) {
-        log::info("id: {}", id);
-    }
     if (!m_manifest.m_nongs.contains(songID)) {
         return std::nullopt;
     }
@@ -129,7 +124,7 @@ NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(std::string song
             if (!result.has_value()) {
                 continue;
             }
-            auto path = result.value()->active()->path;
+            auto path = result.value()->active()->m_path;
             if (path.string().starts_with("songs/")) {
                 path = resources / path;
             }
@@ -248,18 +243,36 @@ Result<> NongManager::addNongs(Nongs&& nongs) {
     return m_manifest.m_nongs.at(nongs.songID())->merge(std::move(nongs));
 }
 
-Result<> NongManager::setActiveSong(const Nongs::ActiveSong& song) {
-    if (!m_manifest.m_nongs.contains(song.metadata->m_gdID)) {
+Result<> NongManager::setActiveSong(const SongMetadataPathed& song) {
+    if (!m_manifest.m_nongs.contains(song.m_metadata.m_gdID)) {
         return Err("Song not initialized in manifest");
     }
-    return m_manifest.m_nongs.at(song.metadata->m_gdID)->setActive(song.path);
+    return m_manifest.m_nongs.at(song.m_metadata.m_gdID)->setActive(song.m_path);
 }
 
-Result<> NongManager::deleteSong(const Nongs::ActiveSong& song) {
-    if (!m_manifest.m_nongs.contains(song.metadata->m_gdID)) {
+
+Result<> NongManager::deleteAllSongs(int songID) {
+    if (!m_manifest.m_nongs.contains(songID)) {
         return Err("Song not initialized in manifest");
     }
-    return m_manifest.m_nongs.at(song.metadata->m_gdID)->deleteSong(song.path);
+    if (auto err = m_manifest.m_nongs.at(songID)->deleteAllSongs(); err.isErr()) {
+      return err;
+    }
+    return Ok();
+}
+
+Result<> NongManager::deleteSong(const SongMetadataPathed& song) {
+    if (!m_manifest.m_nongs.contains(song.m_metadata.m_gdID)) {
+        return Err("Song not initialized in manifest");
+    }
+    auto& nongs = m_manifest.m_nongs.at(song.m_metadata.m_gdID);
+    if (auto err = nongs->deleteSong(song.m_path); err.isErr()) {
+        return err;
+    }
+    if (auto err = nongs->setActive(nongs->defaultSong()->path()); err.isErr()) {
+        return err;
+    }
+    return Ok();
 }
 
 };

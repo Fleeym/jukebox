@@ -27,9 +27,9 @@ protected:
 
     CCMenuItemSpriteExtra* m_backBtn = nullptr;
 
-    std::function<void(int, const SongMetadata&)> m_onSetActive;
+    std::function<void(int, const SongMetadataPathed&)> m_onSetActive;
     std::function<void(int)> m_onFixDefault;
-    std::function<void(int, const SongMetadata&)> m_onDelete;
+    std::function<void(int, const SongMetadataPathed&)> m_onDelete;
     std::function<void(bool)> m_onListTypeChange;
 
     static constexpr float s_padding = 10.0f;
@@ -44,18 +44,18 @@ public:
     static NongList* create(
         std::vector<int>& songIds,
         const cocos2d::CCSize& size,
-        std::function<void(int, const SongMetadata&)> onSetActive,
+        std::function<void(int, const SongMetadataPathed&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const SongMetadata&)> onDelete,
+        std::function<void(int, const SongMetadataPathed&)> onDelete,
         std::function<void(bool)> onListTypeChange = {}
     );
 protected:
     bool init(
         std::vector<int>& songIds,
         const cocos2d::CCSize& size,
-        std::function<void(int, const SongMetadata&)> onSetActive,
+        std::function<void(int, const SongMetadataPathed&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const SongMetadata&)> onDelete,
+        std::function<void(int, const SongMetadataPathed&)> onDelete,
         std::function<void(bool)> onListTypeChange = {}
     );
 };

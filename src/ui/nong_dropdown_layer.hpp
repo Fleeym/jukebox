@@ -40,9 +40,9 @@ protected:
 public:
     void onSelectSong(int songID);
     void onDiscord(CCObject*);
-    void setActiveSong(Nongs::ActiveSong const& song);
-    void deleteSong(Nongs::ActiveSong const& song);
-    void addSong(const Nong& song);
+    void setActiveSong(SongMetadataPathed const& song);
+    void deleteSong(SongMetadataPathed const& song);
+    void addSong(Nongs&& song);
     void updateParentWidget(SongMetadata const& song);
     void refreshList();
 

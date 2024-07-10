@@ -421,7 +421,7 @@ void NongAddPopup::addSong(CCObject* target) {
         },
     };
 
-    m_parentPopup->addSong(nong);
+    m_parentPopup->addSong(std::move(nong.toNongs().unwrap()));
     this->onClose(this);
 }
 

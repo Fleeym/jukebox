@@ -172,10 +172,9 @@ void NongDropdownLayer::createList() {
         m_list = NongList::create(
             m_songIDS,
             CCSize { this->getCellSize().width, 220.f },
-            [this](int id, const SongMetadata& song) {
+            [this](int id, const SongMetadataPathed& song) {
                 m_currentSongID = id;
-                // TODO
-                // this->setActiveSong(song);
+                this->setActiveSong(song);
             },
             [this](int id) {
                 // TODO
@@ -195,10 +194,9 @@ void NongDropdownLayer::createList() {
                 //     NongManager::get()->prepareCorrectDefault(id);
                 // }
             },
-            [this](int id, const SongMetadata& song) {
+            [this](int id, const SongMetadataPathed& song) {
                 m_currentSongID = id;
-                // TODO
-                // this->deleteSong(song);
+                this->deleteSong(song);
             },
             [this](bool multiple) {
                 if (multiple) {
@@ -231,7 +229,7 @@ CCSize NongDropdownLayer::getCellSize() const {
     };
 }
 
-void NongDropdownLayer::setActiveSong(Nongs::ActiveSong const& song) {
+void NongDropdownLayer::setActiveSong(SongMetadataPathed const& song) {
     if (!m_currentSongID) {
         return;
     }
@@ -240,11 +238,7 @@ void NongDropdownLayer::setActiveSong(Nongs::ActiveSong const& song) {
         return;
     }
 
-    // TODO
-    // NongManager::get()->saveNongs(m_data[id], id);
-
-    // this->updateParentWidget(song);
-
+    this->updateParentWidget(song.m_metadata);
     this->createList();
 }
 
@@ -267,15 +261,13 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
 }
 
 void NongDropdownLayer::updateParentWidget(SongMetadata const& song) {
-    // m_parentWidget->m_songInfoObject->m_artistName = song.authorName;
-    // m_parentWidget->m_songInfoObject->m_songName = song.songName;
-    // if (song.songUrl != "local") {
-    //     m_parentWidget->m_songInfoObject->m_songUrl = song.songUrl;
-    // }
-    // m_parentWidget->updateSongInfo();
+    m_parentWidget->m_songInfoObject->m_songName = song.m_name;
+    m_parentWidget->m_songInfoObject->m_artistName = song.m_artist;
+    m_parentWidget->m_songInfoObject->m_songUrl = "local";
+    m_parentWidget->updateSongInfo();
 }
 
-void NongDropdownLayer::deleteSong(Nongs::ActiveSong const& song) {
+void NongDropdownLayer::deleteSong(SongMetadataPathed const& song) {
     if (!m_currentSongID) {
         return;
     }
@@ -288,17 +280,16 @@ void NongDropdownLayer::deleteSong(Nongs::ActiveSong const& song) {
 
     FLAlertLayer::create("Success", "The song was deleted!", "Ok")->show();
 
-    // TODO
-    // this->updateParentWidget(active);
+    this->updateParentWidget(song.m_metadata);
     this->createList();
 }
 
-void NongDropdownLayer::addSong(const Nong& song) {
+void NongDropdownLayer::addSong(Nongs&& song) {
     if (!m_currentSongID) {
         return;
     }
     int id = m_currentSongID.value();
-    if (auto err = NongManager::get()->addNongs(song.toNongs(id)); err.isErr()) {
+    if (auto err = NongManager::get()->addNongs(std::move(song)); err.isErr()) {
         FLAlertLayer::create("Failed", fmt::format("Failed to add song: {}", err.error()), "Ok")->show();
         return;
     }
@@ -332,33 +323,33 @@ void NongDropdownLayer::fetchSongFileHub(CCObject*) {
 }
 
 void NongDropdownLayer::deleteAllNongs(CCObject*) {
-    // TODO
-    // if (!m_currentSongID) {
-    //     return;
-    // }
-    // createQuickPopup("Delete all nongs",
-    //     "Are you sure you want to <cr>delete all nongs</c> for this song?",
-    //     "No",
-    //     "Yes",
-    //     [this](auto, bool btn2) {
-    //         if (!btn2) {
-    //             return;
-    //         }
+    if (!m_currentSongID) {
+        return;
+    }
+    createQuickPopup("Delete all nongs",
+        "Are you sure you want to <cr>delete all nongs</c> for this song?",
+        "No",
+        "Yes",
+        [this](auto, bool btn2) {
+            if (!btn2) {
+                return;
+            }
 
-    //         if (!m_currentSongID) {
-    //             return;
-    //         }
+            if (!m_currentSongID) {
+                return;
+            }
 
-    //         int id = m_currentSongID.value();
-    //         NongManager::get()->deleteAll(id);
-    //         auto data = NongManager::get()->getNongs(id).value();
-    //         auto active = NongManager::get()->getActiveNong(id).value();
-    //         m_data[id] = data;
-    //         this->updateParentWidget(active);
-    //         this->createList();
-    //         FLAlertLayer::create("Success", "All nongs were deleted successfully!", "Ok")->show();
-    //     }
-    // );
+            int id = m_currentSongID.value();
+            if (auto err = NongManager::get()->deleteAllSongs(id); err.isErr()) {
+                FLAlertLayer::create("Failed", fmt::format("Failed to delete nongs: {}", err.error()), "Ok")->show();
+                return;
+            }
+            auto data = NongManager::get()->getNongs(id).value();
+            this->updateParentWidget(*data->defaultSong()->metadata());
+            this->createList();
+            FLAlertLayer::create("Success", "All nongs were deleted successfully!", "Ok")->show();
+        }
+    );
 }
 
 }

@@ -21,9 +21,9 @@ namespace jukebox {
 bool NongList::init(
     std::vector<int>& songIds,
     const cocos2d::CCSize& size,
-    std::function<void(int, const SongMetadata&)> onSetActive,
+    std::function<void(int, const SongMetadataPathed&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongMetadata&)> onDelete,
+    std::function<void(int, const SongMetadataPathed&)> onDelete,
     std::function<void(bool)> onListTypeChange
 ) {
     if (!CCNode::init()) {
@@ -114,7 +114,7 @@ void NongList::build() {
             m_list->m_contentLayer->addChild(
                 jukebox::SongCell::create(
                     id,
-                    active->metadata,
+                    &active->m_metadata,
                     itemSize,
                     [this, id] () {
                         this->onSelectSong(id);
@@ -141,16 +141,20 @@ void NongList::build() {
             jukebox::NongCell::create(
                 id, Nong(*defaultSong),
                 true,
-                defaultSong->path() == active->path,
+                defaultSong->path() == active->m_path,
                 itemSize,
                 [this, id, defaultSong] () {
-                    m_onSetActive(id, *defaultSong->metadata());
+                    m_onSetActive(id, SongMetadataPathed(
+                        *defaultSong->metadata(),
+                        defaultSong->path()
+                    ));
                 },
                 [this, id] () {
                     m_onFixDefault(id);
                 },
                 [this, id, defaultSong] () {
-                    m_onDelete(id, *defaultSong->metadata());
+                    log::info("in list path: {}", defaultSong->path());
+                    m_onDelete(id, SongMetadataPathed{*defaultSong});
                 }
             )
         );
@@ -160,16 +164,19 @@ void NongList::build() {
                 jukebox::NongCell::create(
                     id, Nong(*song),
                     false,
-                    song->path() == defaultSong->path(),
+                    song->path() == active->m_path,
                     itemSize,
                     [this, id, &song] () {
-                        m_onSetActive(id, *song->metadata());
+                      m_onSetActive(id, SongMetadataPathed(
+                          *song->metadata(),
+                          song->path()
+                      ));
                     },
                     [this, id] () {
                         m_onFixDefault(id);
                     },
                     [this, id, &song] () {
-                        m_onDelete(id, *song->metadata());
+                        m_onDelete(id, SongMetadataPathed{*song});
                     }
                 )
             );
@@ -216,9 +223,9 @@ void NongList::onSelectSong(int songId) {
 NongList* NongList::create(
     std::vector<int>& songIds,
     const cocos2d::CCSize& size,
-    std::function<void(int, const SongMetadata&)> onSetActive,
+    std::function<void(int, const SongMetadataPathed&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongMetadata&)> onDelete,
+    std::function<void(int, const SongMetadataPathed&)> onDelete,
     std::function<void(bool)> onListTypeChange
 ) {
     auto ret = new NongList();

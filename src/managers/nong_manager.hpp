@@ -111,13 +111,19 @@ public:
      * Set active song
      * @param song active song
     */
-    Result<> setActiveSong(const Nongs::ActiveSong& song);
+    Result<> setActiveSong(const SongMetadataPathed& song);
 
     /**
      * Delete a song
      * @param song song to delete
     */
-    Result<> deleteSong(const Nongs::ActiveSong& song);
+    Result<> deleteSong(const SongMetadataPathed& song);
+
+    /**
+     * Delete all NONGs for a song ID
+     * @param songID id of the song
+    */
+    Result<> deleteAllSongs(int songID);
 
     static NongManager* get() {
         if (m_instance == nullptr) {

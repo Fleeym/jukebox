@@ -21,12 +21,12 @@ class $modify(GJGameLevel) {
             return GJGameLevel::getAudioFileName();
         }
         auto active = res.value()->active();
-        if (!std::filesystem::exists(active->path)) {
+        if (!std::filesystem::exists(active->m_path)) {
             return GJGameLevel::getAudioFileName();
         }
         jukebox::NongManager::get()->m_currentlyPreparingNong = res.value();
         #ifdef GEODE_IS_WINDOWS
-        return geode::utils::string::wideToUtf8(active->path.c_str());
+        return geode::utils::string::wideToUtf8(active->m_path.c_str());
         #else
         return active->path.string();
         #endif
