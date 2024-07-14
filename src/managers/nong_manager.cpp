@@ -65,6 +65,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
                 gdDir / "Resources" / filename
             }
         })});
+        saveNongs(adjusted);
 
         return;
     }
@@ -81,6 +82,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
             id,
             LocalSong::createUnknown(id)
         })});
+        saveNongs(id);
         return;
     }
 
@@ -95,6 +97,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
             MusicDownloadManager::sharedState()->pathForSong(id)
         }
     })});
+    saveNongs(id);
 }
 
 std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
@@ -171,6 +174,7 @@ bool NongManager::init() {
         if (entry.path().extension() != ".json") {
             continue;
         }
+        log::info("Loading nong from {}", entry.path().string());
 
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
@@ -186,6 +190,38 @@ bool NongManager::init() {
     m_initialized = true;
     return true;
 }
+
+Result<> NongManager::saveNongs(std::optional<int> saveId) {
+    auto path = this->baseManifestPath();
+
+    if (!std::filesystem::exists(path)) {
+        std::filesystem::create_directory(path);
+    }
+
+    for (const auto& entry : m_manifest.m_nongs) {
+        auto id = entry.first;
+
+        if (saveId.has_value() && saveId.value() != id) continue;
+
+        auto& nong = entry.second;
+
+        auto json = matjson::Serialize<Nongs>::to_json(*nong);
+        if (json.isErr()) {
+            return Err(json.error());
+        }
+
+        auto filepath = fmt::format("{}/{}.json", path.string(), id);
+        std::ofstream output(filepath);
+        if (!output.is_open()) {
+            return Err(fmt::format("Couldn't open file: {}", filepath));
+        }
+        output << json.unwrap().dump(matjson::NO_INDENTATION);
+        output.close();
+    }
+
+    return Ok();
+}
+
 
 Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(const std::filesystem::path& path) {
     auto stem = path.stem().string();
@@ -240,14 +276,22 @@ Result<> NongManager::addNongs(Nongs&& nongs) {
     if (!m_manifest.m_nongs.contains(nongs.songID())) {
         return Err("Song not initialized in manifest");
     }
-    return m_manifest.m_nongs.at(nongs.songID())->merge(std::move(nongs));
+
+    auto& manifestNongs = m_manifest.m_nongs.at(nongs.songID());
+    if (auto err = manifestNongs->merge(std::move(nongs)); err.isErr()) {
+        return err;
+    }
+    return saveNongs(manifestNongs->songID());
 }
 
 Result<> NongManager::setActiveSong(const SongMetadataPathed& song) {
     if (!m_manifest.m_nongs.contains(song.m_metadata.m_gdID)) {
         return Err("Song not initialized in manifest");
     }
-    return m_manifest.m_nongs.at(song.m_metadata.m_gdID)->setActive(song.m_path);
+    if (auto err = m_manifest.m_nongs.at(song.m_metadata.m_gdID)->setActive(song.m_path); err.isErr()) {
+        return err;
+    }
+    return saveNongs(song.m_metadata.m_gdID);
 }
 
 
@@ -256,9 +300,9 @@ Result<> NongManager::deleteAllSongs(int songID) {
         return Err("Song not initialized in manifest");
     }
     if (auto err = m_manifest.m_nongs.at(songID)->deleteAllSongs(); err.isErr()) {
-      return err;
+        return err;
     }
-    return Ok();
+    return saveNongs(songID);
 }
 
 Result<> NongManager::deleteSong(const SongMetadataPathed& song) {
@@ -272,7 +316,7 @@ Result<> NongManager::deleteSong(const SongMetadataPathed& song) {
     if (auto err = nongs->setActive(nongs->defaultSong()->path()); err.isErr()) {
         return err;
     }
-    return Ok();
+    return saveNongs(nongs->songID());
 }
 
 };

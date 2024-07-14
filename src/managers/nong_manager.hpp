@@ -38,6 +38,7 @@ protected:
     }
 
     bool init();
+    Result<> saveNongs(std::optional<int> saveId = std::nullopt);
     Result<std::unique_ptr<Nongs>> loadNongsFromPath(const std::filesystem::path& path);
 public:
     using MultiAssetSizeTask = Task<std::string>;

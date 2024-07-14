@@ -10,7 +10,7 @@
 #include "Geode/utils/string.hpp"
 #include "nong.hpp"
 
-template<> 
+template<>
 struct matjson::Serialize<jukebox::SongMetadata> {
     static geode::Result<jukebox::SongMetadata> from_json(
         const matjson::Value& value,
@@ -31,7 +31,7 @@ struct matjson::Serialize<jukebox::SongMetadata> {
                 && value["level"].is_string()
                     ? std::optional(value["level"].as_string())
                     : std::nullopt,
-            value.contains("offset") 
+            value.contains("offset")
                 && value["offset"].is_number()
                     ? value["offset"].as_int()
                     : 0
@@ -47,7 +47,7 @@ struct matjson::Serialize<jukebox::LocalSong> {
     ) {
         auto metadata = matjson::Serialize<jukebox::SongMetadata>
             ::from_json(value, songID);
-        
+
         if (metadata.isErr()) {
             return geode::Err(
                 fmt::format(
@@ -71,7 +71,7 @@ struct matjson::Serialize<jukebox::LocalSong> {
         });
     }
 
-    static matjson::Value to_json(const jukebox::LocalSong& value) {
+    static geode::Result<matjson::Value> to_json(const jukebox::LocalSong& value) {
         matjson::Object ret = {};
         ret["name"] = value.metadata()->m_name;
         ret["artist"] = value.metadata()->m_artist;
@@ -84,7 +84,7 @@ struct matjson::Serialize<jukebox::LocalSong> {
         if (value.metadata()->m_level.has_value()) {
             ret["level"] = value.metadata()->m_level.value();
         }
-        return ret;
+        return geode::Ok(ret);
     }
 };
 
@@ -96,7 +96,7 @@ struct matjson::Serialize<jukebox::YTSong> {
     ) {
         auto metadata = matjson::Serialize<jukebox::SongMetadata>
             ::from_json(value, songID);
-        
+
         if (metadata.isErr()) {
             return geode::Err(
                 fmt::format(
@@ -159,7 +159,7 @@ struct matjson::Serialize<jukebox::HostedSong> {
     ) {
         auto metadata = matjson::Serialize<jukebox::SongMetadata>
             ::from_json(value, songID);
-        
+
         if (metadata.isErr()) {
             return geode::Err(
                 fmt::format(
@@ -190,10 +190,78 @@ struct matjson::Serialize<jukebox::HostedSong> {
             value["path"].as_string()
         });
     }
+
+    static geode::Result<matjson::Value> to_json(const jukebox::HostedSong& value) {
+        if (!value.path().has_value()) {
+            return geode::Err("HostedSong has no local path specified");
+        }
+        matjson::Object ret = {};
+        ret["name"] = value.metadata()->m_name;
+        ret["artist"] = value.metadata()->m_artist;
+        ret["offset"] = value.metadata()->m_startOffset;
+        ret["url"] = value.url();
+
+        #ifdef GEODE_IS_WINDOWS
+        ret["path"] = geode::utils::string::wideToUtf8(value.path().value().c_str());
+        #else
+        ret["path"] = value.path().value().string();
+        #endif
+
+        if (value.metadata()->m_level.has_value()) {
+            ret["level"] = value.metadata()->m_level.value();
+        }
+        return geode::Ok(ret);
+    }
 };
 
 template<>
 struct matjson::Serialize<jukebox::Nongs> {
+    static geode::Result<matjson::Value> to_json(
+        jukebox::Nongs& value
+    ) {
+        matjson::Object ret = {};
+
+        auto resDefault = matjson::Serialize<jukebox::LocalSong>::to_json(*value.defaultSong());
+        if (resDefault.isErr()) {
+            return geode::Err(resDefault.error());
+        }
+        ret["default"] = resDefault.ok();
+
+        ret["active"] = value.active()->m_path;
+
+        matjson::Array locals = {};
+        for (auto& local : value.locals()) {
+            auto res = matjson::Serialize<jukebox::LocalSong>::to_json(*local);
+            if (res.isErr()) {
+                return geode::Err(res.error());
+            }
+            locals.push_back(res.ok());
+        }
+        ret["locals"] = locals;
+
+        matjson::Array youtubes = {};
+        for (auto& youtube : value.youtube()) {
+            auto res = matjson::Serialize<jukebox::YTSong>::to_json(*youtube);
+            if (res.isErr()) {
+                return geode::Err(res.error());
+            }
+            youtubes.push_back(res.ok());
+        }
+        ret["youtube"] = youtubes;
+
+        matjson::Array hosteds = {};
+        for (auto& hosted : value.hosted()) {
+            auto res = matjson::Serialize<jukebox::HostedSong>::to_json(*hosted);
+            if (res.isErr()) {
+                return geode::Err(res.error());
+            }
+            hosteds.push_back(res.ok());
+        }
+        ret["hosted"] = hosteds;
+
+        return geode::Ok(ret);
+    }
+
     static geode::Result<jukebox::Nongs> from_json(
         const matjson::Value& value,
         int songID
@@ -204,10 +272,10 @@ struct matjson::Serialize<jukebox::Nongs> {
 
         auto defaultSong = matjson::Serialize<jukebox::LocalSong>
             ::from_json(value["default"].as_object(), songID);
-        
+
         if (defaultSong.isErr()) {
             // TODO think about something
-            // Try recovery if the song ID has some nongs
+            // Try recwovery if the song ID has some nongs
             return geode::Err("womp womp");
         }
 
@@ -234,7 +302,7 @@ struct matjson::Serialize<jukebox::Nongs> {
             for (auto& local : value["locals"].as_array()) {
                 auto res = matjson::Serialize<jukebox::LocalSong>
                     ::from_json(local, songID);
-                
+
                 if (res.isErr()) {
                     geode::log::error("{}", res.unwrapErr());
                     continue;
@@ -258,7 +326,7 @@ struct matjson::Serialize<jukebox::Nongs> {
             for (auto& yt : value["youtube"].as_array()) {
                 auto res = matjson::Serialize<jukebox::YTSong>
                     ::from_json(yt, songID);
-                
+
                 if (res.isErr()) {
                     geode::log::error("{}", res.unwrapErr());
                     continue;
@@ -272,7 +340,7 @@ struct matjson::Serialize<jukebox::Nongs> {
                     );
 
                 if (
-                    song.path().has_value() 
+                    song.path().has_value()
                     && song.path().value() == active
                 ) {
                     foundActive = true;
@@ -298,7 +366,7 @@ struct matjson::Serialize<jukebox::Nongs> {
                     );
 
                 if (
-                    song.path().has_value() 
+                    song.path().has_value()
                     && song.path().value() == active
                 ) {
                     foundActive = true;
