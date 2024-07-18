@@ -77,10 +77,10 @@ struct matjson::Serialize<jukebox::LocalSong> {
         ret["artist"] = value.metadata()->m_artist;
         #ifdef GEODE_IS_WINDOWS
         ret["path"] = geode::utils::string::wideToUtf8(value.path().c_str());
-        ret["offset"] = value.metadata()->m_startOffset;
         #else
         ret["path"] = value.path().string();
         #endif
+        ret["offset"] = value.metadata()->m_startOffset;
         if (value.metadata()->m_level.has_value()) {
             ret["level"] = value.metadata()->m_level.value();
         }
@@ -121,9 +121,17 @@ struct matjson::Serialize<jukebox::YTSong> {
             );
         }
 
+        if (value.contains("index_id") && !value["index_id"].is_string()) {
+            return geode::Err(
+                "YT Song {} is invalid. Reason: invalid index ID",
+                value.dump(matjson::NO_INDENTATION)
+            );
+        }
+
         return geode::Ok(jukebox::YTSong {
             std::move(metadata.unwrap()),
             value["youtube_id"].as_string(),
+            value.contains("index_id") ? std::optional(value["index_id"].as_string()) : std::nullopt,
             value["path"].as_string(),
         });
     }
@@ -137,6 +145,10 @@ struct matjson::Serialize<jukebox::YTSong> {
         ret["artist"] = value.metadata()->m_artist;
         ret["offset"] = value.metadata()->m_startOffset;
         ret["youtube_id"] = value.youtubeID();
+
+        if (value.indexId().has_value()) {
+            ret["index_id"] = value.indexId().value();
+        }
 
         #ifdef GEODE_IS_WINDOWS
         ret["path"] = geode::utils::string::wideToUtf8(value.path().value().c_str());
@@ -184,9 +196,17 @@ struct matjson::Serialize<jukebox::HostedSong> {
             );
         }
 
+        if (value.contains("index_id") && !value["index_id"].is_string()) {
+            return geode::Err(
+                "YT Song {} is invalid. Reason: invalid index ID",
+                value.dump(matjson::NO_INDENTATION)
+            );
+        }
+
         return geode::Ok(jukebox::HostedSong{
             std::move(metadata.unwrap()),
             value["url"].as_string(),
+            value.contains("index_id") ? std::optional(value["index_id"].as_string()) : std::nullopt,
             value["path"].as_string()
         });
     }
@@ -200,6 +220,10 @@ struct matjson::Serialize<jukebox::HostedSong> {
         ret["artist"] = value.metadata()->m_artist;
         ret["offset"] = value.metadata()->m_startOffset;
         ret["url"] = value.url();
+
+        if (value.indexId().has_value()) {
+            ret["index_id"] = value.indexId().value();
+        }
 
         #ifdef GEODE_IS_WINDOWS
         ret["path"] = geode::utils::string::wideToUtf8(value.path().value().c_str());
@@ -217,7 +241,8 @@ struct matjson::Serialize<jukebox::HostedSong> {
 template<>
 struct matjson::Serialize<jukebox::Nongs> {
     static geode::Result<matjson::Value> to_json(
-        jukebox::Nongs& value
+        jukebox::Nongs& value,
+        bool includeDownloaded
     ) {
         matjson::Object ret = {};
 
@@ -245,6 +270,9 @@ struct matjson::Serialize<jukebox::Nongs> {
             if (res.isErr()) {
                 return geode::Err(res.error());
             }
+            if (!includeDownloaded && !youtube->path().has_value()) {
+                continue;
+            }
             youtubes.push_back(res.ok());
         }
         ret["youtube"] = youtubes;
@@ -254,6 +282,9 @@ struct matjson::Serialize<jukebox::Nongs> {
             auto res = matjson::Serialize<jukebox::HostedSong>::to_json(*hosted);
             if (res.isErr()) {
                 return geode::Err(res.error());
+            }
+            if (!includeDownloaded && !hosted->path().has_value()) {
+                continue;
             }
             hosteds.push_back(res.ok());
         }

@@ -126,6 +126,10 @@ public:
     */
     Result<> deleteAllSongs(int songID);
 
+    void deleteSongsByIndex(const std::string& indexId);
+
+    void addSongsFromIndex(const matjson::Value& indexNongs);
+
     static NongManager* get() {
         if (m_instance == nullptr) {
             m_instance = new NongManager();

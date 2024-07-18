@@ -28,6 +28,14 @@
 			"type": "bool",
 			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny big of lag after picking a song file.",
 			"default": true
+		},
+		"indexes": {
+			"name": "Indexes",
+			"description": "Jukebox Indexes.\nFrom indexes the mod knows where to fetch the songs from.",
+			"type": "custom",
+			"default": [
+				{"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/official.json", "enabled": true, "userAdded": false}
+			]
 		}
 	},
 	"api": {

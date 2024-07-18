@@ -104,20 +104,24 @@ private:
 
     std::unique_ptr<SongMetadata> m_metadata;
     std::string m_youtubeID;
+    std::optional<std::string> m_indexId;
     std::optional<std::filesystem::path> m_path;
 public:
     Impl(
         SongMetadata&& metadata,
         std::string youtubeID,
+        std::optional<std::string> indexId,
         std::optional<std::filesystem::path> path = std::nullopt
     ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
         m_youtubeID(youtubeID),
+        m_indexId(indexId),
         m_path(path)
     {}
 
     Impl(const Impl& other)
         : m_metadata(std::make_unique<SongMetadata>(*other.m_metadata)),
         m_path(other.m_path),
+        m_indexId(other.m_indexId),
         m_youtubeID(other.m_youtubeID)
     {}
     Impl& operator=(const Impl&) = delete;
@@ -136,15 +140,20 @@ public:
     std::string youtubeID() const {
         return m_youtubeID;
     }
+    std::optional<std::string> indexId() const {
+        return m_indexId;
+    }
 };
 
 YTSong::YTSong(
     SongMetadata&& metadata,
     std::string youtubeID,
+    std::optional<std::string> indexId,
     std::optional<std::filesystem::path> path
 ) : m_impl(std::make_unique<Impl>(
     std::move(metadata),
     youtubeID,
+    indexId,
     path
 )) {}
 
@@ -155,6 +164,7 @@ YTSong::YTSong(const YTSong& other)
 YTSong& YTSong::operator=(const YTSong& other) {
     m_impl->m_youtubeID = other.m_impl->m_youtubeID;
     m_impl->m_path = other.m_impl->m_path;
+    m_impl->m_indexId = other.m_impl->m_indexId;
     m_impl->m_metadata = std::make_unique<SongMetadata>(*other.m_impl->m_metadata);
 
     return *this;
@@ -171,6 +181,11 @@ SongMetadata* YTSong::metadata() const {
 std::string YTSong::youtubeID() const {
     return m_impl->youtubeID();
 }
+
+std::optional<std::string> YTSong::indexId() const {
+    return m_impl->indexId();
+}
+
 std::optional<std::filesystem::path> YTSong::path() const {
     return m_impl->path();
 }
@@ -181,20 +196,24 @@ private:
 
     std::unique_ptr<SongMetadata> m_metadata;
     std::string m_url;
+    std::optional<std::string> m_indexId;
     std::optional<std::filesystem::path> m_path;
 public:
     Impl(
         SongMetadata&& metadata,
         std::string url,
+        std::optional<std::string> indexId,
         std::optional<std::filesystem::path> path = std::nullopt
     ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
         m_url(url),
+        m_indexId(indexId),
         m_path(path)
     {}
 
     Impl(const Impl& other)
         : m_metadata(std::make_unique<SongMetadata>(*other.m_metadata)),
         m_path(other.m_path),
+        m_indexId(other.m_indexId),
         m_url(other.m_url)
     {}
     Impl& operator=(const Impl& other) = delete;
@@ -210,6 +229,9 @@ public:
     std::string url() const {
         return m_url;
     }
+    std::optional<std::string> indexId() const {
+        return m_indexId;
+    }
     std::optional<std::filesystem::path> path() const {
         return m_path;
     }
@@ -218,10 +240,12 @@ public:
 HostedSong::HostedSong(
     SongMetadata&& metadata,
     std::string url,
+    std::optional<std::string> indexId,
     std::optional<std::filesystem::path> path
 ) : m_impl(std::make_unique<Impl>(
     std::move(metadata),
     url,
+    indexId,
     path
 )) {}
 
@@ -232,6 +256,7 @@ HostedSong::HostedSong(const HostedSong& other)
 HostedSong& HostedSong::operator=(const HostedSong& other) {
     m_impl->m_metadata = std::make_unique<SongMetadata>(*other.m_impl->m_metadata);
     m_impl->m_path = other.m_impl->m_path;
+    m_impl->m_indexId = other.m_impl->m_indexId;
     m_impl->m_url = other.m_impl->m_url;
 
     return *this;
@@ -241,6 +266,9 @@ SongMetadata* HostedSong::metadata() const {
 }
 std::string HostedSong::url() const {
     return m_impl->url();
+}
+std::optional<std::string> HostedSong::indexId() const {
+    return m_impl->indexId();
 }
 std::optional<std::filesystem::path> HostedSong::path() const {
     return m_impl->path();
@@ -353,6 +381,28 @@ public:
         m_hosted.clear();
 
         return Ok();
+    }
+
+    void deleteSong(const std::string& indexId) {
+        for (auto i = m_youtube.begin(); i != m_youtube.end(); ++i) {
+            auto& ytSong = *i;
+            if (ytSong->indexId() == indexId) {
+                if (ytSong->path().has_value()) {
+                    this->deletePath(ytSong->path().value());
+                }
+                m_youtube.erase(i);
+            }
+        }
+
+        for (auto i = m_hosted.begin(); i != m_hosted.end(); ++i) {
+            auto& hostedSong = *i;
+            if (hostedSong->indexId() == indexId) {
+                if (hostedSong->path().has_value()) {
+                    this->deletePath(hostedSong->path().value());
+                }
+                m_hosted.erase(i);
+            }
+        }
     }
 
     geode::Result<> deleteSong(const std::filesystem::path& path) {
@@ -521,6 +571,10 @@ Result<> Nongs::deleteAllSongs() {
 
 Result<> Nongs::deleteSong(const std::filesystem::path& path) {
     return m_impl->deleteSong(path);
+}
+
+void Nongs::deleteSong(const std::string& indexId) {
+    m_impl->deleteSong(indexId);
 }
 
 void Nongs::resetToDefault() {

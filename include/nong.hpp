@@ -75,6 +75,7 @@ public:
     YTSong(
         SongMetadata&& metadata,
         std::string youtubeID,
+        std::optional<std::string> indexId,
         std::optional<std::filesystem::path> path = std::nullopt
     );
     YTSong(const YTSong& other);
@@ -87,6 +88,7 @@ public:
 
     SongMetadata* metadata() const;
     std::string youtubeID() const;
+    std::optional<std::string> indexId() const;
     std::optional<std::filesystem::path> path() const;
 };
 
@@ -101,6 +103,7 @@ public:
     HostedSong(
         SongMetadata&& metadata,
         std::string url,
+        std::optional<std::string> m_indexId,
         std::optional<std::filesystem::path> path = std::nullopt
     );
     HostedSong(const HostedSong& other);
@@ -113,6 +116,7 @@ public:
 
     SongMetadata* metadata() const;
     std::string url() const;
+    std::optional<std::string> indexId() const;
     std::optional<std::filesystem::path> path() const;
 };
 
@@ -164,6 +168,7 @@ public:
     geode::Result<> merge(Nongs&&);
     geode::Result<> deleteAllSongs();
     geode::Result<> deleteSong(const std::filesystem::path& path);
+    void deleteSong(const std::string& indexId);
 
     std::vector<std::unique_ptr<LocalSong>>& locals();
     std::vector<std::unique_ptr<YTSong>>& youtube();

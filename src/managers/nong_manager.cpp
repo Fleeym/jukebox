@@ -205,7 +205,7 @@ Result<> NongManager::saveNongs(std::optional<int> saveId) {
 
         auto& nong = entry.second;
 
-        auto json = matjson::Serialize<Nongs>::to_json(*nong);
+        auto json = matjson::Serialize<Nongs>::to_json(*nong, false);
         if (json.isErr()) {
             return Err(json.error());
         }
@@ -317,6 +317,28 @@ Result<> NongManager::deleteSong(const SongMetadataPathed& song) {
         return err;
     }
     return saveNongs(nongs->songID());
+}
+
+void NongManager::deleteSongsByIndex(const std::string& indexId) {
+    // for (auto it = m_manifest.m_nongs.begin(); it != m_manifest.m_nongs.end();) {
+    //     auto& nongs = it->second;
+    //     nongs->deleteSong(indexId);
+    // }
+}
+
+void NongManager::addSongsFromIndex(const matjson::Value& indexNongs) {
+    // auto& youtubeSongs = indexNongs["youtube"];
+    // for (auto& ytSong : youtubeSongs.as_array()) {
+    //     auto songID = ytSong;
+    //     if (!m_manifest.m_nongs.contains(songID)) {
+    //         continue;
+    //     }
+    //     auto& nongs = m_manifest.m_nongs.at(songID);
+    //     auto res = nongs->addSong(nong);
+    //     if (res.isErr()) {
+    //         log::error("{}", res.unwrapErr());
+    //     }
+    // }
 }
 
 };
