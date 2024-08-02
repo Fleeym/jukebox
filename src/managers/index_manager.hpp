@@ -21,12 +21,18 @@ protected:
     bool m_initialized = false;
 
     using FetchIndexTask = Task<Result<>, float>;
+    using DownloadSongTask = Task<Result<std::filesystem::path>, float>;
 
     bool init();
     // index id -> index metadata
     std::unordered_map<std::string, std::unique_ptr<IndexMetadata>> m_loadedIndexes;
     // index url -> task listener
     std::unordered_map<std::string, EventListener<FetchIndexTask>> m_indexListeners;
+
+    std::unordered_map<int, Nongs> m_indexNongs;
+    // song id -> download song task
+    std::unordered_map<std::string, EventListener<DownloadSongTask>> m_downloadSongListeners;
+
 public:
     bool initialized() const {
         return m_initialized;
@@ -44,6 +50,10 @@ public:
     void cacheIndexName(const std::string& indexId, const std::string& indexName);
 
     std::filesystem::path baseIndexesPath();
+
+    Result<std::vector<Nong>> getNongs(int gdSongID);
+
+    Result<> downloadSong(HostedSong& hosted);
 
     static IndexManager* get() {
         if (m_instance == nullptr) {

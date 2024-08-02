@@ -85,18 +85,77 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
 
     cacheIndexName(index.m_id, index.m_name);
 
-    NongManager::get()->deleteSongsByIndex(index.m_id);
+    for (const auto& [key, ytNong] : jsonObj.value()["nongs"]["youtube"].as_object()) {
+        const auto& gdSongIDs = ytNong["songs"].as_array();
+        for (const auto& gdSongIDValue : gdSongIDs) {
+            int gdSongID = gdSongIDValue.as_int();
+            if (!m_indexNongs.contains(gdSongID)) {
+                m_indexNongs.emplace(gdSongID, Nongs(gdSongID));
+            }
+            if (auto err = m_indexNongs.at(gdSongID).add(
+              YTSong(
+                  SongMetadata(
+                    gdSongID,
+                    ytNong["name"].as_string(),
+                    ytNong["artist"].as_string(),
+                    std::nullopt,
+                    ytNong["startOffset"].as_int()
+                  ),
+                  ytNong["ytID"].as_string(),
+                  SongIndexMetadata(
+                    index.m_id,
+                    key
+                  ),
+                  std::nullopt
+              )); err.isErr()) {
+                log::error("Failed to add YT song from index: {}", err.error());
+            }
+        }
+    }
+
+    for (const auto& [key, hostedNong] : jsonObj.value()["nongs"]["hosted"].as_object()) {
+        const auto& gdSongIDs = hostedNong["songs"].as_array();
+        for (const auto& gdSongIDValue : gdSongIDs) {
+            int gdSongID = gdSongIDValue.as_int();
+            if (!m_indexNongs.contains(gdSongID)) {
+                m_indexNongs.emplace(gdSongID, Nongs(gdSongID));
+            }
+            if (auto err = m_indexNongs.at(gdSongID).add(
+              HostedSong(
+                  SongMetadata(
+                    gdSongID,
+                    hostedNong["name"].as_string(),
+                    hostedNong["artist"].as_string(),
+                    std::nullopt,
+                    hostedNong["startOffset"].as_int()
+                  ),
+                  hostedNong["url"].as_string(),
+                  SongIndexMetadata(
+                    index.m_id,
+                    key
+                  ),
+                  std::nullopt
+              )); err.isErr()) {
+                log::error("Failed to add Hosted song from index: {}", err.error());
+            }
+        }
+    }
 
     m_loadedIndexes.emplace(
         index.m_id,
         std::make_unique<IndexMetadata>(index)
     );
-    log::info("Jukebox index \"{}\" ({}) Loaded", index.m_name, index.m_id);
+
+    log::info("Index \"{}\" ({}) Loaded. There are currently {} index Nongs objects.", index.m_name, index.m_id, m_indexNongs.size());
 
     return Ok();
 }
 
 Result<> IndexManager::fetchIndexes() {
+    m_indexListeners.clear();
+    m_indexNongs.clear();
+    m_downloadSongListeners.clear();
+
     const auto indexesRes = getIndexes();
     if (indexesRes.isErr()) {
         return Err(indexesRes.error());
@@ -107,6 +166,7 @@ Result<> IndexManager::fetchIndexes() {
         log::info("Fetching index {}", index.m_url);
         if (!index.m_enabled || index.m_url.size() < 3) continue;
 
+        // TODO replace "replace-later" with url to filename function
         auto filepath = baseIndexesPath() / fmt::format("{}.json", "replace-later");
 
         FetchIndexTask task = web::WebRequest().timeout(std::chrono::seconds(30)).get(index.m_url).map(
@@ -172,6 +232,7 @@ Result<> IndexManager::fetchIndexes() {
     return Ok();
 }
 
+// TOOD
 Result<std::string> IndexManager::getIndexName(const std::string& indexId) {
     return Ok("Index Name");
     // auto jsonObj = Mod::get()->getSavedValue<matjson::Value>("cached-index-names");
@@ -179,10 +240,135 @@ Result<std::string> IndexManager::getIndexName(const std::string& indexId) {
     // return Ok(jsonObj[indexId].as_string());
 }
 
+// TODO
 void IndexManager::cacheIndexName(const std::string& indexId, const std::string& indexName) {
     // auto jsonObj = Mod::get()->getSavedValue<matjson::Value>("cached-index-names", {});
     // jsonObj.set(indexId, indexName);
     // Mod::get()->setSavedValue(indexId, jsonObj);
+}
+
+Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
+    auto nongs = std::vector<Nong>();
+    auto localNongs = NongManager::get()->getNongs(gdSongID);
+    if (!localNongs.has_value()) {
+        return Err("Failed to get nongs");
+    }
+    std::optional<Nongs*> indexNongs = m_indexNongs.contains(gdSongID) ? std::optional(&m_indexNongs.at(gdSongID)) : std::nullopt;
+
+    nongs.push_back(Nong(*localNongs.value()->defaultSong()));
+
+    for (std::unique_ptr<LocalSong>& song : localNongs.value()->locals()) {
+        nongs.push_back(Nong(*song));
+    }
+
+    std::vector<SongIndexMetadata*> addedIndexSongs;
+    for (std::unique_ptr<YTSong>& song : localNongs.value()->youtube()) {
+        // Check if song is in an index
+        if (indexNongs.has_value() && song->indexMetadata().has_value()) {
+            for (std::unique_ptr<YTSong>& indexSong : indexNongs.value()->youtube()) {
+                if (*song->indexMetadata().value() == *indexSong->indexMetadata().value()) {
+                    addedIndexSongs.push_back(indexSong->indexMetadata().value());
+                    // TODO: update song metadata from index
+                }
+            }
+        }
+        nongs.push_back(Nong(*song));
+    }
+
+    for (std::unique_ptr<HostedSong>& song : localNongs.value()->hosted()) {
+        // Check if song is in an index
+        if (indexNongs.has_value() && song->indexMetadata().has_value()) {
+            for (std::unique_ptr<HostedSong>& indexSong : indexNongs.value()->hosted()) {
+                if (*song->indexMetadata().value() == *indexSong->indexMetadata().value()) {
+                    addedIndexSongs.push_back(indexSong->indexMetadata().value());
+                    // TODO: update song metadata from index
+                }
+            }
+        }
+        nongs.push_back(Nong(*song));
+    }
+
+    if (indexNongs.has_value()) {
+        for (std::unique_ptr<YTSong>& song : indexNongs.value()->youtube()) {
+            // Check if song is not already added
+            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(), song->indexMetadata().value()) == addedIndexSongs.end()) {
+                nongs.push_back(Nong(*song));
+            }
+        }
+
+        for (std::unique_ptr<HostedSong>& song : indexNongs.value()->hosted()) {
+            // Check if song is not already added
+            log::info("size: {}", addedIndexSongs.size());
+            if (addedIndexSongs.size() > 0) {
+                log::info("first: {}", addedIndexSongs[0]->m_songID);
+                log::info("this: {}", song->indexMetadata().value()->m_songID);
+                log::info("equal: {}", addedIndexSongs[0] == song->indexMetadata().value());
+            }
+            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(), song->indexMetadata().value()) == addedIndexSongs.end()) {
+                nongs.push_back(Nong(*song));
+            }
+        }
+    }
+
+    return Ok(std::move(nongs));
+}
+
+Result<> IndexManager::downloadSong(HostedSong& hosted) {
+    auto indexMetadata = hosted.indexMetadata();
+    auto id = hosted.url() + (indexMetadata.has_value() ? indexMetadata.value()->m_indexID + "-" + indexMetadata.value()->m_songID : "local");
+
+    DownloadSongTask task = web::WebRequest().timeout(std::chrono::seconds(30)).get(hosted.url()).map(
+        [this](web::WebResponse *response) -> DownloadSongTask::Value {
+            if (response->ok() && response->string().isOk()) {
+
+              auto destination = NongManager::get()->generateSongFilePath("mp3");
+              std::ofstream file(destination, std::ios::out | std::ios::binary);
+              file.write(reinterpret_cast<const char *>(response->data().data()), response->data().size());
+              file.close();
+
+              return Ok(destination);
+            }
+            return Err("Web request failed");
+        },
+        [](web::WebProgress *progress) -> DownloadSongTask::Progress {
+            return progress->downloadProgress().value_or(0) / 100.f;
+        }
+    );
+
+    auto listener = EventListener<DownloadSongTask>();
+    listener.bind([this, id, hosted](DownloadSongTask::Event* event) {
+        if (float *progress = event->getProgress()) {
+            log::info("progress: {}", *event->getProgress());
+            return;
+        }
+        m_downloadSongListeners.erase(id);
+        if (event->isCancelled())  {
+            log::error("Failed to fetch song: cancelled");
+            return;
+        }
+        DownloadSongTask::Value *result = event->getValue();
+        if (result->isErr()) {
+            log::error("Failed to fetch song: {}", result->error());
+            return;
+        }
+
+        Nong nong = {
+            HostedSong {
+              SongMetadata(*hosted.metadata()),
+              hosted.url(),
+              hosted.indexMetadata().has_value() ? std::optional(*hosted.indexMetadata().value()) : std::nullopt,
+              result->ok().value(),
+            },
+        };
+        auto res = NongManager::get()->addNongs(std::move(nong.toNongs().unwrap()));
+        if (res.isErr()) {
+            log::error("Failed to add song: {}", res.error());
+            return;
+        }
+    });
+    listener.setFilter(task);
+    m_downloadSongListeners.emplace(id, std::move(listener));
+    return Ok();
 }
 
 };

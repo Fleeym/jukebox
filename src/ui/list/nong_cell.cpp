@@ -10,6 +10,7 @@
 #include <Geode/utils/cocos.hpp>
 #include <fmt/format.h>
 
+#include "../../managers/index_manager.hpp"
 #include "nong_cell.hpp"
 
 namespace jukebox {
@@ -19,10 +20,12 @@ bool NongCell::init(
     Nong info,
     bool isDefault,
     bool selected,
+    bool isDownloaded,
     CCSize const& size,
     std::function<void()> onSelect,
     std::function<void()> onFixDefault,
-    std::function<void()> onDelete
+    std::function<void()> onDelete,
+    std::function<void()> onDownload
 ) {
     if (!CCNode::init()) {
         return false;
@@ -32,9 +35,11 @@ bool NongCell::init(
     m_songInfo = std::move(info);
     m_isDefault = isDefault;
     m_isActive = selected;
+    m_isDownloaded = isDownloaded;
     m_onSelect = onSelect;
     m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
+    m_onDownload = onDownload;
 
     this->setContentSize(size);
     this->setAnchorPoint(CCPoint { 0.5f, 0.5f });
@@ -69,21 +74,13 @@ bool NongCell::init(
     button->setID("set-button");
 
     auto menu = CCMenu::create();
-    menu->addChild(button);
+    if (m_songInfo.path().has_value()) {
+      menu->addChild(button);
+    }
     menu->setAnchorPoint(CCPoint { 1.0f, 0.5f });
     menu->setContentSize(CCSize { 50.f, 30.f });
 
-    if (!isDefault) {
-        auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
-        sprite->setScale(0.7f);
-        auto deleteButton = CCMenuItemSpriteExtra::create(
-            sprite,
-            this,
-            menu_selector(NongCell::deleteSong)
-        );
-        deleteButton->setID("delete-button");
-        menu->addChild(deleteButton);
-    } else {
+    if (isDefault) {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
         sprite->setScale(0.8f);
         if (!selected) {
@@ -96,6 +93,26 @@ bool NongCell::init(
         );
         fixButton->setID("fix-button");
         menu->addChild(fixButton);
+    } else if (!m_isDownloaded) {
+        auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
+        sprite->setScale(0.8f);
+        auto downloadButton = CCMenuItemSpriteExtra::create(
+            sprite,
+            this,
+            menu_selector(NongCell::onDownload)
+        );
+        downloadButton->setID("download-button");
+        menu->addChild(downloadButton);
+    } else {
+        auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
+        sprite->setScale(0.7f);
+        auto deleteButton = CCMenuItemSpriteExtra::create(
+            sprite,
+            this,
+            menu_selector(NongCell::onDelete)
+        );
+        deleteButton->setID("delete-button");
+        menu->addChild(deleteButton);
     }
 
     menu->setLayout(
@@ -174,7 +191,14 @@ void NongCell::onSet(CCObject* target) {
     m_onSelect();
 }
 
-void NongCell::deleteSong(CCObject* target) {
+void NongCell::onDownload(CCObject* target) {
+    m_songInfo.visit([](auto nong){}, [](auto nong){}, [](auto nong){
+      IndexManager::get()->downloadSong(*nong);
+    });
+    // m_onDownload();
+}
+
+void NongCell::onDelete(CCObject* target) {
     createQuickPopup(
         "Are you sure?",
         fmt::format("Are you sure you want to delete <cy>{}</c> from your NONGs?", m_songInfo.metadata()->m_name),
@@ -193,13 +217,15 @@ NongCell* NongCell::create(
     Nong info,
     bool isDefault,
     bool selected,
+    bool isDownloaded,
     CCSize const& size,
     std::function<void()> onSelect,
     std::function<void()> onFixDefault,
-    std::function<void()> onDelete
+    std::function<void()> onDelete,
+    std::function<void()> onDownload
 ) {
     auto ret = new NongCell();
-    if (ret && ret->init(songID, std::move(info), isDefault, selected, size, onSelect, onFixDefault, onDelete)) {
+    if (ret && ret->init(songID, std::move(info), isDefault, selected, isDownloaded, size, onSelect, onFixDefault, onDelete, onDownload)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);

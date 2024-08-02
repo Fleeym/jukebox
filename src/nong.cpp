@@ -104,24 +104,24 @@ private:
 
     std::unique_ptr<SongMetadata> m_metadata;
     std::string m_youtubeID;
-    std::optional<std::string> m_indexId;
+    std::optional<std::unique_ptr<SongIndexMetadata>> m_indexMetadata;
     std::optional<std::filesystem::path> m_path;
 public:
     Impl(
         SongMetadata&& metadata,
         std::string youtubeID,
-        std::optional<std::string> indexId,
+        std::optional<SongIndexMetadata> indexMetadata,
         std::optional<std::filesystem::path> path = std::nullopt
     ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
         m_youtubeID(youtubeID),
-        m_indexId(indexId),
+        m_indexMetadata(indexMetadata.has_value() ? std::optional(std::make_unique<SongIndexMetadata>(*indexMetadata)) : std::nullopt),
         m_path(path)
     {}
 
     Impl(const Impl& other)
         : m_metadata(std::make_unique<SongMetadata>(*other.m_metadata)),
         m_path(other.m_path),
-        m_indexId(other.m_indexId),
+        m_indexMetadata(other.m_indexMetadata.has_value() ? std::optional(std::make_unique<SongIndexMetadata>(*other.m_indexMetadata.value())) : std::nullopt),
         m_youtubeID(other.m_youtubeID)
     {}
     Impl& operator=(const Impl&) = delete;
@@ -140,20 +140,20 @@ public:
     std::string youtubeID() const {
         return m_youtubeID;
     }
-    std::optional<std::string> indexId() const {
-        return m_indexId;
+    std::optional<SongIndexMetadata*> indexMetadata() const {
+        return m_indexMetadata.has_value() ? std::optional(m_indexMetadata->get()) : std::nullopt;
     }
 };
 
 YTSong::YTSong(
     SongMetadata&& metadata,
     std::string youtubeID,
-    std::optional<std::string> indexId,
+    std::optional<SongIndexMetadata> indexMetadata,
     std::optional<std::filesystem::path> path
 ) : m_impl(std::make_unique<Impl>(
     std::move(metadata),
     youtubeID,
-    indexId,
+    indexMetadata,
     path
 )) {}
 
@@ -164,7 +164,7 @@ YTSong::YTSong(const YTSong& other)
 YTSong& YTSong::operator=(const YTSong& other) {
     m_impl->m_youtubeID = other.m_impl->m_youtubeID;
     m_impl->m_path = other.m_impl->m_path;
-    m_impl->m_indexId = other.m_impl->m_indexId;
+    m_impl->m_indexMetadata = other.m_impl->m_indexMetadata.has_value() ? std::optional(std::make_unique<SongIndexMetadata>(*other.m_impl->m_indexMetadata.value())) : std::nullopt;
     m_impl->m_metadata = std::make_unique<SongMetadata>(*other.m_impl->m_metadata);
 
     return *this;
@@ -182,8 +182,8 @@ std::string YTSong::youtubeID() const {
     return m_impl->youtubeID();
 }
 
-std::optional<std::string> YTSong::indexId() const {
-    return m_impl->indexId();
+std::optional<SongIndexMetadata*> YTSong::indexMetadata() const {
+    return m_impl->indexMetadata();
 }
 
 std::optional<std::filesystem::path> YTSong::path() const {
@@ -196,24 +196,24 @@ private:
 
     std::unique_ptr<SongMetadata> m_metadata;
     std::string m_url;
-    std::optional<std::string> m_indexId;
+    std::optional<std::unique_ptr<SongIndexMetadata>> m_indexMetadata;
     std::optional<std::filesystem::path> m_path;
 public:
     Impl(
         SongMetadata&& metadata,
         std::string url,
-        std::optional<std::string> indexId,
+        std::optional<SongIndexMetadata> indexMetadata,
         std::optional<std::filesystem::path> path = std::nullopt
     ) : m_metadata(std::make_unique<SongMetadata>(metadata)),
         m_url(url),
-        m_indexId(indexId),
+        m_indexMetadata(indexMetadata.has_value() ? std::optional(std::make_unique<SongIndexMetadata>(*indexMetadata)) : std::nullopt),
         m_path(path)
     {}
 
     Impl(const Impl& other)
         : m_metadata(std::make_unique<SongMetadata>(*other.m_metadata)),
         m_path(other.m_path),
-        m_indexId(other.m_indexId),
+        m_indexMetadata(other.m_indexMetadata.has_value() ? std::optional(std::make_unique<SongIndexMetadata>(*other.m_indexMetadata.value())) : std::nullopt),
         m_url(other.m_url)
     {}
     Impl& operator=(const Impl& other) = delete;
@@ -229,8 +229,8 @@ public:
     std::string url() const {
         return m_url;
     }
-    std::optional<std::string> indexId() const {
-        return m_indexId;
+    std::optional<SongIndexMetadata*> indexMetadata() const {
+        return m_indexMetadata.has_value() ? std::optional(m_indexMetadata->get()) : std::nullopt;
     }
     std::optional<std::filesystem::path> path() const {
         return m_path;
@@ -240,12 +240,12 @@ public:
 HostedSong::HostedSong(
     SongMetadata&& metadata,
     std::string url,
-    std::optional<std::string> indexId,
+    std::optional<SongIndexMetadata> indexMetadata,
     std::optional<std::filesystem::path> path
 ) : m_impl(std::make_unique<Impl>(
     std::move(metadata),
     url,
-    indexId,
+    indexMetadata,
     path
 )) {}
 
@@ -256,7 +256,7 @@ HostedSong::HostedSong(const HostedSong& other)
 HostedSong& HostedSong::operator=(const HostedSong& other) {
     m_impl->m_metadata = std::make_unique<SongMetadata>(*other.m_impl->m_metadata);
     m_impl->m_path = other.m_impl->m_path;
-    m_impl->m_indexId = other.m_impl->m_indexId;
+    m_impl->m_indexMetadata = other.m_impl->m_indexMetadata.has_value() ? std::optional(std::make_unique<SongIndexMetadata>(*other.m_impl->m_indexMetadata.value())) : std::nullopt;
     m_impl->m_url = other.m_impl->m_url;
 
     return *this;
@@ -267,8 +267,8 @@ SongMetadata* HostedSong::metadata() const {
 std::string HostedSong::url() const {
     return m_impl->url();
 }
-std::optional<std::string> HostedSong::indexId() const {
-    return m_impl->indexId();
+std::optional<SongIndexMetadata*> HostedSong::indexMetadata() const {
+    return m_impl->indexMetadata();
 }
 std::optional<std::filesystem::path> HostedSong::path() const {
     return m_impl->path();
@@ -383,28 +383,6 @@ public:
         return Ok();
     }
 
-    void deleteSong(const std::string& indexId) {
-        for (auto i = m_youtube.begin(); i != m_youtube.end(); ++i) {
-            auto& ytSong = *i;
-            if (ytSong->indexId() == indexId) {
-                if (ytSong->path().has_value()) {
-                    this->deletePath(ytSong->path().value());
-                }
-                m_youtube.erase(i);
-            }
-        }
-
-        for (auto i = m_hosted.begin(); i != m_hosted.end(); ++i) {
-            auto& hostedSong = *i;
-            if (hostedSong->indexId() == indexId) {
-                if (hostedSong->path().has_value()) {
-                    this->deletePath(hostedSong->path().value());
-                }
-                m_hosted.erase(i);
-            }
-        }
-    }
-
     geode::Result<> deleteSong(const std::filesystem::path& path) {
         if (m_default->path() == path) {
             return Err("Cannot delete default song");
@@ -478,14 +456,6 @@ public:
     }
 
     Result<YTSong*> add(YTSong song) {
-        for (const auto& i : m_youtube) {
-            if (i->youtubeID() == song.youtubeID()) {
-                std::string err = fmt::format("Attempted to add a duplicate song for id {}", song.metadata()->m_gdID);
-                // log::error(err);
-                return Err(err);
-            }
-        }
-
         auto s = std::make_unique<YTSong>(song);
         auto ret = s.get();
         m_youtube.push_back(std::move(s));
@@ -493,14 +463,6 @@ public:
     }
 
     Result<HostedSong*> add(HostedSong song) {
-        for (const auto& i : m_hosted) {
-            if (i->url() == song.url()) {
-                std::string err = fmt::format("Attempted to add a duplicate song for id {}", song.metadata()->m_gdID);
-                // log::error(err);
-                return Err(err);
-            }
-        }
-
         auto s = std::make_unique<HostedSong>(song);
         auto ret = s.get();
         m_hosted.push_back(std::move(s));
@@ -573,10 +535,6 @@ Result<> Nongs::deleteSong(const std::filesystem::path& path) {
     return m_impl->deleteSong(path);
 }
 
-void Nongs::deleteSong(const std::string& indexId) {
-    m_impl->deleteSong(indexId);
-}
-
 void Nongs::resetToDefault() {
     m_impl->resetToDefault();
 }
@@ -622,9 +580,9 @@ private:
     };
 
     Type m_type;
-      std::unique_ptr<LocalSong> m_localSong;
-      std::unique_ptr<YTSong> m_ytSong;
-      std::unique_ptr<HostedSong> m_hostedSong;
+    std::unique_ptr<LocalSong> m_localSong;
+    std::unique_ptr<YTSong> m_ytSong;
+    std::unique_ptr<HostedSong> m_hostedSong;
 
 public:
     Impl(const LocalSong local) : m_type(Type::Local), m_localSong(std::make_unique<LocalSong>(local)) {}
@@ -661,6 +619,17 @@ public:
             case Type::Hosted:
                 return m_hostedSong->metadata();
         }
+    }
+
+    std::optional<std::filesystem::path> path() const {
+      switch (m_type) {
+          case Type::Local:
+              return m_localSong->path();
+          case Type::YT:
+              return m_ytSong->path();
+          case Type::Hosted:
+              return m_hostedSong->path();
+      }
     }
 
     Result<Nongs> toNongs() const {
@@ -710,6 +679,10 @@ SongMetadata* Nong::metadata() const {
 
 Result<Nongs> Nong::toNongs() const {
     return m_impl->toNongs();
+};
+
+std::optional<std::filesystem::path> Nong::path() const {
+    return m_impl->path();
 };
 
 void Nong::visit(

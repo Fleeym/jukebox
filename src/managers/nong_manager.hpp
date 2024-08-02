@@ -14,6 +14,28 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
+// class SongStateChanged final : public Event {
+// private:
+//     friend class NongManager;
+//     friend class IndexManager;
+
+//     SongStateChanged();
+// public:
+//     int m_gdSongID;
+// };
+
+// class SongDownloadProgress final : public Event {
+// private:
+//     friend class NongManager;
+//     friend class IndexManager;
+
+//     SongStateChanged();
+// public:
+//     int m_gdSongID;
+//     int index;
+//     int m_id;
+// };
+
 enum class SongInfoGetAction {
     CreateDefault,
     FixDefault
@@ -126,9 +148,10 @@ public:
     */
     Result<> deleteAllSongs(int songID);
 
-    void deleteSongsByIndex(const std::string& indexId);
-
-    void addSongsFromIndex(const matjson::Value& indexNongs);
+    /**
+     * Get a path to a song file
+    */
+    std::filesystem::path generateSongFilePath(const std::string& extension, std::optional<std::string> filename = std::nullopt);
 
     static NongManager* get() {
         if (m_instance == nullptr) {

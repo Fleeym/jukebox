@@ -28,7 +28,7 @@
 #include <system_error>
 
 #include "nong_add_popup.hpp"
-#include "../random_string.hpp"
+#include "../managers/nong_manager.hpp"
 
 std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     std::string ret = "";
@@ -387,13 +387,7 @@ void NongAddPopup::addSong(CCObject* target) {
         startOffset = std::stoi(startOffsetStr);
     }
 
-    auto unique = jukebox::random_string(16);
-    auto destination = Mod::get()->getSaveDir() / "nongs";
-    if (!fs::exists(destination)) {
-        fs::create_directory(destination);
-    }
-    unique += m_songPath.extension().string();
-    destination = destination / unique;
+    auto destination = NongManager::get()->generateSongFilePath(m_songPath.extension().string());
     bool result;
     std::error_code error_code;
     result = fs::copy_file(m_songPath, destination, error_code);

@@ -16,6 +16,22 @@
 
 namespace jukebox {
 
+struct JUKEBOX_DLL SongIndexMetadata final {
+    std::string m_indexID;
+    std::string m_songID;
+
+    SongIndexMetadata(
+        std::string indexID,
+        std::string songID
+    ) : m_indexID(indexID),
+        m_songID(songID)
+      {}
+
+    bool operator==(const SongIndexMetadata& other) const {
+        return m_indexID == other.m_indexID && m_songID == other.m_songID;
+    }
+};
+
 struct JUKEBOX_DLL SongMetadata final {
     int m_gdID;
     std::string m_name;
@@ -75,7 +91,7 @@ public:
     YTSong(
         SongMetadata&& metadata,
         std::string youtubeID,
-        std::optional<std::string> indexId,
+        std::optional<SongIndexMetadata> indexMetadata = std::nullopt,
         std::optional<std::filesystem::path> path = std::nullopt
     );
     YTSong(const YTSong& other);
@@ -88,7 +104,7 @@ public:
 
     SongMetadata* metadata() const;
     std::string youtubeID() const;
-    std::optional<std::string> indexId() const;
+    std::optional<SongIndexMetadata*> indexMetadata() const;
     std::optional<std::filesystem::path> path() const;
 };
 
@@ -103,7 +119,7 @@ public:
     HostedSong(
         SongMetadata&& metadata,
         std::string url,
-        std::optional<std::string> m_indexId,
+        std::optional<SongIndexMetadata> indexMetadata,
         std::optional<std::filesystem::path> path = std::nullopt
     );
     HostedSong(const HostedSong& other);
@@ -116,7 +132,7 @@ public:
 
     SongMetadata* metadata() const;
     std::string url() const;
-    std::optional<std::string> indexId() const;
+    std::optional<SongIndexMetadata*> indexMetadata() const;
     std::optional<std::filesystem::path> path() const;
 };
 
@@ -168,7 +184,6 @@ public:
     geode::Result<> merge(Nongs&&);
     geode::Result<> deleteAllSongs();
     geode::Result<> deleteSong(const std::filesystem::path& path);
-    void deleteSong(const std::string& indexId);
 
     std::vector<std::unique_ptr<LocalSong>>& locals();
     std::vector<std::unique_ptr<YTSong>>& youtube();
@@ -223,6 +238,7 @@ public:
     ~Nong();
 
     SongMetadata* metadata() const;
+    std::optional<std::filesystem::path> path() const;
     geode::Result<Nongs> toNongs() const;
 
     void visit(

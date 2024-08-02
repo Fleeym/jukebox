@@ -17,6 +17,8 @@
 
 #include "../../include/nong.hpp"
 #include "../../include/nong_serialize.hpp"
+#include "../random_string.hpp"
+
 
 namespace jukebox {
 
@@ -319,26 +321,15 @@ Result<> NongManager::deleteSong(const SongMetadataPathed& song) {
     return saveNongs(nongs->songID());
 }
 
-void NongManager::deleteSongsByIndex(const std::string& indexId) {
-    // for (auto it = m_manifest.m_nongs.begin(); it != m_manifest.m_nongs.end();) {
-    //     auto& nongs = it->second;
-    //     nongs->deleteSong(indexId);
-    // }
-}
-
-void NongManager::addSongsFromIndex(const matjson::Value& indexNongs) {
-    // auto& youtubeSongs = indexNongs["youtube"];
-    // for (auto& ytSong : youtubeSongs.as_array()) {
-    //     auto songID = ytSong;
-    //     if (!m_manifest.m_nongs.contains(songID)) {
-    //         continue;
-    //     }
-    //     auto& nongs = m_manifest.m_nongs.at(songID);
-    //     auto res = nongs->addSong(nong);
-    //     if (res.isErr()) {
-    //         log::error("{}", res.unwrapErr());
-    //     }
-    // }
+std::filesystem::path NongManager::generateSongFilePath(const std::string& extension, std::optional<std::string> filename) {
+    auto unique = filename.value_or(jukebox::random_string(16));
+    auto destination = Mod::get()->getSaveDir() / "nongs";
+    if (!std::filesystem::exists(destination)) {
+        std::filesystem::create_directory(destination);
+    }
+    unique += extension;
+    destination = destination / unique;
+    return destination;
 }
 
 };

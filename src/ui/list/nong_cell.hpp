@@ -25,19 +25,23 @@ protected:
     std::function<void()> m_onSelect;
     std::function<void()> m_onFixDefault;
     std::function<void()> m_onDelete;
+    std::function<void()> m_onDownload;
 
     bool m_isDefault;
     bool m_isActive;
+    bool m_isDownloaded;
 
     bool init(
         int songID,
         Nong info,
         bool isDefault,
         bool selected,
+        bool isDownloaded,
         CCSize const& size,
         std::function<void()> onSelect,
         std::function<void()> onFixDefault,
-        std::function<void()> onDelete
+        std::function<void()> onDelete,
+        std::function<void()> onDownload
     );
 public:
     static NongCell* create(
@@ -45,14 +49,17 @@ public:
         Nong info,
         bool isDefault,
         bool selected,
+        bool isDownloaded,
         CCSize const& size,
         std::function<void()> onSelect,
         std::function<void()> onFixDefault,
-        std::function<void()> onDelete
+        std::function<void()> onDelete,
+        std::function<void()> onDownload
     );
     void onSet(CCObject*);
-    void deleteSong(CCObject*);
+    void onDelete(CCObject*);
     void onFixDefault(CCObject*);
+    void onDownload(CCObject*);
 };
 
 }

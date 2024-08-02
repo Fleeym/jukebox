@@ -7,10 +7,12 @@
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <Geode/ui/ScrollLayer.hpp>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include <filesystem>
 #include <optional>
 #include <unordered_map>
 
 #include "../../managers/nong_manager.hpp"
+#include "../../managers/index_manager.hpp"
 #include "nong_cell.hpp"
 #include "song_cell.hpp"
 
@@ -129,58 +131,78 @@ void NongList::build() {
         // Single item
         int id = m_currentSong.value();
 
-        auto nongs = NongManager::get()->getNongs(id);
-        if (!nongs) {
+        auto localNongs = NongManager::get()->getNongs(id);
+        if (!localNongs) {
             return;
         }
 
-        auto defaultSong = nongs.value()->defaultSong();
-        auto active = nongs.value()->active();
+        auto defaultSong = localNongs.value()->defaultSong();
+        auto active = localNongs.value()->active();
 
-        m_list->m_contentLayer->addChild(
-            jukebox::NongCell::create(
-                id, Nong(*defaultSong),
-                true,
-                defaultSong->path() == active->m_path,
-                itemSize,
-                [this, id, defaultSong] () {
-                    m_onSetActive(id, SongMetadataPathed(
-                        *defaultSong->metadata(),
-                        defaultSong->path()
-                    ));
-                },
-                [this, id] () {
-                    m_onFixDefault(id);
-                },
-                [this, id, defaultSong] () {
-                    log::info("in list path: {}", defaultSong->path());
-                    m_onDelete(id, SongMetadataPathed{*defaultSong});
-                }
-            )
-        );
-
-        for (std::unique_ptr<LocalSong>& song : nongs.value()->locals()) {
-            m_list->m_contentLayer->addChild(
-                jukebox::NongCell::create(
-                    id, Nong(*song),
-                    false,
-                    song->path() == active->m_path,
-                    itemSize,
-                    [this, id, &song] () {
-                      m_onSetActive(id, SongMetadataPathed(
-                          *song->metadata(),
-                          song->path()
-                      ));
-                    },
-                    [this, id] () {
-                        m_onFixDefault(id);
-                    },
-                    [this, id, &song] () {
-                        m_onDelete(id, SongMetadataPathed{*song});
-                    }
-                )
-            );
+        auto nongs = IndexManager::get()->getNongs(id);
+        if (nongs.isErr()) {
+            return;
         }
+
+        for (auto& nong : nongs.value()) {
+          auto metadata = *nong.metadata();
+          auto path = nong.path();
+
+          m_list->m_contentLayer->addChild(
+              jukebox::NongCell::create(
+                  id,
+                  std::move(nong),
+                  path == defaultSong->path(),
+                  path == active->m_path,
+                  path.has_value() && std::filesystem::exists(path.value()),
+                  itemSize,
+                  [this, id, path, metadata] () {
+                      if (path.has_value()) {
+                        m_onSetActive(id, SongMetadataPathed(
+                            metadata,
+                            path.value()
+                        ));
+                      }
+                  },
+                  [this, id] () {
+                      m_onFixDefault(id);
+                  },
+                  [this, id, path, metadata] () {
+                      if (path.has_value()) {
+                        m_onDelete(id, SongMetadataPathed(
+                            metadata,
+                            path.value()
+                        ));
+                      }
+                  },
+                  [this, id] () {
+                  }
+              )
+          );
+        }
+
+        // for (std::unique_ptr<LocalSong>& song : nongs.value()->locals()) {
+        //     m_list->m_contentLayer->addChild(
+        //         jukebox::NongCell::create(
+        //             id, Nong(*song),
+        //             false,
+        //             song->path() == active->m_path,
+        //             itemSize,
+        //             [this, id, &song] () {
+        //               m_onSetActive(id, SongMetadataPathed(
+        //                   *song->metadata(),
+        //                   song->path()
+        //               ));
+        //             },
+        //             [this, id] () {
+        //                 m_onFixDefault(id);
+        //             },
+        //             [this, id, &song] () {
+        //                 m_onDelete(id, SongMetadataPathed{*song});
+        //             }
+        //         )
+        //     );
+        // }
     }
     m_list->m_contentLayer->updateLayout();
     this->scrollToTop();
