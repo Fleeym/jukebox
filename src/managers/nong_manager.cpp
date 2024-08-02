@@ -61,6 +61,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
             LocalSong {
                 SongMetadata {
                     adjusted,
+                    jukebox::random_string(16),
                     obj->m_songName,
                     obj->m_artistName
                 },
@@ -93,6 +94,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
         LocalSong {
             SongMetadata {
                 id,
+                jukebox::random_string(16),
                 obj->m_songName,
                 obj->m_artistName
             },

@@ -5,7 +5,6 @@
 #include <matjson.hpp>
 
 #include "../../include/nong.hpp"
-#include "../../include/nong_serialize.hpp"
 #include "../../include/index_serialize.hpp"
 #include "../ui/indexes_setting.hpp"
 
@@ -96,16 +95,14 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
               YTSong(
                   SongMetadata(
                     gdSongID,
+                    key,
                     ytNong["name"].as_string(),
                     ytNong["artist"].as_string(),
                     std::nullopt,
                     ytNong["startOffset"].as_int()
                   ),
                   ytNong["ytID"].as_string(),
-                  SongIndexMetadata(
-                    index.m_id,
-                    key
-                  ),
+                  index.m_id,
                   std::nullopt
               )); err.isErr()) {
                 log::error("Failed to add YT song from index: {}", err.error());
@@ -124,16 +121,14 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
               HostedSong(
                   SongMetadata(
                     gdSongID,
+                    key,
                     hostedNong["name"].as_string(),
                     hostedNong["artist"].as_string(),
                     std::nullopt,
                     hostedNong["startOffset"].as_int()
                   ),
                   hostedNong["url"].as_string(),
-                  SongIndexMetadata(
-                    index.m_id,
-                    key
-                  ),
+                  index.m_id,
                   std::nullopt
               )); err.isErr()) {
                 log::error("Failed to add Hosted song from index: {}", err.error());
@@ -261,13 +256,13 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
         nongs.push_back(Nong(*song));
     }
 
-    std::vector<SongIndexMetadata*> addedIndexSongs;
+    std::vector<std::string> addedIndexSongs;
     for (std::unique_ptr<YTSong>& song : localNongs.value()->youtube()) {
-        // Check if song is in an index
-        if (indexNongs.has_value() && song->indexMetadata().has_value()) {
+        // Check if song is from an index
+        if (indexNongs.has_value() && song->indexID().has_value()) {
             for (std::unique_ptr<YTSong>& indexSong : indexNongs.value()->youtube()) {
-                if (*song->indexMetadata().value() == *indexSong->indexMetadata().value()) {
-                    addedIndexSongs.push_back(indexSong->indexMetadata().value());
+                if (song->metadata()->m_uniqueID == indexSong->metadata()->m_uniqueID) {
+                    addedIndexSongs.push_back(song->metadata()->m_uniqueID);
                     // TODO: update song metadata from index
                 }
             }
@@ -276,11 +271,11 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
     }
 
     for (std::unique_ptr<HostedSong>& song : localNongs.value()->hosted()) {
-        // Check if song is in an index
-        if (indexNongs.has_value() && song->indexMetadata().has_value()) {
+        // Check if song is from an index
+        if (indexNongs.has_value() && song->indexID().has_value()) {
             for (std::unique_ptr<HostedSong>& indexSong : indexNongs.value()->hosted()) {
-                if (*song->indexMetadata().value() == *indexSong->indexMetadata().value()) {
-                    addedIndexSongs.push_back(indexSong->indexMetadata().value());
+                if (song->metadata()->m_uniqueID == indexSong->metadata()->m_uniqueID) {
+                    addedIndexSongs.push_back(song->metadata()->m_uniqueID);
                     // TODO: update song metadata from index
                 }
             }
@@ -291,20 +286,14 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
     if (indexNongs.has_value()) {
         for (std::unique_ptr<YTSong>& song : indexNongs.value()->youtube()) {
             // Check if song is not already added
-            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(), song->indexMetadata().value()) == addedIndexSongs.end()) {
+            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(), song->metadata()->m_uniqueID) == addedIndexSongs.end()) {
                 nongs.push_back(Nong(*song));
             }
         }
 
         for (std::unique_ptr<HostedSong>& song : indexNongs.value()->hosted()) {
             // Check if song is not already added
-            log::info("size: {}", addedIndexSongs.size());
-            if (addedIndexSongs.size() > 0) {
-                log::info("first: {}", addedIndexSongs[0]->m_songID);
-                log::info("this: {}", song->indexMetadata().value()->m_songID);
-                log::info("equal: {}", addedIndexSongs[0] == song->indexMetadata().value());
-            }
-            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(), song->indexMetadata().value()) == addedIndexSongs.end()) {
+            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(), song->metadata()->m_uniqueID) == addedIndexSongs.end()) {
                 nongs.push_back(Nong(*song));
             }
         }
@@ -314,8 +303,7 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
 }
 
 Result<> IndexManager::downloadSong(HostedSong& hosted) {
-    auto indexMetadata = hosted.indexMetadata();
-    auto id = hosted.url() + (indexMetadata.has_value() ? indexMetadata.value()->m_indexID + "-" + indexMetadata.value()->m_songID : "local");
+    const std::string id = hosted.metadata()->m_uniqueID;
 
     DownloadSongTask task = web::WebRequest().timeout(std::chrono::seconds(30)).get(hosted.url()).map(
         [this](web::WebResponse *response) -> DownloadSongTask::Value {
@@ -356,7 +344,7 @@ Result<> IndexManager::downloadSong(HostedSong& hosted) {
             HostedSong {
               SongMetadata(*hosted.metadata()),
               hosted.url(),
-              hosted.indexMetadata().has_value() ? std::optional(*hosted.indexMetadata().value()) : std::nullopt,
+              hosted.indexID(),
               result->ok().value(),
             },
         };

@@ -29,6 +29,7 @@
 
 #include "nong_add_popup.hpp"
 #include "../managers/nong_manager.hpp"
+#include "../random_string.hpp"
 
 std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     std::string ret = "";
@@ -406,6 +407,7 @@ void NongAddPopup::addSong(CCObject* target) {
         LocalSong {
           SongMetadata {
             m_songID,
+            jukebox::random_string(16),
             songName,
             artistName,
             levelName,
