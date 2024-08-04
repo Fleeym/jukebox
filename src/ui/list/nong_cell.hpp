@@ -16,7 +16,6 @@ class NongDropdownLayer;
 class NongCell : public CCNode {
 protected:
     int m_songID;
-    Nong m_songInfo = Nong(LocalSong::createUnknown(0));
     CCLabelBMFont* m_songNameLabel = nullptr;
     CCLabelBMFont* m_authorNameLabel = nullptr;
     CCLabelBMFont* m_levelNameLabel = nullptr;
@@ -30,6 +29,10 @@ protected:
     bool m_isDefault;
     bool m_isActive;
     bool m_isDownloaded;
+
+    CCMenuItemSpriteExtra* m_downloadButton;
+    CCMenu* m_downloadProgressContainer;
+    CCProgressTimer* m_downloadProgress;
 
     bool init(
         int songID,
@@ -56,10 +59,12 @@ public:
         std::function<void()> onDelete,
         std::function<void()> onDownload
     );
+    Nong m_songInfo = Nong(LocalSong::createUnknown(0));
     void onSet(CCObject*);
     void onDelete(CCObject*);
     void onFixDefault(CCObject*);
     void onDownload(CCObject*);
+    void setDownloadProgress(float progress);
 };
 
 }

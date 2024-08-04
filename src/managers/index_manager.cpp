@@ -227,6 +227,13 @@ Result<> IndexManager::fetchIndexes() {
     return Ok();
 }
 
+std::optional<float> IndexManager::getSongDownloadProgress(const std::string& uniqueID) {
+    if (m_downloadSongListeners.contains(uniqueID)) {
+        return m_downloadProgress.at(uniqueID);
+    }
+    return std::nullopt;
+}
+
 // TOOD
 Result<std::string> IndexManager::getIndexName(const std::string& indexId) {
     return Ok("Index Name");
@@ -302,6 +309,36 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
     return Ok(std::move(nongs));
 }
 
+Result<> IndexManager::stopDownloadingSong(const std::string& uniqueID) {
+    if (m_downloadSongListeners.contains(uniqueID)) {
+        m_downloadSongListeners.erase(uniqueID);
+        m_downloadProgress.erase(uniqueID);
+    } else {
+        return Err("Trying to stop downloading a song that is not being downloaded");
+    }
+    return Ok();
+}
+
+Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
+    auto nongs = IndexManager::get()->getNongs(gdSongID);
+    if (!nongs.has_value()) {
+        return Err("GD song {} not initialized in manifest", gdSongID);
+    }
+    for (Nong& nong : nongs.value()) {
+        if (nong.metadata()->m_uniqueID == uniqueID) {
+            return nong.visit<Result<>>([](LocalSong* localSong){
+                return Err("Song type not supported for download");
+            }, [](YTSong* ytSong){
+                return Err("Song type not supported for download");
+            }, [](HostedSong* hostedSong){
+                return IndexManager::get()->downloadSong(*hostedSong);
+            });
+        }
+    }
+
+    return Err("Song {} not found in manifest", uniqueID);
+}
+
 Result<> IndexManager::downloadSong(HostedSong& hosted) {
     const std::string id = hosted.metadata()->m_uniqueID;
 
@@ -326,9 +363,11 @@ Result<> IndexManager::downloadSong(HostedSong& hosted) {
     auto listener = EventListener<DownloadSongTask>();
     listener.bind([this, id, hosted](DownloadSongTask::Event* event) {
         if (float *progress = event->getProgress()) {
-            log::info("progress: {}", *event->getProgress());
+            m_downloadProgress[id] = *progress;
+            SongDownloadProgress(hosted.metadata()->m_gdID, id, *event->getProgress()).post();
             return;
         }
+        m_downloadProgress.erase(id);
         m_downloadSongListeners.erase(id);
         if (event->isCancelled())  {
             log::error("Failed to fetch song: cancelled");
@@ -348,14 +387,21 @@ Result<> IndexManager::downloadSong(HostedSong& hosted) {
               result->ok().value(),
             },
         };
-        auto res = NongManager::get()->addNongs(std::move(nong.toNongs().unwrap()));
-        if (res.isErr()) {
+        if (auto res = NongManager::get()->addNongs(std::move(nong.toNongs().unwrap())); res.isErr()) {
             log::error("Failed to add song: {}", res.error());
             return;
         }
+        if (auto res = NongManager::get()->setActiveSong(hosted.metadata()->m_gdID, hosted.metadata()->m_uniqueID); res.isErr()) {
+            log::error("Failed to set song as active: {}", res.error());
+            return;
+        }
+
+        SongStateChanged(hosted.metadata()->m_gdID).post();
     });
     listener.setFilter(task);
     m_downloadSongListeners.emplace(id, std::move(listener));
+    m_downloadProgress[id] = 0.f;
+    SongDownloadProgress(hosted.metadata()->m_gdID, id, 0.f).post();
     return Ok();
 }
 

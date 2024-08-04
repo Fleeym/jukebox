@@ -40,7 +40,7 @@ class $modify(LevelTools) {
         int searchID = -id - 1;
         auto res = jukebox::NongManager::get()->getNongs(searchID);
         if (res.has_value()) {
-            return res.value()->active()->m_metadata.m_name;
+            return res.value()->activeNong().metadata()->m_name;
         }
         return LevelTools::getAudioTitle(id);
     }

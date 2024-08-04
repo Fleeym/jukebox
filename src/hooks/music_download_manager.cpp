@@ -16,13 +16,13 @@ class $modify(MusicDownloadManager) {
             return MusicDownloadManager::pathForSong(id);
         }
         auto value = nongs.value();
-        auto active = value->active();
-		if (!std::filesystem::exists(active->m_path)) {
+        auto active = value->activeNong();
+		if (!std::filesystem::exists(active.path().value())) {
             return MusicDownloadManager::pathForSong(id);
 		}
         NongManager::get()->m_currentlyPreparingNong = value;
         #ifdef GEODE_IS_WINDOWS
-        return geode::utils::string::wideToUtf8(active->m_path.c_str());
+        return geode::utils::string::wideToUtf8(active.path().value().c_str());
         #else
         return active->path.string();
         #endif
@@ -49,9 +49,9 @@ class $modify(MusicDownloadManager) {
         }
         auto res = NongManager::get()->getNongs(id);
         if (res.has_value()) {
-            auto active = res.value()->active();
-            og->m_songName = active->m_metadata.m_name;
-            og->m_artistName = active->m_metadata.m_artist;
+            auto active = res.value()->activeNong();
+            og->m_songName = active.metadata()->m_name;
+            og->m_artistName = active.metadata()->m_artist;
         }
         return og;
     }

@@ -96,13 +96,37 @@ bool NongCell::init(
     } else if (!m_isDownloaded) {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
         sprite->setScale(0.8f);
-        auto downloadButton = CCMenuItemSpriteExtra::create(
+        m_downloadButton = CCMenuItemSpriteExtra::create(
             sprite,
             this,
             menu_selector(NongCell::onDownload)
         );
-        downloadButton->setID("download-button");
-        menu->addChild(downloadButton);
+        m_downloadButton->setID("download-button");
+        menu->addChild(m_downloadButton);
+
+        auto progressBarBack = CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
+        progressBarBack->setColor(ccc3(50, 50, 50));
+        progressBarBack->setScale(0.62f);
+
+        auto spr = CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
+        spr->setColor(ccc3(0, 255, 0));
+
+        m_downloadProgress = CCProgressTimer::create(spr);
+        m_downloadProgress->setType(CCProgressTimerType::kCCProgressTimerTypeRadial);
+        m_downloadProgress->setPercentage(50.f);
+        m_downloadProgress->setID("progress-bar");
+        m_downloadProgress->setScale(0.66f);
+
+        m_downloadProgressContainer = CCMenu::create();
+
+        m_downloadProgressContainer->addChildAtPosition(m_downloadProgress, Anchor::Center);
+        m_downloadProgressContainer->addChildAtPosition(progressBarBack, Anchor::Center);
+
+        m_downloadProgressContainer->setZOrder(-1);
+        m_downloadProgressContainer->setVisible(false);
+
+        m_downloadButton->addChildAtPosition(m_downloadProgressContainer, Anchor::Center);
+        // TODO initial set download progress
     } else {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
         sprite->setScale(0.7f);
@@ -187,15 +211,21 @@ void NongCell::onFixDefault(CCObject* target) {
     );
 }
 
+void NongCell::setDownloadProgress(float progress) {
+    m_downloadProgressContainer->setVisible(true);
+    auto sprite = CCSprite::createWithSpriteFrameName("GJ_cancelDownloadBtn_001.png");
+    sprite->setScale(0.8f);
+    m_downloadButton->setSprite(sprite);
+    m_downloadButton->setColor(ccc3(105, 105, 105));
+    m_downloadProgress->setPercentage(progress*100.f);
+}
+
 void NongCell::onSet(CCObject* target) {
     m_onSelect();
 }
 
 void NongCell::onDownload(CCObject* target) {
-    m_songInfo.visit([](auto nong){}, [](auto nong){}, [](auto nong){
-      IndexManager::get()->downloadSong(*nong);
-    });
-    // m_onDownload();
+    m_onDownload();
 }
 
 void NongCell::onDelete(CCObject* target) {

@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <unordered_map>
 
 #include "Geode/utils/Task.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
@@ -32,6 +33,8 @@ protected:
     std::unordered_map<int, Nongs> m_indexNongs;
     // song id -> download song task
     std::unordered_map<std::string, EventListener<DownloadSongTask>> m_downloadSongListeners;
+    // song id -> current download progress (used when opening NongDropdownLayer while a song is being downloaded)
+    std::unordered_map<std::string, float> m_downloadProgress;
 
 public:
     bool initialized() const {
@@ -46,6 +49,7 @@ public:
     // Result<> removeIndex(const std::string& url);
     Result<std::vector<IndexSource>> getIndexes();
 
+    std::optional<float> getSongDownloadProgress(const std::string& uniqueID);
     Result<std::string> getIndexName(const std::string& indexId);
     void cacheIndexName(const std::string& indexId, const std::string& indexName);
 
@@ -53,6 +57,8 @@ public:
 
     Result<std::vector<Nong>> getNongs(int gdSongID);
 
+    Result<> stopDownloadingSong(const std::string& uniqueID);
+    Result<> downloadSong(int gdSongID, const std::string& uniqueID);
     Result<> downloadSong(HostedSong& hosted);
 
     static IndexManager* get() {

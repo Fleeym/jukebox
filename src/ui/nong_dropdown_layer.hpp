@@ -11,6 +11,7 @@
 #include "nong_add_popup.hpp"
 #include "list/nong_cell.hpp"
 #include "list/song_cell.hpp"
+#include "../managers/nong_manager.hpp"
 
 using namespace geode::prelude;
 
@@ -28,6 +29,9 @@ protected:
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 
+    std::unique_ptr<EventListener<EventFilter<SongDownloadProgress>>> m_downloadListener;
+    std::unique_ptr<EventListener<EventFilter<SongStateChanged>>> m_songStateListener;
+
     bool m_fetching = false;
 
     bool setup(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) override;
@@ -40,11 +44,11 @@ protected:
 public:
     void onSelectSong(int songID);
     void onDiscord(CCObject*);
-    void setActiveSong(SongMetadataPathed const& song);
-    void deleteSong(SongMetadataPathed const& song);
+    void setActiveSong(int gdSongID, const std::string& uniqueID);
+    void deleteSong(int gdSongID, const std::string& uniqueID);
+    void downloadSong(int gdSongID, const std::string& uniqueID);
     void addSong(Nongs&& song);
     void updateParentWidget(SongMetadata const& song);
-    void refreshList();
 
     static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {
         auto ret = new NongDropdownLayer;

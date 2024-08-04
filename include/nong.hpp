@@ -123,21 +123,7 @@ public:
     std::optional<std::filesystem::path> path() const;
 };
 
-struct JUKEBOX_DLL SongMetadataPathed final {
-    SongMetadata m_metadata;
-    std::filesystem::path m_path;
-
-    SongMetadataPathed(
-        SongMetadata metadata,
-        std::filesystem::path path = ""
-    ) : m_metadata(metadata),
-        m_path(path)
-    {}
-
-    SongMetadataPathed(const LocalSong& song) : m_metadata(*song.metadata()), m_path(song.path()) {}
-    SongMetadataPathed(const YTSong& song) : m_metadata(*song.metadata()), m_path(song.path().value()) {}
-    SongMetadataPathed(const HostedSong& song) : m_metadata(*song.metadata()), m_path(song.path().value()) {}
-};
+class Nong;
 
 class JUKEBOX_DLL Nongs final {
 private:
@@ -159,7 +145,8 @@ public:
 
     int songID() const;
     LocalSong* defaultSong() const;
-    SongMetadataPathed* active() const;
+    std::string active() const;
+    Nong activeNong() const;
 
     bool isDefaultActive() const;
 
@@ -167,10 +154,11 @@ public:
      * Returns Err if there is no NONG with the given path for the song ID
      * Otherwise, returns ok
      */
-    geode::Result<> setActive(const std::filesystem::path& path);
+    geode::Result<> setActive(const std::string& uniqueID);
     geode::Result<> merge(Nongs&&);
     geode::Result<> deleteAllSongs();
-    geode::Result<> deleteSong(const std::filesystem::path& path);
+    geode::Result<> deleteSong(const std::string& uniqueID);
+    std::optional<Nong> getNongFromID(const std::string& uniqueID) const;
 
     std::vector<std::unique_ptr<LocalSong>>& locals();
     std::vector<std::unique_ptr<YTSong>>& youtube();
@@ -228,10 +216,11 @@ public:
     std::optional<std::filesystem::path> path() const;
     geode::Result<Nongs> toNongs() const;
 
-    void visit(
-        std::function<void(LocalSong*)> local,
-        std::function<void(YTSong*)> yt,
-        std::function<void(HostedSong*)> hosted
+    template <typename ReturnType>
+    ReturnType visit(
+        std::function<ReturnType(LocalSong*)> local,
+        std::function<ReturnType(YTSong*)> yt,
+        std::function<ReturnType(HostedSong*)> hosted
     ) const;
 };
 

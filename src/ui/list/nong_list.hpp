@@ -8,6 +8,7 @@
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <optional>
 
+#include "nong_cell.hpp"
 #include "../../../include/nong.hpp"
 
 namespace jukebox {
@@ -27,10 +28,13 @@ protected:
 
     CCMenuItemSpriteExtra* m_backBtn = nullptr;
 
-    std::function<void(int, const SongMetadataPathed&)> m_onSetActive;
+    std::function<void(int, const std::string&)> m_onSetActive;
     std::function<void(int)> m_onFixDefault;
-    std::function<void(int, const SongMetadataPathed&)> m_onDelete;
-    std::function<void(bool)> m_onListTypeChange;
+    std::function<void(int, const std::string&)> m_onDelete;
+    std::function<void(int, const std::string&)> m_onDownload;
+    std::function<void(std::optional<int>)> m_onListTypeChange;
+
+    std::vector<NongCell*> listedNongCells;
 
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
@@ -40,23 +44,26 @@ public:
     void build();
     void onBack(cocos2d::CCObject*);
     void onSelectSong(int songId);
+    void setDownloadProgress(std::string uniqueID, float progress);
 
     static NongList* create(
         std::vector<int>& songIds,
         const cocos2d::CCSize& size,
-        std::function<void(int, const SongMetadataPathed&)> onSetActive,
+        std::function<void(int, const std::string&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const SongMetadataPathed&)> onDelete,
-        std::function<void(bool)> onListTypeChange = {}
+        std::function<void(int, const std::string&)> onDelete,
+        std::function<void(int, const std::string&)> onDownload,
+        std::function<void(std::optional<int>)> onListTypeChange = {}
     );
 protected:
     bool init(
         std::vector<int>& songIds,
         const cocos2d::CCSize& size,
-        std::function<void(int, const SongMetadataPathed&)> onSetActive,
+        std::function<void(int, const std::string&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const SongMetadataPathed&)> onDelete,
-        std::function<void(bool)> onListTypeChange = {}
+        std::function<void(int, const std::string&)> onDelete,
+        std::function<void(int, const std::string&)> onDownload,
+        std::function<void(std::optional<int>)> onListTypeChange = {}
     );
 };
 

@@ -32,6 +32,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool searching = false;
         std::unordered_map<int, Nongs*> assetNongData;
         EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
+        std::unique_ptr<EventListener<EventFilter<SongStateChanged>>> m_songStateListener;
     };
 
     bool init(
@@ -64,6 +65,25 @@ class $modify(JBSongWidget, CustomSongWidget) {
         m_songLabel->setVisible(false);
         this->setupJBSW();
         m_fields->firstRun = false;
+
+        m_fields->m_songStateListener = std::make_unique<EventListener<EventFilter<SongStateChanged>>>([this](SongStateChanged* event){
+          if (!m_songInfoObject) return ListenerResult::Propagate;
+          if (event->m_gdSongID != m_songInfoObject->m_songID) return ListenerResult::Propagate;
+
+          auto nongs = NongManager::get()->getNongs(event->m_gdSongID);
+
+          if (!nongs.has_value()) return ListenerResult::Propagate;
+
+          auto active = nongs.value()->activeNong();
+
+          m_songInfoObject->m_songName = active.metadata()->m_name;
+          m_songInfoObject->m_artistName = active.metadata()->m_artist;
+          m_songInfoObject->m_songUrl = "local";
+          updateSongInfo();
+
+          return ListenerResult::Propagate;
+        });
+
         return true;
     }
 
@@ -135,9 +155,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         m_songLabel->setVisible(false);
-        log::info("before init song id: {} {} {}", obj->m_songID, m_isRobtopSong, NongManager::get()->adjustSongID(id, m_isRobtopSong));
         NongManager::get()->initSongID(obj, obj->m_songID, m_isRobtopSong);
-        log::info("after init song id: {} {} {}", obj->m_songID, m_isRobtopSong, NongManager::get()->adjustSongID(id, m_isRobtopSong));
         std::optional<Nongs*> result = NongManager::get()->getNongs(NongManager::get()->adjustSongID(id, m_isRobtopSong));
 
         auto nongs = result.value();
@@ -178,14 +196,14 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         auto nongs = res.value();
-        auto active = nongs->active();
+        auto active = nongs->activeNong();
         if (m_fields->menu != nullptr) {
             m_fields->menu->removeFromParent();
         }
 		auto menu = CCMenu::create();
 		menu->setID("song-name-menu");
 		auto label = CCLabelBMFont::create(
-            active->m_metadata.m_name.c_str(),
+            active.metadata()->m_name.c_str(),
             "bigFont.fnt"
         );
 		auto songNameMenuLabel = CCMenuItemSpriteExtra::create(
@@ -217,7 +235,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             // TODO this might be fuckery
             if (
-                !std::filesystem::exists(active->m_path)
+                !std::filesystem::exists(active.path().value())
                 && nongs->isDefaultActive()
             ) {
                 m_songIDLabel->setVisible(true);
@@ -228,8 +246,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }
 
             std::string sizeText;
-            if (std::filesystem::exists(active->m_path)) {
-                sizeText = NongManager::get()->getFormattedSize(active->m_path);
+            if (std::filesystem::exists(active.path().value())) {
+                sizeText = NongManager::get()->getFormattedSize(active.path().value());
             } else {
                 sizeText = "NA";
             }

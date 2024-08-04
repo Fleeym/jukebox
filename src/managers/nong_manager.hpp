@@ -14,27 +14,37 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-// class SongStateChanged final : public Event {
-// private:
-//     friend class NongManager;
-//     friend class IndexManager;
+class SongStateChanged final : public Event {
+private:
+    friend class NongManager;
+    friend class IndexManager;
 
-//     SongStateChanged();
-// public:
-//     int m_gdSongID;
-// };
+    SongStateChanged(
+        int gdSongID
+    ) : m_gdSongID(gdSongID)
+    {};
+public:
+    int m_gdSongID;
+};
 
-// class SongDownloadProgress final : public Event {
-// private:
-//     friend class NongManager;
-//     friend class IndexManager;
+class SongDownloadProgress final : public Event {
+private:
+    friend class NongManager;
+    friend class IndexManager;
 
-//     SongStateChanged();
-// public:
-//     int m_gdSongID;
-//     int index;
-//     int m_id;
-// };
+    SongDownloadProgress(
+        int gdSongID,
+        std::string m_uniqueID,
+        float progress
+    ) : m_gdSongID(gdSongID),
+        m_uniqueID(m_uniqueID),
+        m_progress(progress)
+    {};
+public:
+    int m_gdSongID;
+    std::string m_uniqueID;
+    float m_progress;
+};
 
 enum class SongInfoGetAction {
     CreateDefault,
@@ -93,6 +103,13 @@ public:
     int getStoredIDCount();
 
     /**
+     * Get Nong from manifest
+     * @param gdSongID the id of the song in GD
+     * @param uniqueID the unique id of the song in Jukebox
+     */
+    Result<Nong> getNongFromManifest(int gdSongID, std::string uniqueID);
+
+    /**
      * Fetches all NONG data for a certain songID
      *
      * @param songID the id of the song
@@ -132,21 +149,23 @@ public:
 
     /**
      * Set active song
-     * @param song active song
+     * @param gdSongID the id of the song in GD
+     * @param uniqueID the unique id of the song in Jukebox
     */
-    Result<> setActiveSong(const SongMetadataPathed& song);
+    Result<> setActiveSong(int gdSongID, std::string uniqueID);
 
     /**
      * Delete a song
-     * @param song song to delete
+     * @param gdSongID the id of the song in GD
+     * @param uniqueID the unique id of the song in Jukebox
     */
-    Result<> deleteSong(const SongMetadataPathed& song);
+    Result<> deleteSong(int gdSongID, std::string uniqueID);
 
     /**
      * Delete all NONGs for a song ID
-     * @param songID id of the song
+     * @param gdSongID id of the song
     */
-    Result<> deleteAllSongs(int songID);
+    Result<> deleteAllSongs(int gdSongID);
 
     /**
      * Get a path to a song file
