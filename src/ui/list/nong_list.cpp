@@ -163,7 +163,7 @@ void NongList::build() {
           auto cell =  jukebox::NongCell::create(
               id,
               std::move(nong),
-              uniqueID == defaultSong->path(),
+              uniqueID == defaultSong->metadata()->m_uniqueID,
               uniqueID == active,
               path.has_value() && std::filesystem::exists(path.value()),
               itemSize,
