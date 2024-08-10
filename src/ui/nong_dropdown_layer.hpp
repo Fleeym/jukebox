@@ -45,9 +45,9 @@ public:
     void onSelectSong(int songID);
     void onDiscord(CCObject*);
     void setActiveSong(int gdSongID, const std::string& uniqueID);
-    void deleteSong(int gdSongID, const std::string& uniqueID);
+    void deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio, bool confirm);
     void downloadSong(int gdSongID, const std::string& uniqueID);
-    void addSong(Nongs&& song);
+    void addSong(Nongs&& song, bool popup = true);
     void updateParentWidget(SongMetadata const& song);
 
     static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {

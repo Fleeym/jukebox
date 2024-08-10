@@ -3,41 +3,77 @@
 #include "index.hpp"
 
 template<>
-struct matjson::Serialize<jukebox::IndexMetadata::Features> {
-    // TODO: too much indentation
-    static geode::Result<jukebox::IndexMetadata::Features> from_json(matjson::Value const& value, int manifest) {
-        if (manifest == 1) {
-            if (!value.is_object()) {
-                return geode::Err("Expected object in features");
-            }
-            jukebox::IndexMetadata::Features features;
-            if (value.contains("features") && value["features"].is_object()) {
-                const auto& featuresObj = value["features"];
+struct matjson::Serialize<jukebox::IndexMetadata::Features::RequestParams> {
+    static geode::Result<jukebox::IndexMetadata::Features::RequestParams> from_json(matjson::Value const& value, int manifest) {
+        if (manifest != 1) return geode::Err("Using unsupported manifest version: " + std::to_string(manifest));
 
-                if (featuresObj.contains("submit")) {
-                if (!featuresObj["submit"].is_object()) {
-                    return geode::Err("Expected submit to be an object in features");
-                }
-                const auto& submitObj = featuresObj["submit"];
-                    if (submitObj.contains("requestParams")) {
-                        if (!submitObj["requestParams"].is_object()) {
-                            return geode::Err("Expected requestParams to be an object in submit");
-                        }
-                        if (!submitObj["requestParams"]["url"].is_string()) {
-                            return geode::Err("Expected requestParams.url to be a string in submit");
-                        };
-                        features.m_submit = jukebox::IndexMetadata::Features::Submit {
-                            .m_requestParams = jukebox::IndexMetadata::Features::Submit::RequestParams {
-                                .m_url = submitObj["requestParams"]["url"].as_string()
-                            }
-                        };
-                    }
-                }
-            }
-            return geode::Ok(features);
+        if (!value.is_object()) {
+            return geode::Err("Expected object in requestParams");
+        }
+        if (!value.contains("url") || !value["url"].is_string()) {
+            return geode::Err("Expected url in requestParams");
+        }
+        return geode::Ok(jukebox::IndexMetadata::Features::RequestParams {
+            .m_url = value["url"].as_string()
+        });
+    }
+};
+
+template<>
+struct matjson::Serialize<jukebox::IndexMetadata::Features> {
+    static geode::Result<jukebox::IndexMetadata::Features> from_json(matjson::Value const& value, int manifest) {
+        if (manifest != 1) return geode::Err("Using unsupported manifest version: " + std::to_string(manifest));
+
+        if (!value.is_object()) {
+            return geode::Err("Expected object in features");
         }
 
-        return geode::Err("Using unsupported manifest version: " + std::to_string(manifest));
+        jukebox::IndexMetadata::Features features;
+
+        const auto& featuresObj = value;
+
+        if (featuresObj.contains("submit")) {
+            if (!featuresObj["submit"].is_object()) {
+                return geode::Err("Expected submit to be an object in features");
+            }
+            const auto& submitObj = featuresObj["submit"];
+
+            features.m_submit = { };
+
+            if (submitObj.contains("preSubmitMessage")) {
+                if (!submitObj["preSubmitMessage"].is_string()) {
+                    return geode::Err("Expected preSubmitMessage to be a string in submit");
+                }
+                features.m_submit.value().m_preSubmitMessage = submitObj["preSubmitMessage"].as_string();
+            }
+
+            if (submitObj.contains("requestParams")) {
+                auto requestParams = matjson::Serialize<jukebox::IndexMetadata::Features::RequestParams>::from_json(submitObj["requestParams"], manifest);
+                if (requestParams.isErr()) {
+                    return geode::Err(requestParams.error());
+                }
+                features.m_submit.value().m_requestParams = requestParams.value();
+            }
+        }
+
+        if (featuresObj.contains("report")) {
+            if (!featuresObj["report"].is_object()) {
+                return geode::Err("Expected search to be an object in features");
+            }
+            const auto& searchObj = featuresObj["report"];
+
+            features.m_report = { };
+
+            if (searchObj.contains("requestParams")) {
+                auto requestParams = matjson::Serialize<jukebox::IndexMetadata::Features::RequestParams>::from_json(searchObj["requestParams"], manifest);
+                if (requestParams.isErr()) {
+                    return geode::Err(requestParams.error());
+                }
+                features.m_report.value().m_requestParams = requestParams.value();
+            }
+        }
+
+        return geode::Ok(features);
     };
 };
 

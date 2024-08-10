@@ -9,6 +9,7 @@
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/cocos.hpp>
 #include <fmt/format.h>
+#include <numeric>
 
 #include "../../managers/index_manager.hpp"
 #include "nong_cell.hpp"
@@ -20,12 +21,12 @@ bool NongCell::init(
     Nong info,
     bool isDefault,
     bool selected,
-    bool isDownloaded,
     CCSize const& size,
     std::function<void()> onSelect,
     std::function<void()> onFixDefault,
     std::function<void()> onDelete,
-    std::function<void()> onDownload
+    std::function<void()> onDownload,
+    std::function<void()> onEdit
 ) {
     if (!CCNode::init()) {
         return false;
@@ -35,11 +36,17 @@ bool NongCell::init(
     m_songInfo = std::move(info);
     m_isDefault = isDefault;
     m_isActive = selected;
-    m_isDownloaded = isDownloaded;
+    m_isDownloaded = m_songInfo.path().has_value() && std::filesystem::exists(m_songInfo.path().value());
+    m_isDownloadable = m_songInfo.visit<bool>(
+      [](auto _){return false;},
+      [](auto _){return true;},
+      [](auto _){return true;}
+    );
     m_onSelect = onSelect;
     m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
     m_onDownload = onDownload;
+    m_onEdit = onEdit;
 
     this->setContentSize(size);
     this->setAnchorPoint(CCPoint { 0.5f, 0.5f });
@@ -74,11 +81,30 @@ bool NongCell::init(
     button->setID("set-button");
 
     auto menu = CCMenu::create();
-    if (m_songInfo.path().has_value()) {
+    if (m_isDownloaded) {
       menu->addChild(button);
     }
     menu->setAnchorPoint(CCPoint { 1.0f, 0.5f });
-    menu->setContentSize(CCSize { 50.f, 30.f });
+    menu->setContentSize(CCSize { this->getContentSize().width, 200.f });
+
+    menu->setLayout(
+        RowLayout::create()
+            ->setGap(5.f)
+            ->setAxisAlignment(AxisAlignment::End)
+    );
+
+    if (!m_isDefault && !m_songInfo.indexID().has_value()) {
+        auto spr = CCSprite::create("JB_Edit.png"_spr);
+        spr->setScale(0.7f);
+        auto editButton = CCMenuItemSpriteExtra::create(
+            spr,
+            this,
+            menu_selector(NongCell::onEdit)
+        );
+        editButton->setID("edit-button");
+        editButton->setAnchorPoint(ccp(0.5f, 0.5f));
+        menu->addChild(editButton);
+    }
 
     if (isDefault) {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
@@ -93,9 +119,9 @@ bool NongCell::init(
         );
         fixButton->setID("fix-button");
         menu->addChild(fixButton);
-    } else if (!m_isDownloaded) {
+    } else if (m_isDownloadable && !m_isDownloaded) {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
-        sprite->setScale(0.8f);
+        sprite->setScale(0.7f);
         m_downloadButton = CCMenuItemSpriteExtra::create(
             sprite,
             this,
@@ -126,24 +152,23 @@ bool NongCell::init(
         m_downloadProgressContainer->setVisible(false);
 
         m_downloadButton->addChildAtPosition(m_downloadProgressContainer, Anchor::Center);
-        // TODO initial set download progress
-    } else {
-        auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
-        sprite->setScale(0.7f);
-        auto deleteButton = CCMenuItemSpriteExtra::create(
-            sprite,
-            this,
-            menu_selector(NongCell::onDelete)
-        );
-        deleteButton->setID("delete-button");
-        menu->addChild(deleteButton);
     }
 
-    menu->setLayout(
-        RowLayout::create()
-            ->setGap(5.f)
-            ->setAxisAlignment(AxisAlignment::Even)
-    );
+    if (!m_isDefault && !(m_songInfo.indexID().has_value() && !m_isDownloaded)) {
+      bool trashSprite = m_isDownloadable && m_isDownloaded;
+      auto sprite = CCSprite::createWithSpriteFrameName(
+          trashSprite ? "GJ_trashBtn_001.png" : "GJ_deleteIcon_001.png"
+      );
+      sprite->setScale(trashSprite ? 0.6475 : 0.7f);
+      auto deleteButton = CCMenuItemSpriteExtra::create(
+          sprite,
+          this,
+          menu_selector(NongCell::onDelete)
+      );
+      deleteButton->setID("delete-button");
+      menu->addChild(deleteButton);
+    }
+
     menu->updateLayout();
     menu->setID("button-menu");
     this->addChildAtPosition(menu, Anchor::Right, CCPoint { -5.0f, 0.0f });
@@ -151,12 +176,41 @@ bool NongCell::init(
     m_songInfoLayer = CCLayer::create();
     auto songMetadata = m_songInfo.metadata();
 
-    if (songMetadata->m_level.has_value()) {
-        m_levelNameLabel = CCLabelBMFont::create(songMetadata->m_level->c_str(), "bigFont.fnt");
-        m_levelNameLabel->limitLabelWidth(220.f, 0.4f, 0.1f);
-        m_levelNameLabel->setColor(cc3x(0x00c9ff));
-        m_levelNameLabel->setID("level-name");
+    std::vector<std::string> metadataList = {};
+
+    m_songInfo.visit<void>([&metadataList](auto _){
+    }, [&metadataList](YTSong* yt){
+        metadataList.push_back("youtube");
+    }, [&metadataList](HostedSong* hosted){
+        metadataList.push_back("hosted");
+    });
+
+    if (m_songInfo.indexID().has_value()) {
+        auto indexID = m_songInfo.indexID().value();
+        auto indexName = IndexManager::get()->getIndexName(indexID);
+        metadataList.push_back(indexName.has_value() ? indexName.value() : indexID);
     }
+
+    if (m_songInfo.metadata()->m_level.has_value()) {
+        metadataList.push_back(m_songInfo.metadata()->m_level.value());
+    }
+
+    m_metadataLabel = CCLabelBMFont::create(
+      metadataList.size() >= 1
+        ? std::accumulate(
+            std::next(metadataList.begin()),
+            metadataList.end(),
+            metadataList[0],
+            [](const std::string& a, const std::string& b) {
+                return a + " : " + b;
+            }
+        ).c_str()
+        : "",
+      "bigFont.fnt"
+    );
+    m_metadataLabel->limitLabelWidth(220.f, 0.4f, 0.1f);
+    m_metadataLabel->setColor(cc3x(0x00c9ff));
+    m_metadataLabel->setID("metadata");
 
     m_songNameLabel = CCLabelBMFont::create(songMetadata->m_name.c_str(), "bigFont.fnt");
     m_songNameLabel->limitLabelWidth(220.f, 0.7f, 0.1f);
@@ -170,23 +224,23 @@ bool NongCell::init(
     m_authorNameLabel->setID("author-name");
     m_songNameLabel->setID("song-name");
 
-    if (m_levelNameLabel != nullptr) {
-        m_songInfoLayer->addChild(m_levelNameLabel);
+    if (m_metadataLabel != nullptr) {
+        m_songInfoLayer->addChild(m_metadataLabel);
     }
     m_songInfoLayer->addChild(m_authorNameLabel);
     m_songInfoLayer->addChild(m_songNameLabel);
     m_songInfoLayer->setID("song-info");
     auto layout = ColumnLayout::create();
     layout->setAutoScale(false);
-    if (m_levelNameLabel != nullptr) {
+    if (m_metadataLabel != nullptr) {
         layout->setAxisAlignment(AxisAlignment::Even);
     } else {
         layout->setAxisAlignment(AxisAlignment::Center);
     }
     layout->setCrossAxisLineAlignment(AxisAlignment::Start);
-    m_songInfoLayer->setContentSize(ccp(240.f, this->getContentSize().height - 6.f));
+    m_songInfoLayer->setContentSize(ccp(240.f, this->getContentSize().height));
     m_songInfoLayer->setAnchorPoint(ccp(0.f, 0.f));
-    m_songInfoLayer->setPosition(ccp(12.f, 1.5f));
+    m_songInfoLayer->setPosition(ccp(12.f, 0.f));
     m_songInfoLayer->setLayout(layout);
 
     this->addChild(m_songInfoLayer);
@@ -214,7 +268,7 @@ void NongCell::onFixDefault(CCObject* target) {
 void NongCell::setDownloadProgress(float progress) {
     m_downloadProgressContainer->setVisible(true);
     auto sprite = CCSprite::createWithSpriteFrameName("GJ_cancelDownloadBtn_001.png");
-    sprite->setScale(0.8f);
+    sprite->setScale(0.7f);
     m_downloadButton->setSprite(sprite);
     m_downloadButton->setColor(ccc3(105, 105, 105));
     m_downloadProgress->setPercentage(progress*100.f);
@@ -228,18 +282,12 @@ void NongCell::onDownload(CCObject* target) {
     m_onDownload();
 }
 
+void NongCell::onEdit(CCObject* target) {
+    m_onEdit();
+}
+
 void NongCell::onDelete(CCObject* target) {
-    createQuickPopup(
-        "Are you sure?",
-        fmt::format("Are you sure you want to delete <cy>{}</c> from your NONGs?", m_songInfo.metadata()->m_name),
-        "No",
-        "Yes",
-        [this] (FLAlertLayer* self, bool btn2) {
-            if (btn2) {
-                m_onDelete();
-            }
-        }
-    );
+    m_onDelete();
 }
 
 NongCell* NongCell::create(
@@ -247,15 +295,15 @@ NongCell* NongCell::create(
     Nong info,
     bool isDefault,
     bool selected,
-    bool isDownloaded,
     CCSize const& size,
     std::function<void()> onSelect,
     std::function<void()> onFixDefault,
     std::function<void()> onDelete,
-    std::function<void()> onDownload
+    std::function<void()> onDownload,
+    std::function<void()> onEdit
 ) {
     auto ret = new NongCell();
-    if (ret && ret->init(songID, std::move(info), isDefault, selected, isDownloaded, size, onSelect, onFixDefault, onDelete, onDownload)) {
+    if (ret && ret->init(songID, std::move(info), isDefault, selected, size, onSelect, onFixDefault, onDelete, onDownload, onEdit)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);

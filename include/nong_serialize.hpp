@@ -126,17 +126,10 @@ struct matjson::Serialize<jukebox::YTSong> {
             );
         }
 
-        if (value.contains("index") && !value["index"].is_object()) {
-            return geode::Err(
-                "YT Song {} is invalid. Reason: invalid index",
-                value.dump(matjson::NO_INDENTATION)
-            );
-        }
-
         return geode::Ok(jukebox::YTSong {
             std::move(metadata.unwrap()),
             value["youtube_id"].as_string(),
-            value["index_id"].as_string(),
+            value.contains("index_id") && value["index_id"].is_string() ? std::optional(value["index_id"].as_string()) : std::nullopt,
             value.contains("path") ? std::optional(value["path"].as_string()) : std::nullopt,
         });
     }
@@ -148,7 +141,9 @@ struct matjson::Serialize<jukebox::YTSong> {
         ret["artist"] = value.metadata()->m_artist;
         ret["offset"] = value.metadata()->m_startOffset;
         ret["youtube_id"] = value.youtubeID();
-        ret["index_id"] = value.indexID();
+        if (value.indexID().has_value()) {
+            ret["index_id"] = value.indexID().value();
+        }
 
         if (value.path().has_value()) {
             #ifdef GEODE_IS_WINDOWS
@@ -198,17 +193,10 @@ struct matjson::Serialize<jukebox::HostedSong> {
             );
         }
 
-        if (value.contains("index") && !value["index"].is_object()) {
-            return geode::Err(
-                "Hosted Song {} is invalid. Reason: invalid index",
-                value.dump(matjson::NO_INDENTATION)
-            );
-        }
-
         return geode::Ok(jukebox::HostedSong{
             std::move(metadata.unwrap()),
             value["url"].as_string(),
-            value["index_id"].as_string(),
+            value.contains("index_id") && value["index_id"].is_string() ? std::optional(value["index_id"].as_string()) : std::nullopt,
             value.contains("path") ? std::optional(value["path"].as_string()) : std::nullopt,
         });
     }
@@ -220,7 +208,9 @@ struct matjson::Serialize<jukebox::HostedSong> {
         ret["artist"] = value.metadata()->m_artist;
         ret["offset"] = value.metadata()->m_startOffset;
         ret["url"] = value.url();
-        ret["index_id"] = value.indexID();
+        if (value.indexID().has_value()) {
+            ret["index_id"] = value.indexID();
+        }
 
         if (value.path().has_value()) {
             #ifdef GEODE_IS_WINDOWS

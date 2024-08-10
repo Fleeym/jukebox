@@ -20,19 +20,25 @@ struct JUKEBOX_DLL IndexSource final {
 
 struct IndexMetadata final {
   struct Links final {
-    std::optional<std::string> m_discord = std::nullopt;
+      std::optional<std::string> m_discord = std::nullopt;
   };
 
   struct Features {
-    struct Submit final {
       struct RequestParams final {
-        std::string m_url;
+          std::string m_url;
       };
 
-      std::optional<RequestParams> m_requestParams = std::nullopt;
-    };
+      struct Submit final {
+          std::optional<RequestParams> m_requestParams = std::nullopt;
+          std::optional<std::string> m_preSubmitMessage;
+      };
 
-    std::optional<Submit> m_submit = std::nullopt;
+      struct Report final {
+          std::optional<RequestParams> m_requestParams = std::nullopt;
+      };
+
+      std::optional<Submit> m_submit = std::nullopt;
+      std::optional<Report> m_report = std::nullopt;
   };
 
   int m_manifest;

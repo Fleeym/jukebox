@@ -328,6 +328,19 @@ Result<> NongManager::deleteAllSongs(int gdSongID) {
   return saveNongs(gdSongID);
 }
 
+Result<> NongManager::deleteSongAudio(int gdSongID, std::string uniqueID) {
+    auto nongs = getNongs(gdSongID);
+    if (!nongs.has_value()) {
+        return Err("Song not initialized in manifest");
+    }
+
+    if (auto err = nongs.value()->deleteSongAudio(uniqueID); err.isErr()) {
+        return Err("Couldn't delete Nong: {}", err.error());
+    }
+
+    return saveNongs(gdSongID);
+}
+
 Result<> NongManager::deleteSong(int gdSongID, std::string uniqueID) {
     auto nongs = getNongs(gdSongID);
     if (!nongs.has_value()) {

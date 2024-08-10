@@ -234,19 +234,16 @@ std::optional<float> IndexManager::getSongDownloadProgress(const std::string& un
     return std::nullopt;
 }
 
-// TOOD
-Result<std::string> IndexManager::getIndexName(const std::string& indexId) {
-    return Ok("Index Name");
-    // auto jsonObj = Mod::get()->getSavedValue<matjson::Value>("cached-index-names");
-    // if (!jsonObj.contains(indexId)) return Err("Index not found");
-    // return Ok(jsonObj[indexId].as_string());
+std::optional<std::string> IndexManager::getIndexName(const std::string& indexID) {
+    auto jsonObj = Mod::get()->getSavedValue<matjson::Value>("cached-index-names");
+    if (!jsonObj.contains(indexID)) return std::nullopt;
+    return jsonObj[indexID].as_string();
 }
 
-// TODO
 void IndexManager::cacheIndexName(const std::string& indexId, const std::string& indexName) {
-    // auto jsonObj = Mod::get()->getSavedValue<matjson::Value>("cached-index-names", {});
-    // jsonObj.set(indexId, indexName);
-    // Mod::get()->setSavedValue(indexId, jsonObj);
+    auto jsonObj = Mod::get()->getSavedValue<matjson::Value>("cached-index-names", {});
+    jsonObj.set(indexId, indexName);
+    Mod::get()->setSavedValue("cached-index-names", jsonObj);
 }
 
 Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
@@ -309,13 +306,14 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
     return Ok(std::move(nongs));
 }
 
-Result<> IndexManager::stopDownloadingSong(const std::string& uniqueID) {
+Result<> IndexManager::stopDownloadingSong(int gdSongID, const std::string& uniqueID) {
     if (m_downloadSongListeners.contains(uniqueID)) {
         m_downloadSongListeners.erase(uniqueID);
         m_downloadProgress.erase(uniqueID);
     } else {
         return Err("Trying to stop downloading a song that is not being downloaded");
     }
+    SongStateChanged(gdSongID).post();
     return Ok();
 }
 
@@ -341,6 +339,9 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
 
 Result<> IndexManager::downloadSong(HostedSong& hosted) {
     const std::string id = hosted.metadata()->m_uniqueID;
+
+    m_downloadProgress.erase(id);
+    m_downloadSongListeners.erase(id);
 
     DownloadSongTask task = web::WebRequest().timeout(std::chrono::seconds(30)).get(hosted.url()).map(
         [this](web::WebResponse *response) -> DownloadSongTask::Value {
@@ -371,12 +372,18 @@ Result<> IndexManager::downloadSong(HostedSong& hosted) {
         m_downloadSongListeners.erase(id);
         if (event->isCancelled())  {
             log::error("Failed to fetch song: cancelled");
+            SongStateChanged(hosted.metadata()->m_gdID).post();
             return;
         }
         DownloadSongTask::Value *result = event->getValue();
         if (result->isErr()) {
             log::error("Failed to fetch song: {}", result->error());
+            SongStateChanged(hosted.metadata()->m_gdID).post();
             return;
+        }
+
+        if (!hosted.indexID().has_value()) {
+            auto _ = NongManager::get()->getNongs(hosted.metadata()->m_gdID).value()->deleteSong(id);
         }
 
         Nong nong = {
@@ -389,10 +396,12 @@ Result<> IndexManager::downloadSong(HostedSong& hosted) {
         };
         if (auto res = NongManager::get()->addNongs(std::move(nong.toNongs().unwrap())); res.isErr()) {
             log::error("Failed to add song: {}", res.error());
+            SongStateChanged(hosted.metadata()->m_gdID).post();
             return;
         }
         if (auto res = NongManager::get()->setActiveSong(hosted.metadata()->m_gdID, hosted.metadata()->m_uniqueID); res.isErr()) {
             log::error("Failed to set song as active: {}", res.error());
+            SongStateChanged(hosted.metadata()->m_gdID).post();
             return;
         }
 

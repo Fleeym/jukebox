@@ -213,11 +213,24 @@ void NongDropdownLayer::createList() {
                 //     NongManager::get()->prepareCorrectDefault(id);
                 // }
             },
-            [this](int gdSongID, const std::string& uniqueID) {
-                this->deleteSong(gdSongID, uniqueID);
+            [this](int gdSongID, const std::string& uniqueID, bool onlyAudio, bool confirm) {
+                this->deleteSong(gdSongID, uniqueID, onlyAudio, confirm);
             },
             [this](int gdSongID, const std::string& uniqueID) {
                 this->downloadSong(gdSongID, uniqueID);
+            },
+            [this](int gdSongID, const std::string& uniqueID) {
+                auto nongs = NongManager::get()->getNongs(gdSongID);
+                if (!nongs.has_value()) {
+                    FLAlertLayer::create(
+                        "Error",
+                        "Song is not initialized",
+                        "Ok"
+                    )->show();
+                    return;
+                }
+                auto nong = nongs.value()->getNongFromID(uniqueID);
+                NongAddPopup::create(this, gdSongID, std::move(nong))->show();
             },
             [this](std::optional<int> currentSongID) {
                 m_currentSongID = currentSongID;
@@ -273,23 +286,58 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
     );
 }
 
-void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID) {
-    if (auto err = NongManager::get()->deleteSong(gdSongID, uniqueID); err.isErr()) {
-        FLAlertLayer::create("Failed", fmt::format("Failed to delete song: {}", err.error()), "Ok")->show();
+void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio, bool confirm) {
+    auto func = [gdSongID, uniqueID, onlyAudio, confirm](){
+        if (onlyAudio) {
+            if (auto err = NongManager::get()->deleteSongAudio(gdSongID, uniqueID); err.isErr()) {
+                FLAlertLayer::create("Failed", fmt::format("Failed to delete song: {}", err.error()), "Ok")->show();
+                return;
+            }
+        } else {
+            if (auto err = NongManager::get()->deleteSong(gdSongID, uniqueID); err.isErr()) {
+                FLAlertLayer::create("Failed", fmt::format("Failed to delete song: {}", err.error()), "Ok")->show();
+                return;
+            }
+        }
+
+        if (confirm) {
+          FLAlertLayer::create("Success", "The song was deleted!", "Ok")->show();
+        }
+    };
+
+    if (!confirm) {
+        func();
         return;
     }
 
-    FLAlertLayer::create("Success", "The song was deleted!", "Ok")->show();
+    createQuickPopup(
+        "Are you sure?",
+        fmt::format("Are you sure you want to delete the song from your NONGs?"),
+        "No",
+        "Yes",
+        [this, func] (FLAlertLayer* self, bool btn2) {
+            if (!btn2) return;
+            func();
+        }
+    );
 }
 
 void NongDropdownLayer::downloadSong(int gdSongID, const std::string& uniqueID) {
+    auto isDownloading = IndexManager::get()->getSongDownloadProgress(uniqueID);
+    if (isDownloading.has_value()) {
+      if (auto err = IndexManager::get()->stopDownloadingSong(gdSongID, uniqueID); err.isErr()) {
+          FLAlertLayer::create("Failed", fmt::format("Failed to stop downloading song: {}", err.error()), "Ok")->show();
+      }
+      return;
+    }
+
     if (auto err = IndexManager::get()->downloadSong(gdSongID, uniqueID); err.isErr()) {
         FLAlertLayer::create("Failed", fmt::format("Failed to start downloading song: {}", err.error()), "Ok")->show();
         return;
     }
 }
 
-void NongDropdownLayer::addSong(Nongs&& song) {
+void NongDropdownLayer::addSong(Nongs&& song, bool popup) {
     if (!m_currentSongID) {
         return;
     }
@@ -298,7 +346,9 @@ void NongDropdownLayer::addSong(Nongs&& song) {
         FLAlertLayer::create("Failed", fmt::format("Failed to add song: {}", err.error()), "Ok")->show();
         return;
     }
-    FLAlertLayer::create("Success", "The song was added!", "Ok")->show();
+    if (popup) {
+        FLAlertLayer::create("Success", "The song was added!", "Ok")->show();
+    }
 }
 
 void NongDropdownLayer::fetchSongFileHub(CCObject*) {

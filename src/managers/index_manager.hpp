@@ -50,14 +50,14 @@ public:
     Result<std::vector<IndexSource>> getIndexes();
 
     std::optional<float> getSongDownloadProgress(const std::string& uniqueID);
-    Result<std::string> getIndexName(const std::string& indexId);
+    std::optional<std::string> getIndexName(const std::string& indexID);
     void cacheIndexName(const std::string& indexId, const std::string& indexName);
 
     std::filesystem::path baseIndexesPath();
 
     Result<std::vector<Nong>> getNongs(int gdSongID);
 
-    Result<> stopDownloadingSong(const std::string& uniqueID);
+    Result<> stopDownloadingSong(int gdSongID, const std::string& uniqueID);
     Result<> downloadSong(int gdSongID, const std::string& uniqueID);
     Result<> downloadSong(HostedSong& hosted);
 

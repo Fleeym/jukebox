@@ -30,8 +30,9 @@ protected:
 
     std::function<void(int, const std::string&)> m_onSetActive;
     std::function<void(int)> m_onFixDefault;
-    std::function<void(int, const std::string&)> m_onDelete;
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> m_onDelete;
     std::function<void(int, const std::string&)> m_onDownload;
+    std::function<void(int, const std::string&)> m_onEdit;
     std::function<void(std::optional<int>)> m_onListTypeChange;
 
     std::vector<NongCell*> listedNongCells;
@@ -51,8 +52,9 @@ public:
         const cocos2d::CCSize& size,
         std::function<void(int, const std::string&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const std::string&)> onDelete,
+        std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
         std::function<void(int, const std::string&)> onDownload,
+        std::function<void(int, const std::string&)> onEdit,
         std::function<void(std::optional<int>)> onListTypeChange = {}
     );
 protected:
@@ -61,8 +63,9 @@ protected:
         const cocos2d::CCSize& size,
         std::function<void(int, const std::string&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const std::string&)> onDelete,
+        std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
         std::function<void(int, const std::string&)> onDownload,
+        std::function<void(int, const std::string&)> onEdit,
         std::function<void(std::optional<int>)> onListTypeChange = {}
     );
 };

@@ -24,8 +24,9 @@ bool NongList::init(
     const cocos2d::CCSize& size,
     std::function<void(int, const std::string&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const std::string&)> onDelete,
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
     std::function<void(int, const std::string&)> onDownload,
+    std::function<void(int, const std::string&)> onEdit,
     std::function<void(std::optional<int>)> onListTypeChange
 ) {
     if (!CCNode::init()) {
@@ -37,6 +38,7 @@ bool NongList::init(
     m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
     m_onDownload = onDownload;
+    m_onEdit = onEdit;
     m_onListTypeChange = onListTypeChange;
 
     if (m_songIds.size() == 1) {
@@ -160,12 +162,16 @@ void NongList::build() {
           auto path = nong.path();
           auto uniqueID = metadata.m_uniqueID;
 
-          auto cell =  jukebox::NongCell::create(
+          bool isFromIndex = nong.indexID().has_value();
+          bool isDownloaded = path.has_value() && std::filesystem::exists(path.value());
+          bool deleteOnlyAudio = !isFromIndex && isDownloaded;
+          bool deletePopup = !isFromIndex && !isDownloaded;
+
+          auto cell = jukebox::NongCell::create(
               id,
               std::move(nong),
               uniqueID == defaultSong->metadata()->m_uniqueID,
               uniqueID == active,
-              path.has_value() && std::filesystem::exists(path.value()),
               itemSize,
               [this, id, uniqueID] () {
                   m_onSetActive(id, uniqueID);
@@ -173,11 +179,14 @@ void NongList::build() {
               [this, id] () {
                   m_onFixDefault(id);
               },
-              [this, id, uniqueID] () {
-                  m_onDelete(id, uniqueID);
+              [this, id, uniqueID, deleteOnlyAudio, deletePopup]() {
+                  m_onDelete(id, uniqueID, deleteOnlyAudio, deletePopup);
               },
               [this, id, uniqueID] () {
                   m_onDownload(id, uniqueID);
+              },
+              [this, id, uniqueID] () {
+                  m_onEdit(id, uniqueID);
               }
           );
 
@@ -255,12 +264,13 @@ NongList* NongList::create(
     const cocos2d::CCSize& size,
     std::function<void(int, const std::string&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const std::string&)> onDelete,
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
     std::function<void(int, const std::string&)> onDownload,
+    std::function<void(int, const std::string&)> onEdit,
     std::function<void(std::optional<int>)> onListTypeChange
 ) {
     auto ret = new NongList();
-    if (!ret->init(songIds, size, onSetActive, onFixDefault, onDelete, onDownload, onListTypeChange)) {
+    if (!ret->init(songIds, size, onSetActive, onFixDefault, onDelete, onDownload, onEdit, onListTypeChange)) {
         CC_SAFE_DELETE(ret);
         return nullptr;
     }

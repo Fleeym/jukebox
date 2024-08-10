@@ -28,7 +28,6 @@
 #include <system_error>
 
 #include "nong_add_popup.hpp"
-#include "../managers/nong_manager.hpp"
 #include "../random_string.hpp"
 
 std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
@@ -52,29 +51,17 @@ std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
 
 namespace jukebox {
 
-bool NongAddPopup::setup(NongDropdownLayer* parent, int songID) {
+bool NongAddPopup::setup(NongDropdownLayer* parent, int songID, std::optional<Nong> replacedNong) {
     this->setTitle("Add Song");
     m_parentPopup = parent;
     m_songID = songID;
+    m_replacedNong = std::move(replacedNong);
 
     auto spr = CCSprite::createWithSpriteFrameName("accountBtn_myLevels_001.png");
     spr->setScale(0.7f);
-    m_selectSongButton = CCMenuItemSpriteExtra::create(
-        spr,
-        this,
-        menu_selector(NongAddPopup::openFile)
-    );
-    m_selectSongMenu = CCMenu::create();
-    m_selectSongMenu->setID("select-file-menu");
-    m_selectSongButton->setID("select-file-button");
-    m_selectSongMenu->addChild(this->m_selectSongButton);
-    m_selectSongMenu->setContentSize(m_selectSongButton->getScaledContentSize());
-    m_selectSongMenu->setAnchorPoint({1.0f, 0.0f});
-    m_selectSongMenu->setPosition(m_mainLayer->getContentSize().width - 10.f, 10.f);
-    m_selectSongMenu->setLayout(ColumnLayout::create());
 
     m_addSongButton = CCMenuItemSpriteExtra::create(
-        ButtonSprite::create("Add"),
+        ButtonSprite::create(m_replacedNong.has_value() ? "Edit" : "Add"),
         this,
         menu_selector(NongAddPopup::addSong)
     );
@@ -87,34 +74,40 @@ bool NongAddPopup::setup(NongDropdownLayer* parent, int songID) {
     m_addSongMenu->setContentSize(m_addSongButton->getContentSize());
     m_addSongMenu->setLayout(ColumnLayout::create());
 
-    auto selectedContainer = CCNode::create();
-    selectedContainer->setID("selected-container");
-    m_selectedContainer = selectedContainer;
-    auto selectedLabel = CCLabelBMFont::create("Selected file:", "goldFont.fnt");
-    selectedLabel->setScale(0.75f);
-    selectedLabel->setID("selected-label");
-    selectedContainer->addChild(selectedLabel);
-    auto layout = ColumnLayout::create();
-    layout->setAutoScale(false);
-    layout->setAxisReverse(true);
-    layout->setAxisAlignment(AxisAlignment::End);
-    selectedContainer->setContentSize({ 250.f, 50.f });
-    selectedContainer->setPosition(m_mainLayer->getContentSize().width / 2, m_mainLayer->getContentSize().height / 2 - 25.f);
-    selectedContainer->setAnchorPoint({0.5f, 1.0f});
-    selectedContainer->setLayout(layout);
-    m_mainLayer->addChild(selectedContainer);
-
-    m_mainLayer->addChild(this->m_selectSongMenu);
     m_mainLayer->addChild(this->m_addSongMenu);
     this->createInputs();
+
+    if (m_replacedNong.has_value()) {
+        m_replacedNong->visit<void>(
+            [this](LocalSong* local) {
+                setSongType(NongAddPopupSongType::local);
+                m_localLinkInput->setString(local->path().string());
+            },
+            [this](YTSong* yt) {
+                setSongType(NongAddPopupSongType::yt);
+                m_ytLinkInput->setString(yt->youtubeID());
+            },
+            [this](HostedSong* hosted) {
+                setSongType(NongAddPopupSongType::hosted);
+                m_hostedLinkInput->setString(hosted->url());
+            }
+        );
+
+        m_songNameInput->setString(m_replacedNong->metadata()->m_name);
+        m_artistNameInput->setString(m_replacedNong->metadata()->m_artist);
+        if (m_replacedNong->metadata()->m_level.has_value()) {
+            m_levelNameInput->setString(m_replacedNong->metadata()->m_level.value());
+        }
+        m_startOffsetInput->setString(std::to_string(m_replacedNong->metadata()->m_startOffset));
+    }
 
     return true;
 }
 
-NongAddPopup* NongAddPopup::create(NongDropdownLayer* parent, int songID) {
+NongAddPopup* NongAddPopup::create(NongDropdownLayer* parent, int songID, std::optional<Nong> replacedNong) {
     auto ret = new NongAddPopup();
     auto size = ret->getPopupSize();
-    if (ret && ret->initAnchored(size.width, size.height, parent, songID)) {
+    if (ret && ret->initAnchored(size.width, size.height, parent, songID, std::move(replacedNong))) {
         ret->autorelease();
         return ret;
     }
@@ -126,69 +119,28 @@ CCSize NongAddPopup::getPopupSize() {
     return { 320.f, 240.f };
 }
 
-void NongAddPopup::addPathLabel(std::string const& path) {
-    if (m_songPathContainer != nullptr) {
-        m_songPathContainer->removeFromParent();
-        m_songPathContainer = nullptr;
-        m_songPathLabel = nullptr;
-    }
-    auto container = CCNode::create();
-    container->setID("song-path-container");
-    auto label = CCLabelBMFont::create(path.c_str(), "bigFont.fnt");
-    label->limitLabelWidth(240.f, 0.6f, 0.1f);
-    label->setID("song-path-label");
-    m_songPathLabel = label;
-    m_songPathContainer = container;
-
-    auto bgSprite = CCScale9Sprite::create(
-        "square02b_001.png",
-        { 0.0f, 0.0f, 80.0f, 80.0f }
-    );
-    bgSprite->setID("song-path-bg");
-    bgSprite->setColor({ 0, 0, 0 });
-    bgSprite->setOpacity(75);
-    bgSprite->setScale(0.4f);
-    bgSprite->setContentSize(CCPoint { 250.f, 25.f } / bgSprite->getScale());
-    container->setContentSize(bgSprite->getScaledContentSize());
-    bgSprite->setPosition(container->getScaledContentSize() / 2);
-    label->setPosition(container->getScaledContentSize() / 2);
-    container->addChild(bgSprite);
-    container->addChild(label);
-    container->setAnchorPoint({0.5f, 0.5f});
-    container->setPosition(m_mainLayer->getContentSize() / 2);
-    m_selectedContainer->addChild(container);
-    m_selectedContainer->updateLayout();
-}
-
 void NongAddPopup::openFile(CCObject* target) {
-    auto task = Task<Result<std::filesystem::path>>::run([](auto progress, auto hasBeenCancelled) -> Task<Result<std::filesystem::path>>::Result {
-        return Ok(std::filesystem::path("C:\\users\\flafy\\AppData\\Local\\GeometryDash\\10101.mp3"));
-    }, "My epic task that sums up numbers for some reason");
-
+    #ifdef GEODE_IS_WINDOWS
+    file::FilePickOptions::Filter filter = {
+        .description = "Songs",
+        .files = { "*.mp3", "*.flac", "*.wav", "*.ogg" }
+    };
+    #else
     file::FilePickOptions::Filter filter = {};
+    #endif
+    file::FilePickOptions options = {
+        std::nullopt,
+        {filter}
+    };
+
+    auto callback = [this](Result<std::filesystem::path> result) {
+    };
+    auto failedCallback = []() {
+        FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
+    };
+
     m_pickListener.bind(this, &NongAddPopup::onFileOpen);
-    m_pickListener.setFilter(task);
-    // #ifdef GEODE_IS_WINDOWS
-    // file::FilePickOptions::Filter filter = {
-    //     .description = "Songs",
-    //     .files = { "*.mp3", "*.flac", "*.wav", "*.ogg" }
-    // };
-    // #else
-    // file::FilePickOptions::Filter filter = {};
-    // #endif
-    // file::FilePickOptions options = {
-    //     std::nullopt,
-    //     {filter}
-    // };
-
-    // auto callback = [this](Result<std::filesystem::path> result) {
-    // };
-    // auto failedCallback = []() {
-    //     FLAlertLayer::create("Error", "Failed to open file", "Ok")->show();
-    // };
-
-    // m_pickListener.bind(this, &NongAddPopup::onFileOpen);
-    // m_pickListener.setFilter(file::pick(file::PickMode::OpenFile, options));
+    m_pickListener.setFilter(file::pick(file::PickMode::OpenFile, options));
 }
 
 void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event) {
@@ -240,13 +192,13 @@ void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event)
 
                     ss << "Found metadata for the imported song: ";
                     if (meta->name.has_value()) {
-                        ss << fmt::format("\nName: \"{}\". ", meta->name.value());
+                        ss << fmt::format("Name: \"{}\". ", meta->name.value());
                     }
                     if (meta->artist.has_value()) {
-                        ss << fmt::format("\nArtist: \"{}\". ", meta->artist.value());
+                        ss << fmt::format("Artist: \"{}\". ", meta->artist.value());
                     }
 
-                    ss << "\nDo you want to set those values for the song?";
+                    ss << "Do you want to set those values for the song?";
 
                     createQuickPopup(
                         "Metadata found",
@@ -276,15 +228,45 @@ void NongAddPopup::onFileOpen(Task<Result<std::filesystem::path>>::Event* event)
             }
         }
 
-        this->addPathLabel(strPath);
-        m_songPath = path;
+        m_localLinkInput->setString(strPath);
     }
 }
+
+void NongAddPopup::setSongType(NongAddPopupSongType type) {
+    m_songType = type;
+
+    m_switchLocalButtonSprite->updateBGImage(type == NongAddPopupSongType::local ? "GJ_button_01.png" : "GJ_button_04.png");
+    m_switchYTButtonSprite->updateBGImage(type == NongAddPopupSongType::yt ? "GJ_button_01.png" : "GJ_button_04.png");
+    m_switchHostedButtonSprite->updateBGImage(type == NongAddPopupSongType::hosted ? "GJ_button_01.png" : "GJ_button_04.png");
+
+    m_specificInputsMenu->removeAllChildren();
+    if (type == NongAddPopupSongType::local) {
+        m_specificInputsMenu->addChild(m_localMenu);
+    } else if (type == NongAddPopupSongType::yt) {
+        m_specificInputsMenu->addChild(m_ytLinkInput);
+    } else if (type == NongAddPopupSongType::hosted) {
+        m_specificInputsMenu->addChild(m_hostedLinkInput);
+    }
+    m_specificInputsMenu->updateLayout();
+}
+
+void NongAddPopup::onSwitchToLocal(CCObject*) {
+    this->setSongType(NongAddPopupSongType::local);
+}
+
+void NongAddPopup::onSwitchToYT(CCObject*) {
+    this->setSongType(NongAddPopupSongType::yt);
+}
+
+void NongAddPopup::onSwitchToHosted(CCObject*) {
+    this->setSongType(NongAddPopupSongType::hosted);
+}
+
 
 void NongAddPopup::createInputs() {
     auto inputParent = CCNode::create();
     inputParent->setID("input-parent");
-    auto songInput = TextInput::create(250.f, "Song name*", "bigFont.fnt");
+    auto songInput = TextInput::create(350.f, "Song name*", "bigFont.fnt");
     songInput->setID("song-name-input");
     songInput->setCommonFilter(CommonFilter::Any);
     songInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
@@ -292,7 +274,7 @@ void NongAddPopup::createInputs() {
     songInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_songNameInput = songInput;
 
-    auto artistInput = TextInput::create(250.f, "Artist name*", "bigFont.fnt");
+    auto artistInput = TextInput::create(350.f, "Artist name*", "bigFont.fnt");
     artistInput->setID("artist-name-input");
     artistInput->setCommonFilter(CommonFilter::Any);
     artistInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
@@ -300,7 +282,7 @@ void NongAddPopup::createInputs() {
     artistInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_artistNameInput = artistInput;
 
-    auto levelNameInput = TextInput::create(250.f, "Level name", "bigFont.fnt");
+    auto levelNameInput = TextInput::create(350.f, "Level name", "bigFont.fnt");
     levelNameInput->setID("artist-name-input");
     levelNameInput->setCommonFilter(CommonFilter::Any);
     levelNameInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
@@ -308,7 +290,7 @@ void NongAddPopup::createInputs() {
     levelNameInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_levelNameInput = levelNameInput;
 
-    auto startOffsetInput = TextInput::create(250.f, "Start offset (ms)", "bigFont.fnt");
+    auto startOffsetInput = TextInput::create(350.f, "Start offset (ms)", "bigFont.fnt");
     startOffsetInput->setID("start-offset-input");
     startOffsetInput->setCommonFilter(CommonFilter::Int);
     startOffsetInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
@@ -316,13 +298,109 @@ void NongAddPopup::createInputs() {
     startOffsetInput->getInputNode()->setLabelPlaceholderScale(0.7f);
     m_startOffsetInput = startOffsetInput;
 
+
+    m_switchLocalButtonSprite = ButtonSprite::create("Local", "bigFont.fnt", "GJ_button_01.png");
+    m_switchYTButtonSprite = ButtonSprite::create("YouTube", "bigFont.fnt", "GJ_button_01.png");
+    m_switchHostedButtonSprite = ButtonSprite::create("Hosted", "bigFont.fnt", "GJ_button_01.png");
+    m_switchLocalButton = CCMenuItemSpriteExtra::create(
+        m_switchLocalButtonSprite,
+        this,
+        menu_selector(NongAddPopup::onSwitchToLocal)
+    );
+    m_switchYTButton = CCMenuItemSpriteExtra::create(
+        m_switchYTButtonSprite,
+        this,
+        menu_selector(NongAddPopup::onSwitchToYT)
+    );
+    m_switchHostedButton = CCMenuItemSpriteExtra::create(
+        m_switchHostedButtonSprite,
+        this,
+        menu_selector(NongAddPopup::onSwitchToHosted)
+    );
+    m_switchLocalMenu = CCMenu::create();
+    m_switchYTMenu = CCMenu::create();
+    m_switchHostedMenu = CCMenu::create();
+    m_switchLocalMenu->setContentSize({ m_switchLocalButton->getContentWidth(), 30.f });
+    m_switchLocalMenu->addChildAtPosition(m_switchLocalButton, Anchor::Center);
+    m_switchYTMenu->setContentSize({ m_switchYTButton->getContentWidth(), 30.f });
+    m_switchYTMenu->addChildAtPosition(m_switchYTButton, Anchor::Center);
+    m_switchHostedMenu->setContentSize({ m_switchHostedButton->getContentWidth(), 30.f });
+    m_switchHostedMenu->addChildAtPosition(m_switchHostedButton, Anchor::Center);
+
+    m_switchButtonsMenu = CCMenu::create();
+    m_switchButtonsMenu->addChild(m_switchLocalMenu);
+    m_switchButtonsMenu->addChild(m_switchYTMenu);
+    m_switchButtonsMenu->addChild(m_switchHostedMenu);
+    m_switchButtonsMenu->setContentSize({ 280.f, 50.f });
+    m_switchButtonsMenu->setLayout(
+        RowLayout::create()
+            ->setAxisAlignment(AxisAlignment::Center)
+    );
+
+    m_specificInputsMenu = CCMenu::create();
+    m_specificInputsMenu->setContentSize({ 350.f, 70.f });
+    m_specificInputsMenu->setLayout(
+        ColumnLayout::create()
+            ->setAxisAlignment(AxisAlignment::End)
+    );
+
+    m_localMenu = CCMenu::create();
+    m_localMenu->setContentSize(m_specificInputsMenu->getContentSize());
+    m_localMenu->setLayout(
+        RowLayout::create()
+            ->setAxisAlignment(AxisAlignment::End)
+    );
+    auto spr = CCSprite::createWithSpriteFrameName("accountBtn_myLevels_001.png");
+    spr->setScale(0.7f);
+    m_localSongButton = CCMenuItemSpriteExtra::create(
+        spr,
+        this,
+        menu_selector(NongAddPopup::openFile)
+    );
+    m_localSongButton->setID("select-file-button");
+    m_localSongButtonMenu = CCMenu::create();
+    m_localSongButtonMenu->setID("select-file-menu");
+    m_localSongButtonMenu->addChild(this->m_localSongButton);
+    m_localSongButtonMenu->setContentSize(m_localSongButton->getScaledContentSize());
+    m_localSongButtonMenu->setAnchorPoint({1.0f, 0.0f});
+    m_localSongButtonMenu->setPosition(m_mainLayer->getContentSize().width - 10.f, 10.f);
+    m_localSongButtonMenu->setLayout(ColumnLayout::create());
+    m_localLinkInput = TextInput::create(350.f, "Local Path", "bigFont.fnt");
+    m_localLinkInput->setID("local-link-input");
+    m_localLinkInput->setCommonFilter(CommonFilter::Any);
+    m_localLinkInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    m_localLinkInput->getInputNode()->setMaxLabelScale(0.7f);
+    m_localLinkInput->getInputNode()->setLabelPlaceholderScale(0.7f);
+    m_localMenu->addChild(m_localLinkInput);
+    m_localMenu->addChild(m_localSongButtonMenu);
+    m_localMenu->updateLayout();
+    m_localMenu->retain();
+
+    m_ytLinkInput = TextInput::create(350.f, "YouTube Link", "bigFont.fnt");
+    m_ytLinkInput->setID("yt-link-input");
+    m_ytLinkInput->setCommonFilter(CommonFilter::Any);
+    m_ytLinkInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    m_ytLinkInput->getInputNode()->setMaxLabelScale(0.7f);
+    m_ytLinkInput->getInputNode()->setLabelPlaceholderScale(0.7f);
+    m_ytLinkInput->retain();
+
+    m_hostedLinkInput = TextInput::create(350.f, "Hosted Link", "bigFont.fnt");
+    m_hostedLinkInput->setID("hosted-link-input");
+    m_hostedLinkInput->setCommonFilter(CommonFilter::Any);
+    m_hostedLinkInput->getInputNode()->setLabelPlaceholderColor(ccColor3B {108, 153, 216});
+    m_hostedLinkInput->getInputNode()->setMaxLabelScale(0.7f);
+    m_hostedLinkInput->getInputNode()->setLabelPlaceholderScale(0.7f);
+    m_hostedLinkInput->retain();
+
     float inputHeight = songInput->getContentSize().height;
 
     inputParent->addChild(songInput);
     inputParent->addChild(artistInput);
     inputParent->addChild(levelNameInput);
     inputParent->addChild(startOffsetInput);
-    inputParent->setContentSize({ 250.f, 100.f });
+    inputParent->addChild(m_switchButtonsMenu);
+    inputParent->addChild(m_specificInputsMenu);
+    inputParent->setContentSize({ 250.f, 150.f });
     inputParent->setAnchorPoint({ 0.5f, 1.0f });
     inputParent->setLayout(
         ColumnLayout::create()
@@ -333,6 +411,8 @@ void NongAddPopup::createInputs() {
         Anchor::Top,
         { 0.0f, -40.f }
     );
+
+    this->setSongType(NongAddPopupSongType::local);
 }
 
 void NongAddPopup::addSong(CCObject* target) {
@@ -340,47 +420,6 @@ void NongAddPopup::addSong(CCObject* target) {
     auto songName = std::string(m_songNameInput->getString());
     std::string levelName = m_levelNameInput->getString();
     auto startOffsetStr = m_startOffsetInput->getString();
-    #ifdef GEODE_IS_WINDOWS
-    if (wcslen(m_songPath.c_str()) == 0) {
-    #else
-    if (strlen(m_songPath.c_str()) == 0) {
-    #endif
-        FLAlertLayer::create("Error", "No file selected.", "Ok")->show();
-        return;
-    }
-    if (!fs::exists(m_songPath)) {
-        std::stringstream ss;
-        ss << "The selected file (" << m_songPath.string() << ") does not exist.";
-        FLAlertLayer::create("Error", ss.str().c_str(), "Ok")->show();
-        return;
-    }
-
-    if (fs::is_directory(m_songPath)) {
-        FLAlertLayer::create("Error", "You selected a directory.", "Ok")->show();
-        return;
-    }
-
-    std::string extension = m_songPath.extension().string();
-
-    if (
-        extension != ".mp3"
-        && extension != ".ogg"
-        && extension != ".wav"
-        && extension != ".flac"
-    ) {
-        FLAlertLayer::create("Error", "The selected file must be one of the following: <cb>mp3, wav, flac, ogg</c>.", "Ok")->show();
-        return;
-    }
-
-    if (songName == "") {
-        FLAlertLayer::create("Error", "Song name is empty.", "Ok")->show();
-        return;
-    }
-
-    if (artistName == "") {
-        FLAlertLayer::create("Error", "Artist name is empty.", "Ok")->show();
-        return;
-    }
 
     int startOffset = 0;
 
@@ -388,37 +427,148 @@ void NongAddPopup::addSong(CCObject* target) {
         startOffset = std::stoi(startOffsetStr);
     }
 
-    auto destination = NongManager::get()->generateSongFilePath(m_songPath.extension().string());
-    bool result;
-    std::error_code error_code;
-    result = fs::copy_file(m_songPath, destination, error_code);
-    if (error_code) {
-        std::stringstream ss;
-        ss << "Failed to save song. Please try again! Error category: " << error_code.category().name() << ", message: " << error_code.category().message(error_code.value());
-        FLAlertLayer::create("Error", ss.str().c_str(), "Ok")->show();
-        return;
-    }
-    if (!result) {
-        FLAlertLayer::create("Error", "Failed to save song. Please try again!", "Ok")->show();
-        return;
-    }
+    Nong* nong = nullptr;
 
-    Nong nong = {
-        LocalSong {
-          SongMetadata {
-            m_songID,
-            jukebox::random_string(16),
-            songName,
-            artistName,
-            levelName,
-            startOffset,
+    if (m_songType == NongAddPopupSongType::local) {
+        fs::path songPath = m_localLinkInput->getString();
+        #ifdef GEODE_IS_WINDOWS
+        if (wcslen(songPath.c_str()) == 0) {
+        #else
+        if (strlen(m_songPath.c_str()) == 0) {
+        #endif
+            FLAlertLayer::create("Error", "No file selected.", "Ok")->show();
+            return;
+        }
+        if (!fs::exists(songPath)) {
+            std::stringstream ss;
+            ss << "The selected file (" << songPath.string() << ") does not exist.";
+            FLAlertLayer::create("Error", ss.str().c_str(), "Ok")->show();
+            return;
+        }
+
+        if (fs::is_directory(songPath)) {
+            FLAlertLayer::create("Error", "You selected a directory.", "Ok")->show();
+            return;
+        }
+
+        std::string extension = songPath.extension().string();
+
+        if (
+            extension != ".mp3"
+            && extension != ".ogg"
+            && extension != ".wav"
+            && extension != ".flac"
+        ) {
+            FLAlertLayer::create("Error", "The selected file must be one of the following: <cb>mp3, wav, flac, ogg</c>.", "Ok")->show();
+            return;
+        }
+
+        if (songName == "") {
+            FLAlertLayer::create("Error", "Song name is empty.", "Ok")->show();
+            return;
+        }
+
+        if (artistName == "") {
+            FLAlertLayer::create("Error", "Artist name is empty.", "Ok")->show();
+            return;
+        }
+
+        auto unique = jukebox::random_string(16);
+        auto destination = Mod::get()->getSaveDir() / "nongs";
+        if (!fs::exists(destination)) {
+            fs::create_directory(destination);
+        }
+        unique += songPath.extension().string();
+        destination = destination / unique;
+        bool result;
+        std::error_code error_code;
+        result = fs::copy_file(songPath, destination, error_code);
+        if (error_code) {
+            std::stringstream ss;
+            ss << "Failed to save song. Please try again! Error category: " << error_code.category().name() << ", message: " << error_code.category().message(error_code.value());
+            FLAlertLayer::create("Error", ss.str().c_str(), "Ok")->show();
+            return;
+        }
+        if (!result) {
+            FLAlertLayer::create("Error", "Failed to save song. Please try again!", "Ok")->show();
+            return;
+        }
+
+        nong = new Nong {
+            LocalSong {
+              SongMetadata {
+                m_songID,
+                jukebox::random_string(16),
+                songName,
+                artistName,
+                levelName,
+                startOffset,
+              },
+              destination,
+            },
+        };
+    } else if (m_songType == NongAddPopupSongType::yt) {
+        std::string ytLink = m_ytLinkInput->getString();
+        if (strlen(ytLink.c_str()) == 0) {
+            FLAlertLayer::create("Error", "No YouTube video specified", "Ok")->show();
+            return;
+        }
+
+        nong = new Nong {
+            YTSong {
+              SongMetadata {
+                m_songID,
+                jukebox::random_string(16),
+                songName,
+                artistName,
+                levelName,
+                startOffset,
+              },
+              m_ytLinkInput->getString(),
+              std::nullopt,
+            },
+        };
+    } else if (m_songType == NongAddPopupSongType::hosted) {
+      std::string hostedLink = m_hostedLinkInput->getString();
+      if (strlen(hostedLink.c_str()) == 0) {
+          FLAlertLayer::create("Error", "No URL specified", "Ok")->show();
+          return;
+      }
+
+      nong = new Nong {
+          HostedSong {
+            SongMetadata {
+              m_songID,
+              jukebox::random_string(16),
+              songName,
+              artistName,
+              levelName,
+              startOffset,
+            },
+            m_hostedLinkInput->getString(),
+            std::nullopt,
           },
-          destination,
-        },
-    };
+      };
+    }
 
-    m_parentPopup->addSong(std::move(nong.toNongs().unwrap()));
+    if (m_replacedNong.has_value()) {
+        m_parentPopup->deleteSong(
+            m_replacedNong->metadata()->m_gdID,
+            m_replacedNong->metadata()->m_uniqueID,
+            false,
+            false
+        );
+    }
+    m_parentPopup->addSong(std::move(nong->toNongs().unwrap()), !m_replacedNong.has_value());
+    delete nong;
     this->onClose(this);
+}
+
+void NongAddPopup::onClose(CCObject* target) {
+    m_localMenu->release();
+    m_ytLinkInput->release();
+    m_hostedLinkInput->release();
+    this->Popup::onClose(target);
 }
 
 std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(

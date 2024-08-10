@@ -158,6 +158,7 @@ public:
     geode::Result<> merge(Nongs&&);
     geode::Result<> deleteAllSongs();
     geode::Result<> deleteSong(const std::string& uniqueID);
+    geode::Result<> deleteSongAudio(const std::string& uniqueID);
     std::optional<Nong> getNongFromID(const std::string& uniqueID) const;
 
     std::vector<std::unique_ptr<LocalSong>>& locals();
@@ -214,6 +215,7 @@ public:
 
     SongMetadata* metadata() const;
     std::optional<std::filesystem::path> path() const;
+    std::optional<std::string> indexID() const;
     geode::Result<Nongs> toNongs() const;
 
     template <typename ReturnType>

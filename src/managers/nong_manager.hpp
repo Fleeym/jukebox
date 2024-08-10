@@ -162,6 +162,13 @@ public:
     Result<> deleteSong(int gdSongID, std::string uniqueID);
 
     /**
+     * Delete a song's audio file
+     * @param gdSongID the id of the song in GD
+     * @param uniqueID the unique id of the song in Jukebox
+    */
+    Result<> deleteSongAudio(int gdSongID, std::string uniqueID);
+
+    /**
      * Delete all NONGs for a song ID
      * @param gdSongID id of the song
     */
