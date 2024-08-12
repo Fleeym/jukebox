@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <unordered_map>
@@ -57,9 +58,9 @@ public:
 
     Result<std::vector<Nong>> getNongs(int gdSongID);
 
-    Result<> stopDownloadingSong(int gdSongID, const std::string& uniqueID);
+    std::function<void(IndexManager::DownloadSongTask::Event*)> createDownloadSongBind(int gdSongID, Nong nong);
     Result<> downloadSong(int gdSongID, const std::string& uniqueID);
-    Result<> downloadSong(HostedSong& hosted);
+    Result<> downloadSong(Nong hosted);
 
     static IndexManager* get() {
         if (m_instance == nullptr) {

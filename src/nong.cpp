@@ -644,16 +644,21 @@ private:
     };
 
     Type m_type;
-    std::unique_ptr<LocalSong> m_localSong;
-    std::unique_ptr<YTSong> m_ytSong;
-    std::unique_ptr<HostedSong> m_hostedSong;
+    std::unique_ptr<LocalSong> m_localSong = nullptr;
+    std::unique_ptr<YTSong> m_ytSong = nullptr;
+    std::unique_ptr<HostedSong> m_hostedSong = nullptr;
 
 public:
     Impl(const LocalSong local) : m_type(Type::Local), m_localSong(std::make_unique<LocalSong>(local)) {}
     Impl(const YTSong yt) : m_type(Type::YT), m_ytSong(std::make_unique<YTSong>(yt)) {}
     Impl(const HostedSong hosted) : m_type(Type::Hosted), m_hostedSong(std::make_unique<HostedSong>(hosted)) {}
 
-    Impl(const Impl&) = delete;
+    Impl(const Impl& other)
+      : m_type(other.m_type),
+        m_localSong(other.m_type == Type::Local ? std::make_unique<LocalSong>(*other.m_localSong) : nullptr),
+        m_ytSong(other.m_type == Type::YT ? std::make_unique<YTSong>(*other.m_ytSong) : nullptr),
+        m_hostedSong(other.m_type == Type::Hosted ? std::make_unique<HostedSong>(*other.m_hostedSong) : nullptr) {}
+
     Impl& operator=(const Impl&) = delete;
 
     template <typename ReturnType>
@@ -765,6 +770,22 @@ Nong::Nong(const HostedSong& hosted)
     : m_impl(std::make_unique<Impl>(hosted))
 {};
 
+Nong::Nong(const Nong& other)
+    : m_impl(std::make_unique<Impl>(*other.m_impl))
+{};
+
+Nong& Nong::operator=(const Nong& other) {
+    m_impl->m_type = other.m_impl->m_type;
+    if (other.m_impl->m_type == Impl::Type::Local) {
+        m_impl->m_localSong = std::make_unique<LocalSong>(*other.m_impl->m_localSong);
+    } else if (other.m_impl->m_type == Impl::Type::YT) {
+        m_impl->m_ytSong = std::make_unique<YTSong>(*other.m_impl->m_ytSong);
+    } else if (other.m_impl->m_type == Impl::Type::Hosted) {
+        m_impl->m_hostedSong = std::make_unique<HostedSong>(*other.m_impl->m_hostedSong);
+    }
+    return *this;
+}
+
 SongMetadata* Nong::metadata() const {
     return m_impl->metadata();
 };
@@ -793,5 +814,6 @@ ReturnType Nong::visit(
 Nong::Nong(Nong&&) = default;
 Nong& Nong::operator=(Nong&&) = default;
 Nong::~Nong() = default;
+
 
 }

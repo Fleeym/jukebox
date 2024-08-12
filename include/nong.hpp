@@ -204,9 +204,8 @@ public:
     Nong(const YTSong& yt);
     Nong(const HostedSong& hosted);
 
-    // No copies for this one
-    Nong(const Nong&) = delete;
-    Nong& operator=(const Nong&) = delete;
+    Nong(const Nong&);
+    Nong& operator=(const Nong&);
 
     Nong(Nong&&);
     Nong& operator=(Nong&&);

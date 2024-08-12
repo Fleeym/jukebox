@@ -524,6 +524,7 @@ void NongAddPopup::addSong(CCObject* target) {
                 levelName,
                 startOffset,
               },
+              // TODO: get the ID, not the link
               m_ytLinkInput->getString(),
               std::nullopt,
             },

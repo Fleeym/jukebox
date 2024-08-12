@@ -323,16 +323,8 @@ void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID, bo
 }
 
 void NongDropdownLayer::downloadSong(int gdSongID, const std::string& uniqueID) {
-    auto isDownloading = IndexManager::get()->getSongDownloadProgress(uniqueID);
-    if (isDownloading.has_value()) {
-      if (auto err = IndexManager::get()->stopDownloadingSong(gdSongID, uniqueID); err.isErr()) {
-          FLAlertLayer::create("Failed", fmt::format("Failed to stop downloading song: {}", err.error()), "Ok")->show();
-      }
-      return;
-    }
-
     if (auto err = IndexManager::get()->downloadSong(gdSongID, uniqueID); err.isErr()) {
-        FLAlertLayer::create("Failed", fmt::format("Failed to start downloading song: {}", err.error()), "Ok")->show();
+        FLAlertLayer::create("Failed", fmt::format("Failed to start/stop downloading song: {}", err.error()), "Ok")->show();
         return;
     }
 }
