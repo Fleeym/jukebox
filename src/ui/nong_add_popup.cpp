@@ -29,6 +29,9 @@
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
+#include "../managers/index_manager.hpp"
+#include "Geode/binding/FLAlertLayerProtocol.hpp"
+#include "index_choose_popup.hpp"
 
 std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     std::string ret = "";
@@ -49,6 +52,30 @@ std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     );
 }
 
+class IndexDisclaimerPopup : public FLAlertLayer, public FLAlertLayerProtocol {
+protected:
+    MiniFunction<void(FLAlertLayer*, bool)> m_selected;
+
+    void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override {
+        m_selected(layer, btn2);
+    }
+public:
+    static IndexDisclaimerPopup* create(
+        char const* title, std::string const& content, char const* btn1, char const* btn2,
+        float width, MiniFunction<void(FLAlertLayer*, bool)> selected
+    ) {
+        auto inst = new IndexDisclaimerPopup;
+        inst->m_selected = selected;
+        if (inst->init(inst, title, content, btn1, btn2, width, true, .0f, 1.0f)) {
+            inst->autorelease();
+            return inst;
+        }
+
+        delete inst;
+        return nullptr;
+    }
+};
+
 namespace jukebox {
 
 bool NongAddPopup::setup(NongDropdownLayer* parent, int songID, std::optional<Nong> replacedNong) {
@@ -60,6 +87,8 @@ bool NongAddPopup::setup(NongDropdownLayer* parent, int songID, std::optional<No
     auto spr = CCSprite::createWithSpriteFrameName("accountBtn_myLevels_001.png");
     spr->setScale(0.7f);
 
+    auto buttonsContainer = CCMenu::create();
+
     m_addSongButton = CCMenuItemSpriteExtra::create(
         ButtonSprite::create(m_replacedNong.has_value() ? "Edit" : "Add"),
         this,
@@ -69,12 +98,64 @@ bool NongAddPopup::setup(NongDropdownLayer* parent, int songID, std::optional<No
     m_addSongMenu->setID("add-song-menu");
     m_addSongButton->setID("add-song-button");
     m_addSongMenu->addChild(this->m_addSongButton);
-    m_addSongMenu->setPosition(m_mainLayer->getContentSize().width / 2, 10.f);
     m_addSongMenu->setAnchorPoint({0.5f, 0.0f});
     m_addSongMenu->setContentSize(m_addSongButton->getContentSize());
+    m_addSongMenu->setContentHeight(20.f);
     m_addSongMenu->setLayout(ColumnLayout::create());
 
-    m_mainLayer->addChild(this->m_addSongMenu);
+    buttonsContainer->addChild(m_addSongMenu);
+
+    if (m_replacedNong.has_value()) {
+        {
+            std::vector<std::string> indexIDs;
+
+            for (const auto& pair : IndexManager::get()->m_loadedIndexes) {
+                if (!pair.second->m_features.m_submit.has_value()) continue;
+                IndexMetadata::Features::Submit& submit = pair.second->m_features.m_submit.value();
+                if (!m_replacedNong.value().visit<bool>(
+                    [submit](auto _){
+                        return submit.m_supportedSongTypes.at(IndexMetadata::Features::SupportedSongType::local);
+                    },
+                    [submit](auto _){
+                        return submit.m_supportedSongTypes.at(IndexMetadata::Features::SupportedSongType::youtube);
+                    },
+                    [submit](auto _){
+                        return submit.m_supportedSongTypes.at(IndexMetadata::Features::SupportedSongType::hosted);
+                    }
+                )) {
+                    continue;
+                }
+
+                indexIDs.push_back(pair.first);
+            }
+
+            m_publishableIndexes = std::move(indexIDs);
+        }
+
+        if (!m_publishableIndexes.empty()) {
+            auto publishSongButton = CCMenuItemSpriteExtra::create(
+                ButtonSprite::create("Publish"),
+                this,
+                menu_selector(NongAddPopup::onPublish)
+            );
+            auto publishSongMenu = CCMenu::create();
+            publishSongMenu->setID("publish-song-menu");
+            publishSongButton->setID("publish-song-button");
+            publishSongMenu->addChild(publishSongButton);
+            publishSongMenu->setAnchorPoint({0.5f, 0.0f});
+            publishSongMenu->setContentSize(publishSongButton->getContentSize());
+            publishSongMenu->setContentHeight(20.f);
+            publishSongMenu->setLayout(ColumnLayout::create());
+
+            buttonsContainer->addChild(publishSongMenu);
+        }
+    }
+
+    buttonsContainer->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Center));
+    buttonsContainer->setContentWidth(m_mainLayer->getContentWidth());
+    buttonsContainer->updateLayout();
+    m_mainLayer->addChildAtPosition(buttonsContainer, Anchor::Bottom, {0.f, 25.f});
+
     this->createInputs();
 
     if (m_replacedNong.has_value()) {
@@ -415,10 +496,53 @@ void NongAddPopup::createInputs() {
     this->setSongType(NongAddPopupSongType::local);
 }
 
+void NongAddPopup::onPublish(CCObject* target) {
+    IndexChoosePopup::create(m_publishableIndexes, [this](std::string id){
+        auto index = IndexManager::get()->m_loadedIndexes.at(id).get();
+        auto name = IndexManager::get()->getIndexName(id).value();
+        auto submit = index->m_features.m_submit.value();
+
+        auto submitFunc = [this, index, submit](FLAlertLayer* _, bool confirmed){
+            if (submit.m_requestParams.has_value()) {
+                if (!submit.m_requestParams.value().m_params) {
+                    CCApplication::get()->openURL(submit.m_requestParams.value().m_url.c_str());
+                    return;
+                }
+
+                std::string songSpecificParams = "";
+                m_replacedNong.value().visit<void>([&songSpecificParams](LocalSong* local) {
+                    songSpecificParams = fmt::format("&path={}&source=local", local->path());
+                }, [&songSpecificParams](YTSong* yt) {
+                    songSpecificParams = fmt::format("&yt-id={}&source=youtube", yt->youtubeID());
+                }, [&songSpecificParams](HostedSong* hosted) {
+                    songSpecificParams = fmt::format("&url={}&source=youtube", hosted->url());
+                });
+
+                auto metadata = m_replacedNong.value().metadata();
+                CCApplication::get()->openURL(
+                    fmt::format(
+                        "{}song-name={}&artist-name={}&start-offset={}&song-id={}&level-id={}&level-name={}{}",
+                        submit.m_requestParams.value().m_url.c_str(), metadata->m_name, metadata->m_artist,
+                        metadata->m_startOffset, metadata->m_gdID, 0, metadata->m_level.value_or(""), songSpecificParams
+                    ).c_str()
+                );
+            }
+        };
+
+        if (submit.m_preSubmitMessage.has_value()) {
+            auto popup = IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(), name, "Back", "Continue", 420.f, submitFunc);
+            popup->m_scene = this;
+            popup->show();
+        } else {
+            submitFunc(nullptr, true);
+        }
+    })->show();
+}
+
 void NongAddPopup::addSong(CCObject* target) {
     auto artistName = std::string(m_artistNameInput->getString());
     auto songName = std::string(m_songNameInput->getString());
-    std::string levelName = m_levelNameInput->getString();
+    std::optional<std::string> levelName = m_levelNameInput->getString().size() > 0 ? std::optional<std::string>(m_levelNameInput->getString()) : std::nullopt;
     auto startOffsetStr = m_startOffsetInput->getString();
 
     int startOffset = 0;

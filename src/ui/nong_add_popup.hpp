@@ -6,6 +6,7 @@
 #include <Geode/ui/TextInput.hpp>
 #include <optional>
 
+#include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Result.hpp"
 #include "Geode/utils/Task.hpp"
@@ -34,6 +35,8 @@ protected:
     NongDropdownLayer* m_parentPopup;
 
     int m_songID;
+
+    std::vector<std::string> m_publishableIndexes;
 
     CCMenuItemSpriteExtra* m_addSongButton;
     CCMenuItemSpriteExtra* m_switchLocalButton;
@@ -83,6 +86,7 @@ protected:
     CCSize getPopupSize();
     void openFile(CCObject*);
     void addSong(CCObject*);
+    void onPublish(CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
     void onClose(CCObject*) override;
 public:

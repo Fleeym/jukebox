@@ -13,14 +13,27 @@ struct matjson::Serialize<jukebox::IndexMetadata::Features::RequestParams> {
         if (!value.contains("url") || !value["url"].is_string()) {
             return geode::Err("Expected url in requestParams");
         }
+        if (!value.contains("params") || !value["params"].is_bool()) {
+            return geode::Err("Expected params in requestParams");
+        }
+
         return geode::Ok(jukebox::IndexMetadata::Features::RequestParams {
-            .m_url = value["url"].as_string()
+            .m_url = value["url"].as_string(),
+            .m_params = value["params"].as_bool()
         });
     }
 };
 
 template<>
 struct matjson::Serialize<jukebox::IndexMetadata::Features> {
+protected:
+    static geode::Result<jukebox::IndexMetadata::Features::SupportedSongType> getSupportedSongTypeFromString(const std::string& str) {
+        if (str == "local") return geode::Ok(jukebox::IndexMetadata::Features::SupportedSongType::local);
+        if (str == "youtube") return geode::Ok(jukebox::IndexMetadata::Features::SupportedSongType::youtube);
+        if (str == "hosted") return geode::Ok(jukebox::IndexMetadata::Features::SupportedSongType::hosted);
+        return geode::Err("Invalid supported song type: " + str);
+    }
+public:
     static geode::Result<jukebox::IndexMetadata::Features> from_json(matjson::Value const& value, int manifest) {
         if (manifest != 1) return geode::Err("Using unsupported manifest version: " + std::to_string(manifest));
 
@@ -38,13 +51,29 @@ struct matjson::Serialize<jukebox::IndexMetadata::Features> {
             }
             const auto& submitObj = featuresObj["submit"];
 
-            features.m_submit = { };
+            features.m_submit = jukebox::IndexMetadata::Features::Submit { };
 
             if (submitObj.contains("preSubmitMessage")) {
                 if (!submitObj["preSubmitMessage"].is_string()) {
                     return geode::Err("Expected preSubmitMessage to be a string in submit");
                 }
                 features.m_submit.value().m_preSubmitMessage = submitObj["preSubmitMessage"].as_string();
+            }
+
+            if (submitObj.contains("supportedSongTypes")) {
+                if (!submitObj["supportedSongTypes"].is_array()) {
+                    return geode::Err("Expected supportedSongTypes to be an array in submit");
+                }
+                for (const auto& songType : submitObj["supportedSongTypes"].as_array()) {
+                    if (!songType.is_string()) {
+                        return geode::Err("Expected supportedSongTypes to be an array of strings in submit");
+                    }
+                    auto supportedSongType = getSupportedSongTypeFromString(songType.as_string());
+                    if (supportedSongType.isErr()) {
+                        return geode::Err(supportedSongType.error());
+                    }
+                    features.m_submit.value().m_supportedSongTypes[supportedSongType.value()] = true;
+                }
             }
 
             if (submitObj.contains("requestParams")) {
@@ -62,7 +91,7 @@ struct matjson::Serialize<jukebox::IndexMetadata::Features> {
             }
             const auto& searchObj = featuresObj["report"];
 
-            features.m_report = { };
+            features.m_report = jukebox::IndexMetadata::Features::Report { };
 
             if (searchObj.contains("requestParams")) {
                 auto requestParams = matjson::Serialize<jukebox::IndexMetadata::Features::RequestParams>::from_json(searchObj["requestParams"], manifest);
@@ -104,9 +133,9 @@ struct matjson::Serialize<jukebox::IndexMetadata> {
 
             // Features
             const auto featuresResult = value.contains("features")
-                ? matjson::Serialize<jukebox::IndexMetadata::Features>::from_json(value, manifestVersion)
+                ? matjson::Serialize<jukebox::IndexMetadata::Features>::from_json(value["features"], manifestVersion)
                 : geode::Ok(jukebox::IndexMetadata::Features());
-            if (!featuresResult) {
+            if (featuresResult.has_error()) {
                 return geode::Err(featuresResult.error());
             }
 

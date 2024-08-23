@@ -432,7 +432,7 @@ Result<> IndexManager::downloadSong(Nong nong) {
                     })
                     .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
-                    .post("https://co.wuk.sh/api/json")
+                    .post("https://api.cobalt.tools/api/json")
             );
         }, "Download a YouTube song from Cobalt");
     }, [this, &task](HostedSong* hosted) {

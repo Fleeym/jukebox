@@ -19,36 +19,52 @@ struct JUKEBOX_DLL IndexSource final {
 };
 
 struct IndexMetadata final {
-  struct Links final {
-      std::optional<std::string> m_discord = std::nullopt;
-  };
+    struct Links final {
+        std::optional<std::string> m_discord = std::nullopt;
+    };
 
-  struct Features {
-      struct RequestParams final {
-          std::string m_url;
-      };
+    struct Features {
+        struct RequestParams final {
+            std::string m_url;
+            bool m_params;
+        };
 
-      struct Submit final {
-          std::optional<RequestParams> m_requestParams = std::nullopt;
-          std::optional<std::string> m_preSubmitMessage;
-      };
+        struct RequestLink final {
+            std::string m_url;
+        };
 
-      struct Report final {
-          std::optional<RequestParams> m_requestParams = std::nullopt;
-      };
+        enum class SupportedSongType {
+            local,
+            youtube,
+            hosted,
+        };
 
-      std::optional<Submit> m_submit = std::nullopt;
-      std::optional<Report> m_report = std::nullopt;
-  };
+        struct Submit final {
+            std::optional<RequestParams> m_requestParams = std::nullopt;
+            std::optional<std::string> m_preSubmitMessage;
+            std::unordered_map<SupportedSongType, bool> m_supportedSongTypes = {
+                {SupportedSongType::local, false},
+                {SupportedSongType::youtube, false},
+                {SupportedSongType::hosted, false},
+            };
+        };
 
-  int m_manifest;
-  std::string m_url;
-  std::string m_id;
-  std::string m_name;
-  std::optional<std::string> m_description;
-  std::optional<int> m_lastUpdate;
-  Links m_links;
-  Features m_features;
+        struct Report final {
+            std::optional<RequestParams> m_requestParams = std::nullopt;
+        };
+
+        std::optional<Submit> m_submit = std::nullopt;
+        std::optional<Report> m_report = std::nullopt;
+    };
+
+    int m_manifest;
+    std::string m_url;
+    std::string m_id;
+    std::string m_name;
+    std::optional<std::string> m_description;
+    std::optional<int> m_lastUpdate;
+    Links m_links;
+    Features m_features;
 };
 
 }

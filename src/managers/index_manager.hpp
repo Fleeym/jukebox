@@ -26,8 +26,6 @@ protected:
     using DownloadSongTask = Task<Result<std::filesystem::path>, float>;
 
     bool init();
-    // index id -> index metadata
-    std::unordered_map<std::string, std::unique_ptr<IndexMetadata>> m_loadedIndexes;
     // index url -> task listener
     std::unordered_map<std::string, EventListener<FetchIndexTask>> m_indexListeners;
 
@@ -38,6 +36,9 @@ protected:
     std::unordered_map<std::string, float> m_downloadProgress;
 
 public:
+    // index id -> index metadata
+    std::unordered_map<std::string, std::unique_ptr<IndexMetadata>> m_loadedIndexes;
+
     bool initialized() const {
         return m_initialized;
     }
