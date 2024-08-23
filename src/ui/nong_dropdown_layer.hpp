@@ -25,7 +25,6 @@ protected:
     Ref<CustomSongWidget> m_parentWidget;
     NongList* m_list = nullptr;
 
-    CCMenuItemSpriteExtra* m_downloadBtn = nullptr;
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 

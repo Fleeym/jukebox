@@ -44,32 +44,9 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     manifestLabel->setID("manifest-label");
     m_mainLayer->addChild(manifestLabel);
 
-    auto bigMenu = CCMenu::create();
-    bigMenu->setID("big-menu");
-    bigMenu->ignoreAnchorPointForPosition(false);
-    auto discordSpr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
-    auto discordBtn = CCMenuItemSpriteExtra::create(
-        discordSpr,
-        this,
-        menu_selector(NongDropdownLayer::onDiscord)
-    );
-    discordBtn->setID("discord-button");
-    CCPoint position = discordBtn->getScaledContentSize() / 2;
-    position += { 5.f, 5.f };
-    bigMenu->addChildAtPosition(discordBtn, Anchor::BottomLeft, position);
-    this->addChild(bigMenu);
-
-    auto spr = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
-    spr->setScale(0.7f);
     auto menu = CCMenu::create();
     menu->setID("bottom-right-menu");
-    auto downloadBtn = CCMenuItemSpriteExtra::create(
-        spr,
-        this,
-        menu_selector(NongDropdownLayer::fetchSongFileHub)
-    );
-    m_downloadBtn = downloadBtn;
-    spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
+    auto spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
     spr->setScale(0.7f);
     auto addBtn = CCMenuItemSpriteExtra::create(
         spr,
@@ -77,7 +54,14 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
         menu_selector(NongDropdownLayer::openAddPopup)
     );
     m_addBtn = addBtn;
-    spr = CCSprite::createWithSpriteFrameName("GJ_trashBtn_001.png");
+    spr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
+    auto discordBtn = CCMenuItemSpriteExtra::create(
+        spr,
+        this,
+        menu_selector(NongDropdownLayer::onDiscord)
+    );
+    discordBtn->setID("discord-button");
+    spr = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
     spr->setScale(0.7f);
     auto removeBtn = CCMenuItemSpriteExtra::create(
         spr,
@@ -88,14 +72,12 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     if (isMultiple) {
         m_addBtn->setVisible(false);
         m_deleteBtn->setVisible(false);
-        m_downloadBtn->setVisible(false);
     } else {
         m_addBtn->setVisible(true);
         m_deleteBtn->setVisible(true);
-        m_downloadBtn->setVisible(true);
     }
     menu->addChild(addBtn);
-    menu->addChild(downloadBtn);
+    menu->addChild(discordBtn);
     menu->addChild(removeBtn);
     auto layout = ColumnLayout::create();
     layout->setAxisAlignment(AxisAlignment::Start);
@@ -238,11 +220,9 @@ void NongDropdownLayer::createList() {
                 if (multiple) {
                     m_addBtn->setVisible(false);
                     m_deleteBtn->setVisible(false);
-                    m_downloadBtn->setVisible(false);
                 } else {
                     m_addBtn->setVisible(true);
                     m_deleteBtn->setVisible(true);
-                    m_downloadBtn->setVisible(true);
                 }
             }
         );
