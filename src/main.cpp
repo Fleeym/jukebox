@@ -4,12 +4,5 @@
 #include "managers/index_manager.hpp"
 
 $on_mod(Loaded) {
-    // TODO
-    // jukebox::NongManager::get()->loadSongs();
     jukebox::IndexManager::get();
 };
-
-$on_mod(DataSaved) {
-    // TODO
-    // jukebox::NongManager::get()->writeJson();
-}
