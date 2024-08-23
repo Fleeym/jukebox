@@ -5,7 +5,6 @@
 
 #include <Geode/utils/web.hpp>
 #include <matjson.hpp>
-#include <variant>
 
 #include "../../include/nong.hpp"
 #include "../../include/index_serialize.hpp"
@@ -31,7 +30,7 @@ bool IndexManager::init() {
     }
 
     if (auto err = fetchIndexes().error(); !err.empty()) {
-        log::error("Failed to fetch indexes: {}", err);
+        SongError(false, "Failed to fetch indexes: {}", err).post();
         return false;
     }
 
@@ -108,7 +107,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                   index.m_id,
                   std::nullopt
               )); err.isErr()) {
-                log::error("Failed to add YT song from index: {}", err.error());
+                SongError(false, "Failed to add YT song from index: {}", err.error()).post();
             }
         }
     }
@@ -134,7 +133,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                   index.m_id,
                   std::nullopt
               )); err.isErr()) {
-                log::error("Failed to add Hosted song from index: {}", err.error());
+                SongError(false, "Failed to add Hosted song from index: {}", err.error()).post();
             }
         }
     }
@@ -213,14 +212,14 @@ Result<> IndexManager::fetchIndexes() {
 
             if (FetchIndexTask::Value *result = event->getValue()) {
                 if (result->isErr()) {
-                    log::error("Failed to fetch index: {}", result->error());
+                    SongError(false, "Failed to fetch index: {}", result->error()).post();
                 } else {
                     log::info("Index fetched and cached: {}", index.m_url);
                 }
             } else if (event->isCancelled()) {}
 
             if (auto err = loadIndex(filepath).error(); !err.empty()) {
-                log::error("Failed to load index: {}", err);
+                SongError(false, "Failed to load index: {}", err).post();
             }
         });
         listener.setFilter(task);
@@ -332,8 +331,8 @@ Result<> IndexManager::downloadSong(Nong nong) {
     }
     DownloadSongTask task;
 
-    nong.visit<void>([](LocalSong* local){
-
+    nong.visit<void>([this, &task](LocalSong* local){
+        task = DownloadSongTask::immediate(Err("Can't download local song"));
     }, [this, &task](YTSong* yt) {
         EventListener<web::WebTask>* cobaltMetadataListener = new EventListener<web::WebTask>();
         EventListener<web::WebTask>* cobaltSongListener = new EventListener<web::WebTask>();
@@ -348,6 +347,10 @@ Result<> IndexManager::downloadSong(Nong nong) {
             utils::MiniFunction<void(DownloadSongTask::Progress)> progress,
             utils::MiniFunction<bool()> hasBeenCancelled
         ) {
+            if (yt.youtubeID().length() != 11) {
+                return finish(Err("Invalid YouTube ID"));
+            }
+
             std::function<void(std::string)> finishErr = [finish, cobaltMetadataListener, cobaltSongListener](std::string err){
                 delete cobaltSongListener;
                 delete cobaltMetadataListener;
@@ -466,13 +469,13 @@ Result<> IndexManager::downloadSong(Nong nong) {
         m_downloadProgress.erase(id);
         m_downloadSongListeners.erase(id);
         if (event->isCancelled())  {
-            log::error("Failed to fetch song: cancelled");
+            SongError(false, "Failed to fetch song: cancelled").post();
             SongStateChanged(gdSongID).post();
             return;
         }
         DownloadSongTask::Value *result = event->getValue();
         if (result->isErr()) {
-            log::error("Failed to fetch song: {}", result->error());
+            SongError(true, "Failed to fetch song: {}", result->error()).post();
             SongStateChanged(gdSongID).post();
             return;
         }
@@ -513,12 +516,12 @@ Result<> IndexManager::downloadSong(Nong nong) {
         Nong newNong = std::move(*newNongPtr);
 
         if (auto res = NongManager::get()->addNongs(std::move(newNong.toNongs().unwrap())); res.isErr()) {
-            log::error("Failed to add song: {}", res.error());
+            SongError(true, "Failed to add song: {}", res.error()).post();
             SongStateChanged(gdSongID).post();
             return;
         }
         if (auto res = NongManager::get()->setActiveSong(gdSongID, id); res.isErr()) {
-            log::error("Failed to set song as active: {}", res.error());
+            SongError(true, "Failed to set song as active: {}", res.error()).post();
             SongStateChanged(gdSongID).post();
             return;
         }

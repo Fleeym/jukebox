@@ -181,6 +181,11 @@ bool NongManager::init() {
         return true;
     }
 
+    m_songErrorListener = std::make_unique<EventListener<EventFilter<SongError>>>([this](SongError* event){
+        log::error("{}", event->m_error);
+        return ListenerResult::Propagate;
+    });
+
     auto path = this->baseManifestPath();
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directory(path);

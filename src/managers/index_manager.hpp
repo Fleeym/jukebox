@@ -47,8 +47,6 @@ public:
 
     Result<> loadIndex(std::filesystem::path path);
 
-    // Result<> addIndex(IndexSource source);
-    // Result<> removeIndex(const std::string& url);
     Result<std::vector<IndexSource>> getIndexes();
 
     std::optional<float> getSongDownloadProgress(const std::string& uniqueID);

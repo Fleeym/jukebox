@@ -14,6 +14,25 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
+class SongError final : public Event {
+private:
+    friend class NongManager;
+    friend class IndexManager;
+
+    template<typename... Args>
+    SongError(
+        bool notifyUser,
+        fmt::format_string<Args...> format,
+        Args&&... args
+    ) : m_error(fmt::format(format, std::forward<Args>(args)...)),
+        m_notifyUser(notifyUser)
+    {};
+
+public:
+    bool m_notifyUser;
+    std::string m_error;
+};
+
 class SongStateChanged final : public Event {
 private:
     friend class NongManager;
@@ -71,6 +90,7 @@ protected:
 
     bool init();
     Result<> saveNongs(std::optional<int> saveId = std::nullopt);
+    std::unique_ptr<EventListener<EventFilter<SongError>>> m_songErrorListener;
     Result<std::unique_ptr<Nongs>> loadNongsFromPath(const std::filesystem::path& path);
 public:
     using MultiAssetSizeTask = Task<std::string>;

@@ -135,6 +135,18 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     m_mainLayer->addChild(title);
     handleTouchPriority(this);
 
+    m_songErrorListener = std::make_unique<EventListener<EventFilter<SongError>>>([this](SongError* event){
+        log::info("notify: {}, {}", event->m_notifyUser, event->m_error);
+        if (event->m_notifyUser) {
+            FLAlertLayer::create(
+                "Error",
+                event->m_error,
+                "OK"
+            )->show();
+        }
+        return ListenerResult::Propagate;
+    });
+
     m_songStateListener = std::make_unique<EventListener<EventFilter<SongStateChanged>>>([this](SongStateChanged* event){
         if (!m_list || m_currentSongID != event->m_gdSongID) return ListenerResult::Propagate;
 
@@ -147,7 +159,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     m_downloadListener = std::make_unique<EventListener<EventFilter<SongDownloadProgress>>>([this](SongDownloadProgress* event){
         if (!m_list || m_currentSongID != event->m_gdSongID) return ListenerResult::Propagate;
 
-        log::info("download progress: {} {}", event->m_uniqueID, event->m_progress);
         m_list->setDownloadProgress(event->m_uniqueID, event->m_progress);
 
         return ListenerResult::Propagate;

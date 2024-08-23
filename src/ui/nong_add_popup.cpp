@@ -26,6 +26,7 @@
 #include <optional>
 #include <sstream>
 #include <system_error>
+#include <regex>
 
 #include "nong_add_popup.hpp"
 #include "../random_string.hpp"
@@ -637,6 +638,23 @@ void NongAddPopup::addSong(CCObject* target) {
             FLAlertLayer::create("Error", "No YouTube video specified", "Ok")->show();
             return;
         }
+        std::string ytID;
+
+        if (ytLink.size() == 11) {
+            ytID = ytLink;
+        }
+
+        const std::regex youtube_regex("(?:youtube\\.com\\/.*[?&]v=|youtu\\.be\\/)([a-zA-Z0-9_-]{11})");
+        std::smatch match;
+
+        if (std::regex_search(ytLink, match, youtube_regex) && match.size() > 1) {
+            ytID = match.str(1);
+        }
+
+        if (ytID.size() != 11) {
+            FLAlertLayer::create("Error", "Invalid YouTube video ID", "Ok")->show();
+            return;
+        }
 
         nong = new Nong {
             YTSong {
@@ -648,8 +666,7 @@ void NongAddPopup::addSong(CCObject* target) {
                 levelName,
                 startOffset,
               },
-              // TODO: get the ID, not the link
-              m_ytLinkInput->getString(),
+              ytID,
               std::nullopt,
             },
         };
