@@ -201,8 +201,7 @@ bool NongManager::init() {
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
             log::error("{}", res.unwrapErr());
-            // TODO Backup
-
+            std::filesystem::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename().string()));
             continue;
         }
 

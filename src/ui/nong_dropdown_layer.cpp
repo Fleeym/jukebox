@@ -334,32 +334,6 @@ void NongDropdownLayer::addSong(Nongs&& song, bool popup) {
     }
 }
 
-void NongDropdownLayer::fetchSongFileHub(CCObject*) {
-    // TODO FIX
-    if (!m_currentSongID) {
-        return;
-    }
-    int id = m_currentSongID.value();
-    std::stringstream ss;
-    ss << "Do you want to open <cb>Song File Hub</c>? The song ID (" << id << ") will be copied to your <cr>clipboard</c>.";
-    createQuickPopup(
-        "Song File Hub",
-        ss.str(),
-        "No",
-        "Yes",
-        [this, id](FLAlertLayer* alert, bool btn2) {
-            if (!btn2) {
-                return;
-            }
-            std::stringstream ss;
-            ss << id;
-            geode::utils::clipboard::write(ss.str());
-            geode::utils::web::openLinkInBrowser("https://songfilehub.com");
-        }
-    );
-}
-
-// TODO make default the active after deleting
 void NongDropdownLayer::deleteAllNongs(CCObject*) {
     if (!m_currentSongID) {
         return;

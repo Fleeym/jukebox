@@ -163,8 +163,13 @@ Result<> IndexManager::fetchIndexes() {
         log::info("Fetching index {}", index.m_url);
         if (!index.m_enabled || index.m_url.size() < 3) continue;
 
-        // TODO replace "replace-later" with url to filename function
-        auto filepath = baseIndexesPath() / fmt::format("{}.json", "replace-later");
+        // Hash url to use as a filename per index
+        std::hash<std::string> hasher;
+        std::size_t hashValue = hasher(index.m_url);
+        std::stringstream hashStream;
+        hashStream << std::hex << hashValue;
+
+        auto filepath = baseIndexesPath() / fmt::format("{}.json", hashStream.str());
 
         FetchIndexTask task = web::WebRequest().timeout(std::chrono::seconds(30)).get(index.m_url).map(
             [this, filepath, index](web::WebResponse *response) -> FetchIndexTask::Value {
