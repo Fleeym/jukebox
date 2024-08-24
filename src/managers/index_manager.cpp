@@ -9,6 +9,7 @@
 #include "../../include/nong.hpp"
 #include "../../include/index_serialize.hpp"
 #include "../ui/indexes_setting.hpp"
+#include "../events/song_error_event.hpp"
 
 namespace jukebox {
 
@@ -30,7 +31,7 @@ bool IndexManager::init() {
     }
 
     if (auto err = fetchIndexes().error(); !err.empty()) {
-        SongError(false, "Failed to fetch indexes: {}", err).post();
+        SongErrorEvent(false, "Failed to fetch indexes: {}", err).post();
         return false;
     }
 
@@ -107,7 +108,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                   index.m_id,
                   std::nullopt
               )); err.isErr()) {
-                SongError(false, "Failed to add YT song from index: {}", err.error()).post();
+                SongErrorEvent(false, "Failed to add YT song from index: {}", err.error()).post();
             }
         }
     }
@@ -133,7 +134,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                   index.m_id,
                   std::nullopt
               )); err.isErr()) {
-                SongError(false, "Failed to add Hosted song from index: {}", err.error()).post();
+                SongErrorEvent(false, "Failed to add Hosted song from index: {}", err.error()).post();
             }
         }
     }
@@ -217,14 +218,14 @@ Result<> IndexManager::fetchIndexes() {
 
             if (FetchIndexTask::Value *result = event->getValue()) {
                 if (result->isErr()) {
-                    SongError(false, "Failed to fetch index: {}", result->error()).post();
+                    SongErrorEvent(false, "Failed to fetch index: {}", result->error()).post();
                 } else {
                     log::info("Index fetched and cached: {}", index.m_url);
                 }
             } else if (event->isCancelled()) {}
 
             if (auto err = loadIndex(filepath).error(); !err.empty()) {
-                SongError(false, "Failed to load index: {}", err).post();
+                SongErrorEvent(false, "Failed to load index: {}", err).post();
             }
         });
         listener.setFilter(task);
@@ -382,7 +383,7 @@ Result<> IndexManager::downloadSong(Nong nong) {
                 if (event->getProgress() != nullptr) {
                     float progress = event->getProgress()->downloadProgress().value_or(0) / 1000.f;
                     m_downloadProgress[yt.metadata()->m_uniqueID] = progress;
-                    SongDownloadProgress(yt.metadata()->m_gdID, yt.metadata()->m_uniqueID, progress).post();
+                    SongDownloadProgressEvent(yt.metadata()->m_gdID, yt.metadata()->m_uniqueID, progress).post();
                     return;
                 }
 
@@ -413,7 +414,7 @@ Result<> IndexManager::downloadSong(Nong nong) {
                     if (event->getProgress() != nullptr) {
                         float progress = event->getProgress()->downloadProgress().value_or(0) / 100.f * 0.9f + 0.1f;
                         m_downloadProgress[yt.metadata()->m_uniqueID] = progress;
-                        SongDownloadProgress(yt.metadata()->m_gdID, yt.metadata()->m_uniqueID, progress).post();
+                        SongDownloadProgressEvent(yt.metadata()->m_gdID, yt.metadata()->m_uniqueID, progress).post();
                         return;
                     }
 
@@ -480,25 +481,25 @@ Result<> IndexManager::downloadSong(Nong nong) {
     listener.bind([this, gdSongID, id, nong](DownloadSongTask::Event* event) {
         if (float *progress = event->getProgress()) {
             m_downloadProgress[id] = *progress;
-            SongDownloadProgress(gdSongID, id, *event->getProgress()).post();
+            SongDownloadProgressEvent(gdSongID, id, *event->getProgress()).post();
             return;
         }
         m_downloadProgress.erase(id);
         m_downloadSongListeners.erase(id);
         if (event->isCancelled())  {
-            SongError(false, "Failed to fetch song: cancelled").post();
-            SongStateChanged(gdSongID).post();
+            SongErrorEvent(false, "Failed to fetch song: cancelled").post();
+            SongStateChangedEvent(gdSongID).post();
             return;
         }
         DownloadSongTask::Value *result = event->getValue();
         if (result->isErr()) {
-            SongError(true, "Failed to fetch song: {}", result->error()).post();
-            SongStateChanged(gdSongID).post();
+            SongErrorEvent(true, "Failed to fetch song: {}", result->error()).post();
+            SongStateChangedEvent(gdSongID).post();
             return;
         }
 
         if (result->value().string().size() == 0) {
-            SongStateChanged(gdSongID).post();
+            SongStateChangedEvent(gdSongID).post();
             return;
         }
 
@@ -533,22 +534,22 @@ Result<> IndexManager::downloadSong(Nong nong) {
         Nong newNong = std::move(*newNongPtr);
 
         if (auto res = NongManager::get()->addNongs(std::move(newNong.toNongs().unwrap())); res.isErr()) {
-            SongError(true, "Failed to add song: {}", res.error()).post();
-            SongStateChanged(gdSongID).post();
+            SongErrorEvent(true, "Failed to add song: {}", res.error()).post();
+            SongStateChangedEvent(gdSongID).post();
             return;
         }
         if (auto res = NongManager::get()->setActiveSong(gdSongID, id); res.isErr()) {
-            SongError(true, "Failed to set song as active: {}", res.error()).post();
-            SongStateChanged(gdSongID).post();
+            SongErrorEvent(true, "Failed to set song as active: {}", res.error()).post();
+            SongStateChangedEvent(gdSongID).post();
             return;
         }
 
-        SongStateChanged(gdSongID).post();
+        SongStateChangedEvent(gdSongID).post();
     });
     listener.setFilter(task);
     m_downloadSongListeners.emplace(id, std::move(listener));
     m_downloadProgress[id] = 0.f;
-    SongDownloadProgress(gdSongID, id, 0.f).post();
+    SongDownloadProgressEvent(gdSongID, id, 0.f).post();
     return Ok();
 }
 

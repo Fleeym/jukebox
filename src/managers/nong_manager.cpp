@@ -17,7 +17,7 @@
 
 #include "../../include/nong.hpp"
 #include "../../include/nong_serialize.hpp"
-#include "../random_string.hpp"
+#include "../utils/random_string.hpp"
 #include "index_manager.hpp"
 
 
@@ -53,7 +53,7 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
                     deleteAudio ? std::nullopt : song->path(),
                 },
             }); res.isErr()) {
-                SongError(false, "Failed to replace song while updating saved songs from index: {}", res.error()).post();
+                SongErrorEvent(false, "Failed to replace song while updating saved songs from index: {}", res.error()).post();
                 continue;
             }
             changed = true;
@@ -77,7 +77,7 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
                     deleteAudio ? std::nullopt : song->path(),
                 },
             }); res.isErr()) {
-                SongError(false, "Failed to replace song while updating saved songs from index: {}", res.error()).post();
+                SongErrorEvent(false, "Failed to replace song while updating saved songs from index: {}", res.error()).post();
                 continue;
             }
             changed = true;
@@ -242,8 +242,27 @@ bool NongManager::init() {
         return true;
     }
 
-    m_songErrorListener = std::make_unique<EventListener<EventFilter<SongError>>>([this](SongError* event){
-        log::error("{}", event->m_error);
+    m_songErrorListener.bind([this](SongErrorEvent* event){
+        log::error("{}", event->error());
+        return ListenerResult::Propagate;
+    });
+
+    m_songInfoListener.bind([this](GetSongInfoEvent* event){
+        log::info("Song info event for {}", event->gdSongID());
+        log::info("info: {} - {}", event->songName(), event->artistName());
+
+        auto nongs = getNongs(event->gdSongID());
+        if (!nongs.has_value())  return ListenerResult::Stop;
+        SongMetadata* defaultSongMetadata = nongs.value()->defaultSong()->metadata();
+        if (event->songName() == defaultSongMetadata->m_name && event->artistName() == defaultSongMetadata->m_artist) return ListenerResult::Stop;
+
+        defaultSongMetadata->m_name = event->songName();
+        defaultSongMetadata->m_artist = event->artistName();
+
+        log::info("got here?");
+
+        saveNongs(event->gdSongID());
+
         return ListenerResult::Propagate;
     });
 
@@ -302,7 +321,7 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
     }
 
     if (saveID.has_value()) {
-      SongStateChanged(saveID.value()).post();
+      SongStateChangedEvent(saveID.value()).post();
     }
 
     return Ok();

@@ -28,9 +28,9 @@ protected:
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 
-    std::unique_ptr<EventListener<EventFilter<SongError>>> m_songErrorListener;
-    std::unique_ptr<EventListener<EventFilter<SongDownloadProgress>>> m_downloadListener;
-    std::unique_ptr<EventListener<EventFilter<SongStateChanged>>> m_songStateListener;
+    EventListener<SongErrorFilter> m_songErrorListener;
+    EventListener<SongDownloadProgressFilter> m_downloadListener;
+    EventListener<SongStateChangedFilter> m_songStateListener;
 
     bool m_fetching = false;
 

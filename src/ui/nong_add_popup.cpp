@@ -29,7 +29,7 @@
 #include <regex>
 
 #include "nong_add_popup.hpp"
-#include "../random_string.hpp"
+#include "../utils/random_string.hpp"
 #include "../managers/index_manager.hpp"
 #include "Geode/binding/FLAlertLayerProtocol.hpp"
 #include "index_choose_popup.hpp"

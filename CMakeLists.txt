@@ -11,6 +11,7 @@ file(GLOB SOURCES
     src/hooks/*.cpp
     src/events/*.cpp
     src/api/*.cpp
+    src/utils/*.cpp
 	src/*.cpp
 )
 

@@ -32,7 +32,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool searching = false;
         std::unordered_map<int, Nongs*> assetNongData;
         EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
-        std::unique_ptr<EventListener<EventFilter<SongStateChanged>>> m_songStateListener;
+        std::unique_ptr<EventListener<EventFilter<SongStateChangedEvent>>> m_songStateListener;
     };
 
     bool init(
@@ -66,11 +66,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->setupJBSW();
         m_fields->firstRun = false;
 
-        m_fields->m_songStateListener = std::make_unique<EventListener<EventFilter<SongStateChanged>>>([this](SongStateChanged* event){
+        m_fields->m_songStateListener = std::make_unique<EventListener<EventFilter<SongStateChangedEvent>>>([this](SongStateChangedEvent* event){
           if (!m_songInfoObject) return ListenerResult::Propagate;
-          if (event->m_gdSongID != m_songInfoObject->m_songID) return ListenerResult::Propagate;
+          if (event->gdSongID() != m_songInfoObject->m_songID) return ListenerResult::Propagate;
 
-          auto nongs = NongManager::get()->getNongs(event->m_gdSongID);
+          auto nongs = NongManager::get()->getNongs(event->gdSongID());
 
           if (!nongs.has_value()) return ListenerResult::Propagate;
 

@@ -10,65 +10,14 @@
 
 #include "../../include/nong.hpp"
 
+#include "../events/song_state_changed_event.hpp"
+#include "../events/song_error_event.hpp"
+#include "../events/get_song_info_event.hpp"
+#include "../events/song_download_progress_event.hpp"
+
 using namespace geode::prelude;
 
 namespace jukebox {
-
-class SongError final : public Event {
-private:
-    friend class NongManager;
-    friend class IndexManager;
-
-    template<typename... Args>
-    SongError(
-        bool notifyUser,
-        fmt::format_string<Args...> format,
-        Args&&... args
-    ) : m_error(fmt::format(format, std::forward<Args>(args)...)),
-        m_notifyUser(notifyUser)
-    {};
-
-public:
-    bool m_notifyUser;
-    std::string m_error;
-};
-
-class SongStateChanged final : public Event {
-private:
-    friend class NongManager;
-    friend class IndexManager;
-
-    SongStateChanged(
-        int gdSongID
-    ) : m_gdSongID(gdSongID)
-    {};
-public:
-    int m_gdSongID;
-};
-
-class SongDownloadProgress final : public Event {
-private:
-    friend class NongManager;
-    friend class IndexManager;
-
-    SongDownloadProgress(
-        int gdSongID,
-        std::string m_uniqueID,
-        float progress
-    ) : m_gdSongID(gdSongID),
-        m_uniqueID(m_uniqueID),
-        m_progress(progress)
-    {};
-public:
-    int m_gdSongID;
-    std::string m_uniqueID;
-    float m_progress;
-};
-
-enum class SongInfoGetAction {
-    CreateDefault,
-    FixDefault
-};
 
 class NongManager : public CCObject {
 protected:
@@ -90,7 +39,8 @@ protected:
 
     bool init();
     Result<> saveNongs(std::optional<int> saveId = std::nullopt);
-    std::unique_ptr<EventListener<EventFilter<SongError>>> m_songErrorListener;
+    EventListener<SongErrorFilter> m_songErrorListener;
+    EventListener<GetSongInfoFilter> m_songInfoListener;
     Result<std::unique_ptr<Nongs>> loadNongsFromPath(const std::filesystem::path& path);
 public:
     using MultiAssetSizeTask = Task<std::string>;

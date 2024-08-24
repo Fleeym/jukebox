@@ -1,31 +1,32 @@
 #pragma once
 
-#include "Geode/binding/SongInfoObject.hpp"
-#include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/loader/Event.hpp"
-#include "Geode/utils/MiniFunction.hpp"
+#include "../managers/nong_manager.hpp"
+#include "../managers/index_manager.hpp"
+#include "../hooks/music_download_manager.hpp"
 
 using namespace geode::prelude;
 
+namespace jukebox {
+
 class GetSongInfoEvent : public Event {
+private:
+    std::string m_songName;
+    std::string m_artistName;
+    int m_gdSongID;
+
 protected:
-    SongInfoObject* m_songInfo;
-    int m_songID;
+    friend class ::JBMusicDownloadManager;
+
+    GetSongInfoEvent(std::string songName, std::string artistName, int gdSongID)
+        : m_songName(songName), m_artistName(artistName), m_gdSongID(gdSongID) {}
+
 public:
-    GetSongInfoEvent(SongInfoObject* object, int songID)
-        : m_songInfo(object), m_songID(songID) {}
-    SongInfoObject* getObject() { return m_songInfo; }
-    int getID() { return m_songID; }
+    std::string songName() { return m_songName; }
+    std::string artistName() { return m_artistName; }
+    int gdSongID() { return m_gdSongID; }
 };
 
-class GetSongInfoEventFilter : public EventFilter<GetSongInfoEvent> {
-protected:
-    int m_songID;
-    CCNode* m_target;
-public:
-    int getSongID() { return m_songID; }
-    using Callback = ListenerResult(SongInfoObject* obj);
-    ListenerResult handle(MiniFunction<Callback> fn, GetSongInfoEvent* event);
-    GetSongInfoEventFilter(CCNode* target, int songID)
-        : m_songID(songID), m_target(target) {}
-};
+using GetSongInfoFilter = EventFilter<GetSongInfoEvent>;
+
+}

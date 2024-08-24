@@ -110,7 +110,7 @@ bool NongCell::init(
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
         sprite->setScale(0.8f);
         if (!selected) {
-            sprite->setColor(cc3x(0x808080));
+            sprite->setColor({0x80, 0x80, 0x80});
         }
         auto fixButton = CCMenuItemSpriteExtra::create(
             sprite,
@@ -209,7 +209,7 @@ bool NongCell::init(
       "bigFont.fnt"
     );
     m_metadataLabel->limitLabelWidth(220.f, 0.4f, 0.1f);
-    m_metadataLabel->setColor(cc3x(0x00c9ff));
+    m_metadataLabel->setColor({0x00, 0xc9, 0xff});
     m_metadataLabel->setID("metadata");
 
     m_songNameLabel = CCLabelBMFont::create(songMetadata->m_name.c_str(), "bigFont.fnt");

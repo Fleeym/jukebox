@@ -135,20 +135,19 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     m_mainLayer->addChild(title);
     handleTouchPriority(this);
 
-    m_songErrorListener = std::make_unique<EventListener<EventFilter<SongError>>>([this](SongError* event){
-        log::info("notify: {}, {}", event->m_notifyUser, event->m_error);
-        if (event->m_notifyUser) {
+    m_songErrorListener.bind([](SongErrorEvent* event){
+        if (event->notifyUser()) {
             FLAlertLayer::create(
                 "Error",
-                event->m_error,
+                event->error(),
                 "OK"
             )->show();
         }
         return ListenerResult::Propagate;
     });
 
-    m_songStateListener = std::make_unique<EventListener<EventFilter<SongStateChanged>>>([this](SongStateChanged* event){
-        if (!m_list || m_currentSongID != event->m_gdSongID) return ListenerResult::Propagate;
+    m_songStateListener.bind([this](SongStateChangedEvent* event){
+        if (!m_list || m_currentSongID != event->gdSongID()) return ListenerResult::Propagate;
 
         log::info("song state changed");
         createList();
@@ -156,10 +155,10 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
         return ListenerResult::Propagate;
     });
 
-    m_downloadListener = std::make_unique<EventListener<EventFilter<SongDownloadProgress>>>([this](SongDownloadProgress* event){
-        if (!m_list || m_currentSongID != event->m_gdSongID) return ListenerResult::Propagate;
+    m_downloadListener.bind([this](SongDownloadProgressEvent* event){
+        if (!m_list || m_currentSongID != event->gdSongID()) return ListenerResult::Propagate;
 
-        m_list->setDownloadProgress(event->m_uniqueID, event->m_progress);
+        m_list->setDownloadProgress(event->uniqueID(), event->progress());
 
         return ListenerResult::Propagate;
     });
@@ -205,6 +204,8 @@ void NongDropdownLayer::createList() {
                 //     NongManager::get()->markAsInvalidDefault(id);
                 //     NongManager::get()->prepareCorrectDefault(id);
                 // }
+                MusicDownloadManager::sharedState()->clearSong(gdSongID);
+                MusicDownloadManager::sharedState()->getSongInfo(gdSongID, true);
             },
             [this](int gdSongID, const std::string& uniqueID, bool onlyAudio, bool confirm) {
                 this->deleteSong(gdSongID, uniqueID, onlyAudio, confirm);

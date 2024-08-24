@@ -1,7 +1,7 @@
 #include "../include/nong.hpp"
 
 #include "Geode/binding/MusicDownloadManager.hpp"
-#include "random_string.hpp"
+#include "./utils/random_string.hpp"
 
 #include <filesystem>
 #include <fmt/core.h>
