@@ -308,6 +308,20 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
         }
     }
 
+    std::sort(nongs.begin(), nongs.end(), [defaultUniqueID = localNongs.value()->defaultSong()->metadata()->m_uniqueID](const Nong& a, const Nong& b) {
+        // Place the object with isDefault == true at the front
+        if (a.metadata()->m_uniqueID == defaultUniqueID) return true;
+        if (b.metadata()->m_uniqueID == defaultUniqueID) return false;
+
+        // Next, compare whether indexID exists or not (std::nullopt should be first)
+        if (a.indexID().has_value() != b.indexID().has_value()) {
+            return !a.indexID().has_value() && b.indexID().has_value();
+        }
+
+        // Finally, compare by name
+        return a.metadata()->m_name < b.metadata()->m_name;
+    });
+
     return Ok(std::move(nongs));
 }
 
