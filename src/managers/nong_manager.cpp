@@ -18,6 +18,7 @@
 #include "../../include/nong.hpp"
 #include "../../include/nong_serialize.hpp"
 #include "../random_string.hpp"
+#include "index_manager.hpp"
 
 
 namespace jukebox {
@@ -25,6 +26,66 @@ namespace jukebox {
 std::optional<Nongs*> NongManager::getNongs(int songID) {
     if (!m_manifest.m_nongs.contains(songID)) {
         return std::nullopt;
+    }
+
+    // Try to update saved songs from the index in case it changed
+    auto localNongs = m_manifest.m_nongs[songID].get();
+
+    if (!IndexManager::get()->m_indexNongs.contains(songID)) return localNongs;
+
+    Nongs* indexNongs = &IndexManager::get()->m_indexNongs.at(songID);
+
+    bool changed = false;
+    for (std::unique_ptr<YTSong>& song : localNongs->youtube()) {
+        // Check if song is from an index
+        if (!song->indexID().has_value()) continue;
+        for (std::unique_ptr<YTSong>& indexSong : indexNongs->youtube()) {
+            if (song->indexID() != indexSong->indexID()) continue;
+            if (*song->metadata() == *indexSong->metadata() && song->youtubeID() == indexSong->youtubeID()) continue;
+
+            bool deleteAudio = song->youtubeID() != indexSong->youtubeID();
+
+            if (auto res = localNongs->replaceSong(song->metadata()->m_uniqueID, Nong {
+                 YTSong {
+                    SongMetadata(*indexSong->metadata()),
+                    indexSong->youtubeID(),
+                    indexSong->indexID(),
+                    deleteAudio ? std::nullopt : song->path(),
+                },
+            }); res.isErr()) {
+                SongError(false, "Failed to replace song while updating saved songs from index: {}", res.error()).post();
+                continue;
+            }
+            changed = true;
+        }
+    }
+
+    for (std::unique_ptr<HostedSong>& song : localNongs->hosted()) {
+        // Check if song is from an index
+        if (!song->indexID().has_value()) continue;
+        for (std::unique_ptr<HostedSong>& indexSong : indexNongs->hosted()) {
+            if (song->indexID() != indexSong->indexID()) continue;
+            if (*song->metadata() == *indexSong->metadata() && song->url() == indexSong->url()) continue;
+
+            bool deleteAudio = song->url() != indexSong->url();
+
+            if (auto res = localNongs->replaceSong(song->metadata()->m_uniqueID, Nong {
+                HostedSong {
+                    SongMetadata(*indexSong->metadata()),
+                    indexSong->url(),
+                    indexSong->indexID(),
+                    deleteAudio ? std::nullopt : song->path(),
+                },
+            }); res.isErr()) {
+                SongError(false, "Failed to replace song while updating saved songs from index: {}", res.error()).post();
+                continue;
+            }
+            changed = true;
+        }
+    }
+
+    if (changed) {
+        saveNongs(songID);
     }
 
     return m_manifest.m_nongs[songID].get();

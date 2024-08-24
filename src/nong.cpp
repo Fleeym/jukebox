@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fmt/core.h>
 #include <memory>
+#include <optional>
 #include <system_error>
 
 using namespace geode::prelude;
@@ -374,7 +375,7 @@ public:
         return Ok();
     }
 
-    geode::Result<> deleteSong(const std::string& uniqueID) {
+    geode::Result<> deleteSong(const std::string& uniqueID, bool audio) {
         if (m_default->metadata()->m_uniqueID == uniqueID) {
             return Err("Cannot delete default song");
         }
@@ -385,7 +386,9 @@ public:
 
         for (auto i = m_locals.begin(); i != m_locals.end(); ++i) {
             if ((*i)->metadata()->m_uniqueID == uniqueID) {
-                this->deletePath((*i)->path());
+                if (audio) {
+                    this->deletePath((*i)->path());
+                }
                 m_locals.erase(i);
                 return Ok();
             }
@@ -393,7 +396,9 @@ public:
 
         for (auto i = m_youtube.begin(); i != m_youtube.end(); ++i) {
             if ((*i)->metadata()->m_uniqueID == uniqueID) {
-                this->deletePath((*i)->path());
+                if (audio) {
+                    this->deletePath((*i)->path());
+                }
                 m_youtube.erase(i);
                 return Ok();
             }
@@ -401,7 +406,9 @@ public:
 
         for (auto i = m_hosted.begin(); i != m_hosted.end(); ++i) {
             if ((*i)->metadata()->m_uniqueID == uniqueID) {
-                this->deletePath((*i)->path());
+                if (audio) {
+                    this->deletePath((*i)->path());
+                }
                 m_hosted.erase(i);
                 return Ok();
             }
@@ -470,23 +477,20 @@ public:
         return std::nullopt;
     }
 
+    geode::Result<> replaceSong(std::string prevUniqueID, Nong&& song) {
+        auto isActive = m_active == prevUniqueID;
 
-    void resetToDefault() {
-        auto _ = this->setActive(this->defaultSong()->metadata()->m_uniqueID);
-        for (const auto& i : m_locals) {
-            this->deletePath(i->path());
-        }
-        m_locals.clear();
+        auto prevNong = getNongFromID(prevUniqueID);
+        bool deleteAudio = prevNong.has_value() && prevNong->path() != song.path();
 
-        for (const auto& i : m_youtube) {
-            this->deletePath(i->path());
+        // Not required to succeed
+        auto _ = deleteSong(prevUniqueID, deleteAudio);
+        if (auto res = add(std::move(song)); res.isErr()) return res;
+        if (isActive) {
+            // Not required to succeed
+            auto _ = setActive(song.metadata()->m_uniqueID);
         }
-        m_youtube.clear();
-
-        for (const auto& i : m_hosted) {
-            this->deletePath(i->path());
-        }
-        m_hosted.clear();
+        return Ok();
     }
 
     Result<LocalSong*> add(LocalSong song) {
@@ -516,6 +520,21 @@ public:
         auto ret = s.get();
         m_hosted.push_back(std::move(s));
         return Ok(ret);
+    }
+
+    Result<> add(Nong&& song) {
+        std::optional<std::string> err = std::nullopt;
+        song.visit<void>(
+            [this, &err](LocalSong* local){
+                if (auto addRes = this->add(*local); addRes.isErr()) err = addRes.err();
+            }, [this, &err](YTSong* yt){
+                if (auto addRes = this->add(*yt); addRes.isErr()) err = addRes.err();
+            }, [this, &err](HostedSong* hosted){
+                if (auto addRes = this->add(*hosted); addRes.isErr()) err = addRes.err();
+            }
+        );
+        if (err.has_value()) return Err(err.value());
+        return Ok();
     }
 
     bool isDefaultActive() const {
@@ -559,6 +578,10 @@ std::optional<Nong> Nongs::getNongFromID(const std::string& uniqueID) const {
     return m_impl->getNongFromID(uniqueID);
 }
 
+geode::Result<> Nongs::replaceSong(std::string prevUniqueID, Nong&& song) {
+    return m_impl->replaceSong(prevUniqueID, std::move(song));
+}
+
 bool Nongs::isDefaultActive() const {
     return m_impl->isDefaultActive();
 }
@@ -591,16 +614,12 @@ Result<> Nongs::deleteAllSongs() {
     return m_impl->deleteAllSongs();
 }
 
-Result<> Nongs::deleteSong(const std::string& uniqueID) {
-    return m_impl->deleteSong(uniqueID);
+Result<> Nongs::deleteSong(const std::string& uniqueID, bool audio) {
+    return m_impl->deleteSong(uniqueID, audio);
 }
 
 Result<> Nongs::deleteSongAudio(const std::string& uniqueID) {
     return m_impl->deleteSongAudio(uniqueID);
-}
-
-void Nongs::resetToDefault() {
-    m_impl->resetToDefault();
 }
 
 std::vector<std::unique_ptr<LocalSong>>& Nongs::locals() {
@@ -625,6 +644,10 @@ Result<YTSong*> Nongs::add(YTSong song) {
 
 Result<HostedSong*> Nongs::add(HostedSong song) {
     return m_impl->add(song);
+}
+
+Result<> Nongs::add(Nong&& song) {
+    return m_impl->add(std::move(song));
 }
 
 // Nongs::Nongs(const Nongs&) = delete;

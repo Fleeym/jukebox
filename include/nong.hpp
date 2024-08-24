@@ -38,6 +38,15 @@ struct JUKEBOX_DLL SongMetadata final {
         m_level(level),
         m_startOffset(offset)
     {}
+
+    bool operator==(const SongMetadata& other) const {
+        return m_gdID == other.m_gdID &&
+               m_uniqueID == other.m_uniqueID &&
+               m_name == other.m_name &&
+               m_artist == other.m_artist &&
+               m_level == other.m_level &&
+               m_startOffset == other.m_startOffset;
+    }
 };
 
 class JUKEBOX_DLL LocalSong final {
@@ -156,25 +165,21 @@ public:
      */
     geode::Result<> setActive(const std::string& uniqueID);
     geode::Result<> merge(Nongs&&);
+    // Remove all custom nongs and set the default song as active
     geode::Result<> deleteAllSongs();
-    geode::Result<> deleteSong(const std::string& uniqueID);
+    geode::Result<> deleteSong(const std::string& uniqueID, bool audio = true);
     geode::Result<> deleteSongAudio(const std::string& uniqueID);
     std::optional<Nong> getNongFromID(const std::string& uniqueID) const;
+    geode::Result<> replaceSong(std::string prevUniqueID, Nong&& song);
 
     std::vector<std::unique_ptr<LocalSong>>& locals();
     std::vector<std::unique_ptr<YTSong>>& youtube();
     std::vector<std::unique_ptr<HostedSong>>& hosted();
 
-    // Remove all custom nongs and set the default song as active
-    void resetToDefault();
-
     geode::Result<LocalSong*> add(LocalSong song);
     geode::Result<YTSong*> add(YTSong song);
     geode::Result<HostedSong*> add(HostedSong song);
-
-    void remove(LocalSong* song);
-    void remove(YTSong* song);
-    void remove(HostedSong* song);
+    geode::Result<> add(Nong&& song);
 };
 
 class JUKEBOX_DLL Manifest {

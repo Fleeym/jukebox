@@ -274,7 +274,6 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
             for (std::unique_ptr<YTSong>& indexSong : indexNongs.value()->youtube()) {
                 if (song->metadata()->m_uniqueID == indexSong->metadata()->m_uniqueID) {
                     addedIndexSongs.push_back(song->metadata()->m_uniqueID);
-                    // TODO: update song metadata from index
                 }
             }
         }
@@ -287,7 +286,6 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
             for (std::unique_ptr<HostedSong>& indexSong : indexNongs.value()->hosted()) {
                 if (song->metadata()->m_uniqueID == indexSong->metadata()->m_uniqueID) {
                     addedIndexSongs.push_back(song->metadata()->m_uniqueID);
-                    // TODO: update song metadata from index
                 }
             }
         }

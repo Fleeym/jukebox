@@ -18,6 +18,7 @@ using namespace geode::prelude;
 namespace jukebox {
 
 class IndexManager : public CCObject {
+    friend class NongManager;
 protected:
     inline static IndexManager* m_instance = nullptr;
     bool m_initialized = false;

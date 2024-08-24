@@ -289,7 +289,7 @@ struct matjson::Serialize<jukebox::Nongs> {
         if (defaultSong.isErr()) {
             // TODO think about something
             // Try recwovery if the song ID has some nongs
-            return geode::Err("womp womp");
+            return geode::Err("Failed to parse default song for id {}", songID);
         }
 
         jukebox::Nongs nongs = {
