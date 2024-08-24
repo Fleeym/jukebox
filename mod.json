@@ -7,14 +7,22 @@
 		"win": "2.206",
 		"android": "2.206"
 	},
-	"developer": "Fleym",
+	"developers": [ "Fleym", "Flafy" ],
 	"description": "A simple song manager for Geometry Dash",
 	"repository": "https://github.com/Fleeym/jukebox",
+	"links": {
+		"community": "https://discord.gg/SFE7qxYFyU",
+		"source": "https://github.com/Fleeym/jukebox"
+	},
 	"issues": {
-		"info": "For any issues regarding this mod, send me a message on my discord: 'fleeym'. If you can, please give the level or song ID you are having problems with."
+		"info": "For any issues regarding this mod, send me a message on my discord: 'fleeym'. If you can, please give the level or song ID you are having problems with.",
+		"url": "https://github.com/Fleeym/jukebox/issues"
 	},
 	"tags": [
-		"music"
+		"music",
+		"online",
+		"utility",
+		"interface"
 	],
 	"settings": {
 		"fix-empty-size": {
