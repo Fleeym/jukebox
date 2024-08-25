@@ -538,7 +538,7 @@ void NongAddPopup::onPublish(CCObject* target) {
         };
 
         if (submit.m_preSubmitMessage.has_value()) {
-            auto popup = IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(), name, "Back", "Continue", 420.f, submitFunc);
+            auto popup = IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(), submit.m_preSubmitMessage.value(), "Back", "Continue", 420.f, submitFunc);
             popup->m_scene = this;
             popup->show();
         } else {
