@@ -36,17 +36,28 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     Nongs* indexNongs = &IndexManager::get()->m_indexNongs.at(songID);
 
     bool changed = false;
+
     for (std::unique_ptr<YTSong>& song : localNongs->youtube()) {
         // Check if song is from an index
         if (!song->indexID().has_value()) continue;
         for (std::unique_ptr<YTSong>& indexSong : indexNongs->youtube()) {
             if (song->indexID() != indexSong->indexID()) continue;
-            if (*song->metadata() == *indexSong->metadata() && song->youtubeID() == indexSong->youtubeID()) continue;
+            auto metadata = song->metadata();
+            auto indexMetadata = indexSong->metadata();
+            if (metadata->m_uniqueID != indexMetadata->m_uniqueID) continue;
+            if (
+                metadata->m_gdID == indexMetadata->m_gdID &&
+                metadata->m_name == indexMetadata->m_name &&
+                metadata->m_artist == indexMetadata->m_artist &&
+                metadata->m_level == indexMetadata->m_level &&
+                metadata->m_startOffset == indexMetadata->m_startOffset &&
+                song->youtubeID() == indexSong->youtubeID()
+            ) continue;
 
             bool deleteAudio = song->youtubeID() != indexSong->youtubeID();
 
             if (auto res = localNongs->replaceSong(song->metadata()->m_uniqueID, Nong {
-                 YTSong {
+                YTSong {
                     SongMetadata(*indexSong->metadata()),
                     indexSong->youtubeID(),
                     indexSong->indexID(),
@@ -65,7 +76,17 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
         if (!song->indexID().has_value()) continue;
         for (std::unique_ptr<HostedSong>& indexSong : indexNongs->hosted()) {
             if (song->indexID() != indexSong->indexID()) continue;
-            if (*song->metadata() == *indexSong->metadata() && song->url() == indexSong->url()) continue;
+            auto metadata = song->metadata();
+            auto indexMetadata = indexSong->metadata();
+            if (metadata->m_uniqueID != indexMetadata->m_uniqueID) continue;
+            if (
+                metadata->m_gdID == indexMetadata->m_gdID &&
+                metadata->m_name == indexMetadata->m_name &&
+                metadata->m_artist == indexMetadata->m_artist &&
+                metadata->m_level == indexMetadata->m_level &&
+                metadata->m_startOffset == indexMetadata->m_startOffset &&
+                song->url() == indexSong->url()
+            ) continue;
 
             bool deleteAudio = song->url() != indexSong->url();
 
