@@ -566,7 +566,7 @@ void NongAddPopup::addSong(CCObject* target) {
         #ifdef GEODE_IS_WINDOWS
         if (wcslen(songPath.c_str()) == 0) {
         #else
-        if (strlen(m_songPath.c_str()) == 0) {
+        if (strlen(songPath.c_str()) == 0) {
         #endif
             FLAlertLayer::create("Error", "No file selected.", "Ok")->show();
             return;

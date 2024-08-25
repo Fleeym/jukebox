@@ -149,7 +149,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
     if (obj && robtop) {
         int adjusted = adjustSongID(id, robtop);
         std::string filename = LevelTools::getAudioFileName(adjusted);
-        std::filesystem::path gdDir = CCFileUtils::sharedFileUtils()->getWritablePath2();
+        std::filesystem::path gdDir = std::filesystem::path(CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
         m_manifest.m_nongs.insert({adjusted, std::make_unique<Nongs>(Nongs {
             adjusted,
             LocalSong {
@@ -192,7 +192,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
                 obj->m_songName,
                 obj->m_artistName
             },
-            MusicDownloadManager::sharedState()->pathForSong(id)
+            std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(id).c_str())
         }
     })});
     saveNongs(id);

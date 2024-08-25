@@ -28,7 +28,7 @@ class $modify(GJGameLevel) {
         #ifdef GEODE_IS_WINDOWS
         return geode::utils::string::wideToUtf8(active.path().value().c_str());
         #else
-        return active->path.string();
+        return active.path().value().string();
         #endif
     }
 };
