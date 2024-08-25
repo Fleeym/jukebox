@@ -217,10 +217,17 @@ public:
 
     ~Nong();
 
+    enum class Type {
+        Local,
+        YT,
+        Hosted,
+    };
+
     SongMetadata* metadata() const;
     std::optional<std::filesystem::path> path() const;
     std::optional<std::string> indexID() const;
     geode::Result<Nongs> toNongs() const;
+    Type type() const;
 
     template <typename ReturnType>
     ReturnType visit(

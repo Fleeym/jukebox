@@ -660,12 +660,6 @@ class Nong::Impl {
 private:
     friend class Nong;
 
-    enum class Type {
-        Local,
-        YT,
-        Hosted,
-    };
-
     Type m_type;
     std::unique_ptr<LocalSong> m_localSong = nullptr;
     std::unique_ptr<YTSong> m_ytSong = nullptr;
@@ -759,6 +753,10 @@ public:
             }
         }
     }
+
+    Type type() const {
+        return m_type;
+    }
 };
 
 // Explicit template instantiation
@@ -799,11 +797,11 @@ Nong::Nong(const Nong& other)
 
 Nong& Nong::operator=(const Nong& other) {
     m_impl->m_type = other.m_impl->m_type;
-    if (other.m_impl->m_type == Impl::Type::Local) {
+    if (other.m_impl->m_type == Type::Local) {
         m_impl->m_localSong = std::make_unique<LocalSong>(*other.m_impl->m_localSong);
-    } else if (other.m_impl->m_type == Impl::Type::YT) {
+    } else if (other.m_impl->m_type == Type::YT) {
         m_impl->m_ytSong = std::make_unique<YTSong>(*other.m_impl->m_ytSong);
-    } else if (other.m_impl->m_type == Impl::Type::Hosted) {
+    } else if (other.m_impl->m_type == Type::Hosted) {
         m_impl->m_hostedSong = std::make_unique<HostedSong>(*other.m_impl->m_hostedSong);
     }
     return *this;
@@ -823,6 +821,10 @@ std::optional<std::filesystem::path> Nong::path() const {
 
 std::optional<std::string> Nong::indexID() const {
     return m_impl->indexID();
+}
+
+Nong::Type Nong::type() const {
+    return m_impl->type();
 }
 
 template <typename ReturnType>

@@ -4,6 +4,7 @@
 #include "index_manager.hpp"
 
 #include <Geode/utils/web.hpp>
+#include <filesystem>
 #include <matjson.hpp>
 
 #include "../../include/nong.hpp"
@@ -102,7 +103,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                     ytNong["name"].as_string(),
                     ytNong["artist"].as_string(),
                     std::nullopt,
-                    ytNong["startOffset"].as_int()
+                    ytNong.contains("startOffset") ? ytNong["startOffset"].as_int() : 0
                   ),
                   ytNong["ytID"].as_string(),
                   index.m_id,
@@ -128,7 +129,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                     hostedNong["name"].as_string(),
                     hostedNong["artist"].as_string(),
                     std::nullopt,
-                    hostedNong["startOffset"].as_int()
+                    hostedNong.contains("startOffset") ? hostedNong["startOffset"].as_int() : 0
                   ),
                   hostedNong["url"].as_string(),
                   index.m_id,
@@ -309,10 +310,34 @@ Result<std::vector<Nong>> IndexManager::getNongs(int gdSongID) {
         }
     }
 
-    std::sort(nongs.begin(), nongs.end(), [defaultUniqueID = localNongs.value()->defaultSong()->metadata()->m_uniqueID](const Nong& a, const Nong& b) {
+    std::unordered_map<Nong::Type, int> sortedNongType = {
+        { Nong::Type::Local, 1 },
+        { Nong::Type::Hosted, 2 },
+        { Nong::Type::YT, 3 }
+    };
+
+    std::sort(nongs.begin(), nongs.end(), [&sortedNongType, defaultUniqueID = localNongs.value()->defaultSong()->metadata()->m_uniqueID](const Nong& a, const Nong& b) {
         // Place the object with isDefault == true at the front
         if (a.metadata()->m_uniqueID == defaultUniqueID) return true;
         if (b.metadata()->m_uniqueID == defaultUniqueID) return false;
+
+        // Next, those without an index
+        if (!a.indexID().has_value() && b.indexID().has_value()) return true;
+        if (a.indexID().has_value() && !b.indexID().has_value()) return false;
+
+        // Next, compare whether path exists or not
+        if (a.path().has_value() && std::filesystem::exists(a.path().value())) {
+            if (!b.path().has_value() || !std::filesystem::exists(b.path().value())) {
+                return true;
+            }
+        } else if (b.path().has_value() && std::filesystem::exists(b.path().value())) {
+            return false;
+        }
+
+        // Next, compare by type
+        if (a.type() != b.type()) {
+            return sortedNongType.at(a.type()) < sortedNongType.at(b.type());
+        }
 
         // Next, compare whether indexID exists or not (std::nullopt should be first)
         if (a.indexID().has_value() != b.indexID().has_value()) {
