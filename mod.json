@@ -1,6 +1,6 @@
 {
-	"geode": "3.2.0",
-	"version": "2.11.0",
+	"geode": "3.4.0",
+	"version": "3.0.0-alpha.1",
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
@@ -42,14 +42,14 @@
 			"description": "Jukebox Indexes.\nFrom indexes the mod knows where to fetch the songs from.",
 			"type": "custom",
 			"default": [
-				{"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/official.json", "enabled": true, "userAdded": false}
+				{"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json", "enabled": true, "userAdded": false},
+				{"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json", "enabled": true, "userAdded": false}
 			]
 		}
 	},
 	"api": {
 		"include": [
-			"include/*.hpp",
-			"src/types/song_info.hpp"
+			"include/*.hpp"
 		]
 	},
 	"resources": {
