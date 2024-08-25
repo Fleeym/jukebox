@@ -130,6 +130,13 @@ bool NongAddPopup::setup(NongDropdownLayer* parent, int songID, std::optional<No
                 indexIDs.push_back(pair.first);
             }
 
+            std::stable_sort(indexIDs.begin(), indexIDs.end(), [](const std::string& a, const std::string& b) {
+                // Ensure "song-file-hub-index" comes first
+                if (a == "song-file-hub-index") return true;
+                if (b == "song-file-hub-index") return false;
+                return false; // maintain relative order for other strings
+            });
+
             m_publishableIndexes = std::move(indexIDs);
         }
 
