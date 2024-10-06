@@ -19,12 +19,6 @@ bool IndexManager::init() {
         return true;
     }
 
-    Mod::get()->addCustomSetting<IndexesSettingValue>(
-        "indexes", Mod::get()
-                       ->getSettingDefinition("indexes")
-                       ->get<CustomSetting>()
-                       ->json->get<std::vector<IndexSource>>("default"));
-
     auto path = this->baseIndexesPath();
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directory(path);
@@ -41,12 +35,12 @@ bool IndexManager::init() {
 }
 
 Result<std::vector<IndexSource>> IndexManager::getIndexes() {
-    auto setting = Mod::get()->getSettingValue<IndexesSettingStruct>("indexes");
-    log::info("Indexes: {}", setting.m_indexes.size());
-    for (const auto index : setting.m_indexes) {
+    auto setting = Mod::get()->getSettingValue<Indexes>("indexes");
+    log::info("Indexes: {}", setting.indexes.size());
+    for (const auto index : setting.indexes) {
       log::info("Index({}): {}", index.m_enabled, index.m_url);
     }
-    return Ok(setting.m_indexes);
+    return Ok(setting.indexes);
 }
 
 std::filesystem::path IndexManager::baseIndexesPath() {

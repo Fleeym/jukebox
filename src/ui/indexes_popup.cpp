@@ -19,13 +19,10 @@
 #include <ccTypes.h>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
 
-#include <filesystem>
 #include <fmt/core.h>
 #include <fmod.hpp>
 #include <fmod_common.h>
 #include <optional>
-#include <sstream>
-#include <system_error>
 
 #include "indexes_popup.hpp"
 #include "list/index_cell.hpp"
@@ -57,10 +54,10 @@ bool IndexesPopup::setup(std::vector<IndexSource> indexes, std::function<void(st
 void IndexesPopup::onClose(CCObject* sender) {
     log::info("IndexesPopup::onClose");
     for (auto& index : m_indexes) {
-        log::info("Index: {}", index.m_enabled);
+        log::info("Index: {}, enabled: {}", index.m_url, index.m_enabled);
     }
     m_setIndexesCallback(m_indexes);
-    this->Popup::onClose(sender);
+    Popup::onClose(sender);
 }
 
 void IndexesPopup::onAdd(CCObject*) {
@@ -86,7 +83,7 @@ CCSize IndexesPopup::getPopupSize() {
 void IndexesPopup::createList() {
     auto size = this->m_mainLayer->getContentSize();
 
-    static const float HORIZONTAL_PADDING = 5.f;
+    constexpr float HORIZONTAL_PADDING = 5.f;
 
     if (m_list) {
         m_list->removeFromParent();

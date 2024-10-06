@@ -1,14 +1,11 @@
 #pragma once
 
-#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <unordered_map>
 
 #include "Geode/utils/Task.hpp"
-#include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Event.hpp"
-#include "Geode/loader/Mod.hpp"
 
 #include "../../include/nong.hpp"
 #include "../../include/index.hpp"

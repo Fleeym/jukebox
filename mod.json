@@ -39,11 +39,19 @@
 		},
 		"indexes": {
 			"name": "Indexes",
-			"description": "Jukebox Indexes.\nFrom indexes the mod knows where to fetch the songs from.",
-			"type": "custom",
+			"description": "An index is a JSON file that tells jukebox where to fetch song data from. The default indexes that are provided fetch data from Song File Hub. The system is extensible, so you can add your own indexes!",
+			"type": "custom:indexes",
 			"default": [
-				{"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json", "enabled": true, "userAdded": false},
-				{"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json", "enabled": true, "userAdded": false}
+				{
+                    "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json",
+                    "enabled": true,
+                    "userAdded": false
+                },
+				{
+                    "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json",
+                    "enabled": true,
+                    "userAdded": false
+                }
 			]
 		}
 	},
