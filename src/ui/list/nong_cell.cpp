@@ -181,7 +181,7 @@ bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
                 ? std::accumulate(std::next(metadataList.begin()),
                                   metadataList.end(), metadataList[0],
                                   [](const std::string& a, const std::string& b) {
-                                      return a + " : " + b;
+                                      return a + ": " + b;
                                   })
                       .c_str()
                 : "",
