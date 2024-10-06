@@ -30,26 +30,31 @@
 			"description": "An index is a JSON file that tells Jukebox where to fetch song data from. The default indexes that are provided fetch data from Song File Hub. The system is extensible, so you can add your own indexes!",
 			"type": "custom:indexes",
 			"default": [
+        {
+          "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json",
+          "enabled": true,
+          "userAdded": false
+        },
 				{
-                    "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json",
-                    "enabled": true,
-                    "userAdded": false
-                },
-				{
-                    "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json",
-                    "enabled": true,
-                    "userAdded": false
-                }
+          "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json",
+          "enabled": true,
+          "userAdded": false
+        }
 			]
 		},
+    "experimental-title": {
+      "name": "Experimental",
+      "type": "title",
+      "description": "Settings that may improve your live, or crash your game. Have fun! :)"
+    },
 		"fix-empty-size": {
 			"name": "Fix 0.0B",
 			"type": "bool",
-			"description": "Fixes multi asset levels showing 0.0B size (experimental, might cause lag when downloading assets)",
+			"description": "Fixes multi asset levels showing 0.0B size. Might cause lag when downloading assets.",
 			"default": false
 		},
 		"autocomplete-metadata": {
-			"name": "Autocomplete metadata (experimental)",
+			"name": "Autocomplete metadata",
 			"type": "bool",
 			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny big of lag after picking a song file. Doesn't play nice with UTF-8, at the moment",
 			"default": false
