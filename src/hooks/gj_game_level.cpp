@@ -1,7 +1,7 @@
-#include <Geode/modify/GJGameLevel.hpp>
-#include <Geode/binding/GJGameLevel.hpp>
-#include <Geode/modify/Modify.hpp>
-#include <Geode/utils/string.hpp>
+#include "Geode/modify/GJGameLevel.hpp" // IWYU pragma: keep
+#include "Geode/binding/GJGameLevel.hpp"
+#include "Geode/modify/Modify.hpp"
+#include "Geode/utils/string.hpp"
 
 #include <filesystem>
 

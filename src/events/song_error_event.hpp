@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Geode/loader/Event.hpp"
-#include "../managers/nong_manager.hpp"
 #include "../managers/index_manager.hpp"
+#include "../managers/nong_manager.hpp"
+#include "Geode/loader/Event.hpp"
 
 using namespace geode::prelude;
 
@@ -17,20 +17,15 @@ protected:
     friend class NongManager;
     friend class IndexManager;
 
-    template<typename... Args>
-    SongErrorEvent(
-        bool notifyUser,
-        fmt::format_string<Args...> format,
-        Args&&... args
-    ) : m_error(fmt::format(format, std::forward<Args>(args)...)),
-        m_notifyUser(notifyUser)
-    {};
+    template <typename... Args>
+    SongErrorEvent(bool notifyUser, fmt::format_string<Args...> format,
+                   Args&&... args)
+        : m_error(fmt::format(format, std::forward<Args>(args)...)),
+          m_notifyUser(notifyUser){};
 
 public:
     std::string error() { return m_error; }
     bool notifyUser() { return m_notifyUser; }
 };
 
-using SongErrorFilter = EventFilter<SongErrorEvent>;
-
-}
+}  // namespace jukebox

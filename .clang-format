@@ -1,0 +1,12 @@
+BasedOnStyle: Google
+AccessModifierOffset: -4
+IndentWidth: 4
+IncludeBlocks: Preserve
+InsertBraces: true
+InsertNewlineAtEOF: true
+UseTab: Never
+---
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Left
+---

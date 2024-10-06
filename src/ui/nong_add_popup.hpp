@@ -1,15 +1,16 @@
 #pragma once
 
-#include <Geode/c++stl/gdstdlib.hpp>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/c++stl/gdstdlib.hpp>
 #include <Geode/ui/TextInput.hpp>
-#include <optional>
-
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Result.hpp"
 #include "Geode/utils/Task.hpp"
+
+#include <optional>
+
 #include "nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
@@ -19,12 +20,13 @@ namespace jukebox {
 
 class NongDropdownLayer;
 
-class NongAddPopup : public Popup<NongDropdownLayer*, int, std::optional<Nong>> {
+class NongAddPopup
+    : public Popup<NongDropdownLayer*, int, std::optional<Nong>> {
 protected:
     enum class NongAddPopupSongType {
-      local,
-      yt,
-      hosted,
+        local,
+        yt,
+        hosted,
     };
 
     struct ParsedMetadata {
@@ -74,7 +76,8 @@ protected:
 
     std::optional<Nong> m_replacedNong;
 
-    bool setup(NongDropdownLayer* parent, int songID, std::optional<Nong> replacedNong) override;
+    bool setup(NongDropdownLayer* parent, int songID,
+               std::optional<Nong> replacedNong) override;
     void createInputs();
     void addPathLabel(std::string const& path);
     void onFileOpen(Task<Result<std::filesystem::path>>::Event* event);
@@ -89,8 +92,10 @@ protected:
     void onPublish(CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
     void onClose(CCObject*) override;
+
 public:
-    static NongAddPopup* create(NongDropdownLayer* parent, int songID, std::optional<Nong> nong = std::nullopt);
+    static NongAddPopup* create(NongDropdownLayer* parent, int songID,
+                                std::optional<Nong> nong = std::nullopt);
 };
 
-}
+}  // namespace jukebox
