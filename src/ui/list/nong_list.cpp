@@ -7,11 +7,12 @@
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <Geode/ui/ScrollLayer.hpp>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include <filesystem>
 #include <optional>
 #include <unordered_map>
 
 #include "../../managers/nong_manager.hpp"
-#include "nong_cell.hpp"
+#include "../../managers/index_manager.hpp"
 #include "song_cell.hpp"
 
 using namespace geode::prelude;
@@ -19,25 +20,29 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool NongList::init(
-    std::unordered_map<int, NongData>& data,
+    std::vector<int>& songIds,
     const cocos2d::CCSize& size,
-    std::function<void(int, const SongInfo&)> onSetActive,
+    std::function<void(int, const std::string&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongInfo&)> onDelete,
-    std::function<void(bool)> onListTypeChange
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
+    std::function<void(int, const std::string&)> onDownload,
+    std::function<void(int, const std::string&)> onEdit,
+    std::function<void(std::optional<int>)> onListTypeChange
 ) {
     if (!CCNode::init()) {
         return false;
     }
 
-    m_data = data;
+    m_songIds = songIds;
     m_onSetActive = onSetActive;
     m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
+    m_onDownload = onDownload;
+    m_onEdit = onEdit;
     m_onListTypeChange = onListTypeChange;
 
-    if (m_data.size() == 1) {
-        m_currentSong = m_data.begin()->first;
+    if (m_songIds.size() == 1) {
+        m_currentSong = m_songIds.front();
     }
 
     this->setContentSize(size);
@@ -80,16 +85,28 @@ bool NongList::init(
         -m_list->getScaledContentSize() / 2
     );
 
+    m_onListTypeChange(m_currentSong);
+
     this->build();
     return true;
 }
 
+void NongList::setDownloadProgress(std::string uniqueID, float progress) {
+    for (auto& cell : listedNongCells) {
+        if (cell->m_songInfo.metadata()->m_uniqueID == uniqueID) {
+            cell->setDownloadProgress(progress);
+            break;
+        }
+    }
+}
+
 void NongList::build() {
+    listedNongCells.clear();
     if (m_list->m_contentLayer->getChildrenCount() > 0) {
         m_list->m_contentLayer->removeAllChildren();
     }
 
-    if (m_data.size() == 0) {
+    if (m_songIds.size() == 0) {
         return;
     }
 
@@ -98,23 +115,24 @@ void NongList::build() {
         s_itemSize
     };
 
-    if (!m_currentSong) {
-        if (m_onListTypeChange) {
-            m_onListTypeChange(true);
-        }
-        for (const auto& kv : m_data) {
-            SongInfo display;
-            auto active = NongManager::get()->getActiveNong(kv.first);
+    if (m_onListTypeChange) {
+        m_onListTypeChange(m_currentSong);
+    }
 
-            if (!active) {
+    if (!m_currentSong) {
+        for (const auto& id : m_songIds) {
+            auto nongs = NongManager::get()->getNongs(id);
+
+            if (!nongs) {
                 continue;
             }
 
-            int id = kv.first;
+            auto active = nongs.value()->activeNong();
+
             m_list->m_contentLayer->addChild(
                 jukebox::SongCell::create(
                     id,
-                    active.value(),
+                    active.metadata(),
                     itemSize,
                     [this, id] () {
                         this->onSelectSong(id);
@@ -123,66 +141,85 @@ void NongList::build() {
             );
         }
     } else {
-        if (m_onListTypeChange) {
-            m_onListTypeChange(false);
-        }
         // Single item
         int id = m_currentSong.value();
-        if (!m_data.contains(id)) {
-            return;
-        }
-        NongData data = m_data.at(id);
-        auto active = NongManager::get()->getActiveNong(id);
-        auto defaultRes = NongManager::get()->getDefaultNong(id);
-        if (!defaultRes) {
-            return;
-        }
-        if (!active) {
+
+        auto localNongs = NongManager::get()->getNongs(id);
+        if (!localNongs) {
             return;
         }
 
-        auto defaultSong = defaultRes.value();
+        auto defaultSong = localNongs.value()->defaultSong();
+        auto active = localNongs.value()->active();
 
-        m_list->m_contentLayer->addChild(
-            jukebox::NongCell::create(
-                id, defaultSong,
-                true,
-                defaultSong.path == data.active,
-                itemSize,
-                [this, id, defaultSong] () {
-                    m_onSetActive(id, defaultSong);
-                },
-                [this, id] () {
-                    m_onFixDefault(id);
-                },
-                [this, id, defaultSong] () {
-                    m_onDelete(id, defaultSong);
-                }
-            )
-        );
-
-        for (const SongInfo& song : data.songs) {
-            if (song.path == data.defaultPath) {
-                continue;
-            }
-            m_list->m_contentLayer->addChild(
-                jukebox::NongCell::create(
-                    id, song,
-                    song.path == data.defaultPath,
-                    song.path == data.active,
-                    itemSize,
-                    [this, id, song] () {
-                        m_onSetActive(id, song);
-                    },
-                    [this, id] () {
-                        m_onFixDefault(id);
-                    },
-                    [this, id, song] () {
-                        m_onDelete(id, song);
-                    }
-                )
-            );
+        auto nongs = IndexManager::get()->getNongs(id);
+        if (nongs.isErr()) {
+            return;
         }
+
+        for (auto& nong : nongs.value()) {
+          auto metadata = *nong.metadata();
+          auto path = nong.path();
+          auto uniqueID = metadata.m_uniqueID;
+
+          bool isFromIndex = nong.indexID().has_value();
+          bool isDownloaded = path.has_value() && std::filesystem::exists(path.value());
+          bool deleteOnlyAudio = !isFromIndex && isDownloaded;
+          bool deletePopup = !isFromIndex && !isDownloaded;
+
+          auto cell = jukebox::NongCell::create(
+              id,
+              std::move(nong),
+              uniqueID == defaultSong->metadata()->m_uniqueID,
+              uniqueID == active,
+              itemSize,
+              [this, id, uniqueID] () {
+                  m_onSetActive(id, uniqueID);
+              },
+              [this, id] () {
+                  m_onFixDefault(id);
+              },
+              [this, id, uniqueID, deleteOnlyAudio, deletePopup]() {
+                  m_onDelete(id, uniqueID, deleteOnlyAudio, deletePopup);
+              },
+              [this, id, uniqueID] () {
+                  m_onDownload(id, uniqueID);
+              },
+              [this, id, uniqueID] () {
+                  m_onEdit(id, uniqueID);
+              }
+          );
+
+          if (auto progress = IndexManager::get()->getSongDownloadProgress(metadata.m_uniqueID); progress.has_value()) {
+              cell->setDownloadProgress(progress.value());
+          };
+
+          listedNongCells.push_back(cell);
+          m_list->m_contentLayer->addChild(cell);
+        }
+
+        // for (std::unique_ptr<LocalSong>& song : nongs.value()->locals()) {
+        //     m_list->m_contentLayer->addChild(
+        //         jukebox::NongCell::create(
+        //             id, Nong(*song),
+        //             false,
+        //             song->path() == active->m_path,
+        //             itemSize,
+        //             [this, id, &song] () {
+        //               m_onSetActive(id, SongMetadataPathed(
+        //                   *song->metadata(),
+        //                   song->path()
+        //               ));
+        //             },
+        //             [this, id] () {
+        //                 m_onFixDefault(id);
+        //             },
+        //             [this, id, &song] () {
+        //                 m_onDelete(id, SongMetadataPathed{*song});
+        //             }
+        //         )
+        //     );
+        // }
     }
     m_list->m_contentLayer->updateLayout();
     this->scrollToTop();
@@ -194,12 +231,8 @@ void NongList::scrollToTop() {
     );
 }
 
-void NongList::setData(std::unordered_map<int, NongData>& data) {
-    m_data = data;
-}
-
 void NongList::onBack(cocos2d::CCObject* target) {
-    if (!m_currentSong.has_value() || m_data.size() < 2) {
+    if (!m_currentSong.has_value() || m_songIds.size() < 2) {
         return;
     }
 
@@ -210,13 +243,13 @@ void NongList::onBack(cocos2d::CCObject* target) {
 }
 
 void NongList::setCurrentSong(int songId) {
-    if (m_data.contains(songId)) {
+    if (std::find(m_songIds.begin(), m_songIds.end(), songId) != m_songIds.end()) {
         m_currentSong = songId;
     }
 }
 
 void NongList::onSelectSong(int songId) {
-    if (m_currentSong.has_value() || !m_data.contains(songId)) {
+    if (m_currentSong.has_value() || std::find(m_songIds.begin(), m_songIds.end(), songId) == m_songIds.end()) {
         return;
     }
 
@@ -227,15 +260,17 @@ void NongList::onSelectSong(int songId) {
 }
 
 NongList* NongList::create(
-    std::unordered_map<int, NongData>& data,
+    std::vector<int>& songIds,
     const cocos2d::CCSize& size,
-    std::function<void(int, const SongInfo&)> onSetActive,
+    std::function<void(int, const std::string&)> onSetActive,
     std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongInfo&)> onDelete,
-    std::function<void(bool)> onListTypeChange
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
+    std::function<void(int, const std::string&)> onDownload,
+    std::function<void(int, const std::string&)> onEdit,
+    std::function<void(std::optional<int>)> onListTypeChange
 ) {
     auto ret = new NongList();
-    if (!ret->init(data, size, onSetActive, onFixDefault, onDelete, onListTypeChange)) {
+    if (!ret->init(songIds, size, onSetActive, onFixDefault, onDelete, onDownload, onEdit, onListTypeChange)) {
         CC_SAFE_DELETE(ret);
         return nullptr;
     }

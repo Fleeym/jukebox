@@ -3,19 +3,16 @@
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/web.hpp>
-#include <filesystem>
 #include <sstream>
 
 #include "nong_dropdown_layer.hpp"
-#include "../managers/nong_manager.hpp"
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "ccTypes.h"
 #include "list/nong_list.hpp"
-
-namespace fs = std::filesystem;
+#include "../managers/index_manager.hpp"
 
 namespace jukebox {
 
@@ -23,15 +20,16 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     m_songIDS = ids;
     m_parentWidget = parent;
     m_defaultSongID = defaultSongID;
-    for (auto const& id : m_songIDS) {
-        auto result = NongManager::get()->getNongs(id);
-        auto value = result.value();
-        m_data[id] = value;
-    }
+    // for (auto const& id : m_songIDS) {
+    //     auto result = NongManager::get()->getNongs(id);
+    //     auto value = result.value();
+    //     m_data[id] = value;
+    // }
     bool isMultiple = ids.size() > 1;
     if (ids.size() == 1) {
         m_currentSongID = ids[0];
     }
+
     auto contentSize = m_mainLayer->getContentSize();
 
     int manifest = NongManager::get()->getCurrentManifestVersion();
@@ -46,32 +44,9 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     manifestLabel->setID("manifest-label");
     m_mainLayer->addChild(manifestLabel);
 
-    auto bigMenu = CCMenu::create();
-    bigMenu->setID("big-menu");
-    bigMenu->ignoreAnchorPointForPosition(false);
-    auto discordSpr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
-    auto discordBtn = CCMenuItemSpriteExtra::create(
-        discordSpr,
-        this,
-        menu_selector(NongDropdownLayer::onDiscord)
-    );
-    discordBtn->setID("discord-button");
-    CCPoint position = discordBtn->getScaledContentSize() / 2;
-    position += { 5.f, 5.f };
-    bigMenu->addChildAtPosition(discordBtn, Anchor::BottomLeft, position);
-    this->addChild(bigMenu);
-
-    auto spr = CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
-    spr->setScale(0.7f);
     auto menu = CCMenu::create();
     menu->setID("bottom-right-menu");
-    auto downloadBtn = CCMenuItemSpriteExtra::create(
-        spr,
-        this,
-        menu_selector(NongDropdownLayer::fetchSongFileHub)
-    );
-    m_downloadBtn = downloadBtn;
-    spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
+    auto spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
     spr->setScale(0.7f);
     auto addBtn = CCMenuItemSpriteExtra::create(
         spr,
@@ -79,7 +54,14 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
         menu_selector(NongDropdownLayer::openAddPopup)
     );
     m_addBtn = addBtn;
-    spr = CCSprite::createWithSpriteFrameName("GJ_trashBtn_001.png");
+    spr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
+    auto discordBtn = CCMenuItemSpriteExtra::create(
+        spr,
+        this,
+        menu_selector(NongDropdownLayer::onDiscord)
+    );
+    discordBtn->setID("discord-button");
+    spr = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
     spr->setScale(0.7f);
     auto removeBtn = CCMenuItemSpriteExtra::create(
         spr,
@@ -90,14 +72,12 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     if (isMultiple) {
         m_addBtn->setVisible(false);
         m_deleteBtn->setVisible(false);
-        m_downloadBtn->setVisible(false);
     } else {
         m_addBtn->setVisible(true);
         m_deleteBtn->setVisible(true);
-        m_downloadBtn->setVisible(true);
     }
     menu->addChild(addBtn);
-    menu->addChild(downloadBtn);
+    menu->addChild(discordBtn);
     menu->addChild(removeBtn);
     auto layout = ColumnLayout::create();
     layout->setAxisAlignment(AxisAlignment::Start);
@@ -154,6 +134,35 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent, in
     title->setScale(0.75f);
     m_mainLayer->addChild(title);
     handleTouchPriority(this);
+
+    m_songErrorListener.bind([](SongErrorEvent* event){
+        if (event->notifyUser()) {
+            FLAlertLayer::create(
+                "Error",
+                event->error(),
+                "OK"
+            )->show();
+        }
+        return ListenerResult::Propagate;
+    });
+
+    m_songStateListener.bind([this](SongStateChangedEvent* event){
+        if (!m_list || m_currentSongID != event->gdSongID()) return ListenerResult::Propagate;
+
+        log::info("song state changed");
+        createList();
+
+        return ListenerResult::Propagate;
+    });
+
+    m_downloadListener.bind([this](SongDownloadProgressEvent* event){
+        if (!m_list || m_currentSongID != event->gdSongID()) return ListenerResult::Propagate;
+
+        m_list->setDownloadProgress(event->uniqueID(), event->progress());
+
+        return ListenerResult::Propagate;
+    });
+
     return true;
 }
 
@@ -163,52 +172,69 @@ void NongDropdownLayer::onSettings(CCObject* sender) {
 
 void NongDropdownLayer::onSelectSong(int songID) {
     m_currentSongID = songID;
-    this->createList();
 }
 
 void NongDropdownLayer::openAddPopup(CCObject* target) {
-    NongAddPopup::create(this)->show();
+    if (!m_currentSongID.has_value()) return;
+    NongAddPopup::create(this, m_currentSongID.value())->show();
 }
 
 void NongDropdownLayer::createList() {
     if (!m_list) {
         m_list = NongList::create(
-            m_data, 
+            m_songIDS,
             CCSize { this->getCellSize().width, 220.f },
-            [this](int id, const SongInfo& song) {
-                m_currentSongID = id;
-                this->setActiveSong(song);
+            [this](int gdSongID, const std::string& uniqueID) {
+                this->setActiveSong(gdSongID, uniqueID);
             },
-            [this](int id) {
-                if (!NongManager::get()->isFixingDefault(id)) {
-                    this->template addEventListener<GetSongInfoEventFilter>(
-                        [this](auto song) {
-                            this->refreshList();
-                            FLAlertLayer::create(
-                                "Success",
-                                "Default song data was refetched successfully!",
-                                "Ok"
-                            )->show();
-                            return ListenerResult::Propagate;
-                        }, id
-                    );
-                    NongManager::get()->markAsInvalidDefault(id);
-                    NongManager::get()->prepareCorrectDefault(id);
+            [this](int gdSongID) {
+                // TODO
+                // if (!NongManager::get()->isFixingDefault(id)) {
+                //     this->template addEventListener<GetSongInfoEventFilter>(
+                //         [this](auto song) {
+                //             this->refreshList();
+                //             FLAlertLayer::create(
+                //                 "Success",
+                //                 "Default song data was refetched successfully!",
+                //                 "Ok"
+                //             )->show();
+                //             return ListenerResult::Propagate;
+                //         }, id
+                //     );
+                //     NongManager::get()->markAsInvalidDefault(id);
+                //     NongManager::get()->prepareCorrectDefault(id);
+                // }
+                MusicDownloadManager::sharedState()->clearSong(gdSongID);
+                MusicDownloadManager::sharedState()->getSongInfo(gdSongID, true);
+            },
+            [this](int gdSongID, const std::string& uniqueID, bool onlyAudio, bool confirm) {
+                this->deleteSong(gdSongID, uniqueID, onlyAudio, confirm);
+            },
+            [this](int gdSongID, const std::string& uniqueID) {
+                this->downloadSong(gdSongID, uniqueID);
+            },
+            [this](int gdSongID, const std::string& uniqueID) {
+                auto nongs = NongManager::get()->getNongs(gdSongID);
+                if (!nongs.has_value()) {
+                    FLAlertLayer::create(
+                        "Error",
+                        "Song is not initialized",
+                        "Ok"
+                    )->show();
+                    return;
                 }
+                auto nong = nongs.value()->getNongFromID(uniqueID);
+                NongAddPopup::create(this, gdSongID, std::move(nong))->show();
             },
-            [this](int id, const SongInfo& song) {
-                m_currentSongID = id;
-                this->deleteSong(song);
-            },
-            [this](bool multiple) {
+            [this](std::optional<int> currentSongID) {
+                m_currentSongID = currentSongID;
+                bool multiple = !currentSongID.has_value();
                 if (multiple) {
                     m_addBtn->setVisible(false);
                     m_deleteBtn->setVisible(false);
-                    m_downloadBtn->setVisible(false);
                 } else {
                     m_addBtn->setVisible(true);
                     m_deleteBtn->setVisible(true);
-                    m_downloadBtn->setVisible(true);
                 }
             }
         );
@@ -216,24 +242,12 @@ void NongDropdownLayer::createList() {
         return;
     }
 
-    m_list->setData(m_data);
     // TODO FIX
     if (m_currentSongID.has_value()) {
         m_list->setCurrentSong(m_currentSongID.value());
     }
     m_list->build();
     handleTouchPriority(this);
-}
-
-SongInfo NongDropdownLayer::getActiveSong() {
-    int id = m_currentSongID.value();
-    auto active = NongManager::get()->getActiveNong(id);
-    if (!active.has_value()) {
-        m_data[id].active = m_data[id].defaultPath;
-        NongManager::get()->saveNongs(m_data[id], id);
-        return NongManager::get()->getActiveNong(id).value();
-    }
-    return active.value();
 }
 
 CCSize NongDropdownLayer::getCellSize() const {
@@ -243,34 +257,11 @@ CCSize NongDropdownLayer::getCellSize() const {
     };
 }
 
-void NongDropdownLayer::setActiveSong(SongInfo const& song) {
-    if (!m_currentSongID) {
+void NongDropdownLayer::setActiveSong(int gdSongID, const std::string& uniqueID) {
+    if (auto err = NongManager::get()->setActiveSong(gdSongID, uniqueID); err.isErr()) {
+        FLAlertLayer::create("Failed", fmt::format("Failed to set song: {}", err.error()), "Ok")->show();
         return;
     }
-    int id = m_currentSongID.value();
-    auto songs = m_data[id];
-    auto defaultNong = NongManager::get()->getDefaultNong(id);
-    auto isDefault = defaultNong.has_value() && defaultNong->path == song.path;
-    if (!isDefault && !fs::exists(song.path)) {
-        FLAlertLayer::create("Failed", "Failed to set song: file not found", "Ok")->show();
-        return;
-    }
-
-    m_data[id].active = song.path;
-
-    NongManager::get()->saveNongs(m_data[id], id);
-    
-    this->updateParentWidget(song);
-
-    this->createList();
-}
-
-void NongDropdownLayer::refreshList() {
-    if (m_currentSongID.has_value()) {
-        int id = m_currentSongID.value();
-        m_data[id] = NongManager::get()->getNongs(id).value();
-    }
-    this->createList();
 }
 
 void NongDropdownLayer::onDiscord(CCObject* target) {
@@ -287,78 +278,70 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
     );
 }
 
-void NongDropdownLayer::updateParentWidget(SongInfo const& song) {
-    m_parentWidget->m_songInfoObject->m_artistName = song.authorName;
-    m_parentWidget->m_songInfoObject->m_songName = song.songName;
-    if (song.songUrl != "local") {
-        m_parentWidget->m_songInfoObject->m_songUrl = song.songUrl;
-    }
-    m_parentWidget->updateSongInfo();
-}
-
-void NongDropdownLayer::deleteSong(SongInfo const& song) {
-    if (!m_currentSongID) {
-        return;
-    }
-    int id = m_currentSongID.value();
-    NongManager::get()->deleteNong(song, id);
-    auto active = NongManager::get()->getActiveNong(id).value();
-    this->updateParentWidget(active);
-    FLAlertLayer::create("Success", "The song was deleted!", "Ok")->show();
-    m_data[id] = NongManager::get()->getNongs(id).value();
-    this->createList();
-}
-
-void NongDropdownLayer::addSong(SongInfo const& song) {
-    if (!m_currentSongID) {
-        return;
-    }
-    int id = m_currentSongID.value();
-    auto data = m_data[id];
-    for (auto savedSong : data.songs) {
-        if (song.path.string() == savedSong.path.string()) {
-            FLAlertLayer::create("Error", "This NONG already exists! (<cy>" + savedSong.songName + "</c>)", "Ok")->show();
-            return;
-        }
-    }
-    NongManager::get()->addNong(song, id);
-    FLAlertLayer::create("Success", "The song was added!", "Ok")->show();
-    m_data[id] = NongManager::get()->getNongs(id).value();
-    this->createList();
-}
-
-void NongDropdownLayer::fetchSongFileHub(CCObject*) {
-    // TODO FIX
-    if (!m_currentSongID) {
-        return;
-    }
-    int id = m_currentSongID.value();
-    std::stringstream ss;
-    ss << "Do you want to open <cb>Song File Hub</c>? The song ID (" << id << ") will be copied to your <cr>clipboard</c>.";
-    createQuickPopup(
-        "Song File Hub",
-        ss.str(),
-        "No",
-        "Yes",
-        [this, id](FLAlertLayer* alert, bool btn2) {
-            if (!btn2) {
+void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio, bool confirm) {
+    auto func = [gdSongID, uniqueID, onlyAudio, confirm](){
+        if (onlyAudio) {
+            if (auto err = NongManager::get()->deleteSongAudio(gdSongID, uniqueID); err.isErr()) {
+                FLAlertLayer::create("Failed", fmt::format("Failed to delete song: {}", err.error()), "Ok")->show();
                 return;
             }
-            std::stringstream ss;
-            ss << id;
-            geode::utils::clipboard::write(ss.str());
-            geode::utils::web::openLinkInBrowser("https://songfilehub.com");
+        } else {
+            if (auto err = NongManager::get()->deleteSong(gdSongID, uniqueID); err.isErr()) {
+                FLAlertLayer::create("Failed", fmt::format("Failed to delete song: {}", err.error()), "Ok")->show();
+                return;
+            }
+        }
+
+        if (confirm) {
+          FLAlertLayer::create("Success", "The song was deleted!", "Ok")->show();
+        }
+    };
+
+    if (!confirm) {
+        func();
+        return;
+    }
+
+    createQuickPopup(
+        "Are you sure?",
+        fmt::format("Are you sure you want to delete the song from your NONGs?"),
+        "No",
+        "Yes",
+        [this, func] (FLAlertLayer* self, bool btn2) {
+            if (!btn2) return;
+            func();
         }
     );
+}
+
+void NongDropdownLayer::downloadSong(int gdSongID, const std::string& uniqueID) {
+    if (auto err = IndexManager::get()->downloadSong(gdSongID, uniqueID); err.isErr()) {
+        FLAlertLayer::create("Failed", fmt::format("Failed to start/stop downloading song: {}", err.error()), "Ok")->show();
+        return;
+    }
+}
+
+void NongDropdownLayer::addSong(Nongs&& song, bool popup) {
+    if (!m_currentSongID) {
+        return;
+    }
+    int id = m_currentSongID.value();
+    if (auto err = NongManager::get()->addNongs(std::move(song)); err.isErr()) {
+        FLAlertLayer::create("Failed", fmt::format("Failed to add song: {}", err.error()), "Ok")->show();
+        return;
+    }
+    if (popup) {
+        FLAlertLayer::create("Success", "The song was added!", "Ok")->show();
+    }
 }
 
 void NongDropdownLayer::deleteAllNongs(CCObject*) {
     if (!m_currentSongID) {
         return;
     }
-    createQuickPopup("Delete all nongs", 
-        "Are you sure you want to <cr>delete all nongs</c> for this song?", 
-        "No", 
+    createQuickPopup("Delete all nongs",
+        "Are you sure you want to <cr>delete all nongs</c> for this song?",
+        "No",
         "Yes",
         [this](auto, bool btn2) {
             if (!btn2) {
@@ -370,12 +353,11 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
             }
 
             int id = m_currentSongID.value();
-            NongManager::get()->deleteAll(id);
+            if (auto err = NongManager::get()->deleteAllSongs(id); err.isErr()) {
+                FLAlertLayer::create("Failed", fmt::format("Failed to delete nongs: {}", err.error()), "Ok")->show();
+                return;
+            }
             auto data = NongManager::get()->getNongs(id).value();
-            auto active = NongManager::get()->getActiveNong(id).value();
-            m_data[id] = data;
-            this->updateParentWidget(active);
-            this->createList();
             FLAlertLayer::create("Success", "All nongs were deleted successfully!", "Ok")->show();
         }
     );

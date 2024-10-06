@@ -7,9 +7,9 @@
 #include <Geode/ui/ScrollLayer.hpp>
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <optional>
-#include <unordered_map>
 
-#include "../../types/song_info.hpp"
+#include "nong_cell.hpp"
+#include "../../../include/nong.hpp"
 
 namespace jukebox {
 
@@ -21,44 +21,52 @@ public:
         Multiple = 1
     };
 protected:
-    std::unordered_map<int, NongData> m_data;
+    std::vector<int> m_songIds;
     geode::ScrollLayer* m_list;
     cocos2d::extension::CCScale9Sprite* m_bg;
     std::optional<int> m_currentSong = std::nullopt;
 
     CCMenuItemSpriteExtra* m_backBtn = nullptr;
 
-    std::function<void(int, const SongInfo&)> m_onSetActive;
+    std::function<void(int, const std::string&)> m_onSetActive;
     std::function<void(int)> m_onFixDefault;
-    std::function<void(int, const SongInfo&)> m_onDelete;
-    std::function<void(bool)> m_onListTypeChange;
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> m_onDelete;
+    std::function<void(int, const std::string&)> m_onDownload;
+    std::function<void(int, const std::string&)> m_onEdit;
+    std::function<void(std::optional<int>)> m_onListTypeChange;
+
+    std::vector<NongCell*> listedNongCells;
 
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
 public:
     void scrollToTop();
-    void setData(std::unordered_map<int, NongData>& data);
     void setCurrentSong(int songId);
     void build();
     void onBack(cocos2d::CCObject*);
     void onSelectSong(int songId);
+    void setDownloadProgress(std::string uniqueID, float progress);
 
     static NongList* create(
-        std::unordered_map<int, NongData>& data,
+        std::vector<int>& songIds,
         const cocos2d::CCSize& size,
-        std::function<void(int,const SongInfo&)> onSetActive,
+        std::function<void(int, const std::string&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const SongInfo&)> onDelete,
-        std::function<void(bool)> onListTypeChange = {}
+        std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
+        std::function<void(int, const std::string&)> onDownload,
+        std::function<void(int, const std::string&)> onEdit,
+        std::function<void(std::optional<int>)> onListTypeChange = {}
     );
 protected:
     bool init(
-        std::unordered_map<int, NongData>& data,
+        std::vector<int>& songIds,
         const cocos2d::CCSize& size,
-        std::function<void(int, const SongInfo&)> onSetActive,
+        std::function<void(int, const std::string&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const SongInfo&)> onDelete,
-        std::function<void(bool)> onListTypeChange = {}
+        std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
+        std::function<void(int, const std::string&)> onDownload,
+        std::function<void(int, const std::string&)> onEdit,
+        std::function<void(std::optional<int>)> onListTypeChange = {}
     );
 };
 

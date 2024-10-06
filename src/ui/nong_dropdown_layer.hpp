@@ -6,11 +6,12 @@
 #include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/ui/ListView.hpp>
 
-#include "../types/song_info.hpp"
+#include "../../../include/nong.hpp"
 #include "list/nong_list.hpp"
 #include "nong_add_popup.hpp"
 #include "list/nong_cell.hpp"
 #include "list/song_cell.hpp"
+#include "../managers/nong_manager.hpp"
 
 using namespace geode::prelude;
 
@@ -18,22 +19,23 @@ namespace jukebox {
 
 class NongDropdownLayer : public Popup<std::vector<int>, CustomSongWidget*, int> {
 protected:
-    std::unordered_map<int, NongData> m_data;
     std::vector<int> m_songIDS;
     std::optional<int> m_currentSongID = std::nullopt;
     int m_defaultSongID;
     Ref<CustomSongWidget> m_parentWidget;
     NongList* m_list = nullptr;
 
-    CCMenuItemSpriteExtra* m_downloadBtn = nullptr;
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
+
+    EventListener<SongErrorFilter> m_songErrorListener;
+    EventListener<SongDownloadProgressFilter> m_downloadListener;
+    EventListener<SongStateChangedFilter> m_songStateListener;
 
     bool m_fetching = false;
 
     bool setup(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) override;
     void createList();
-    SongInfo getActiveSong();
     CCSize getCellSize() const;
     void deleteAllNongs(CCObject*);
     void fetchSongFileHub(CCObject*);
@@ -42,11 +44,11 @@ protected:
 public:
     void onSelectSong(int songID);
     void onDiscord(CCObject*);
-    void setActiveSong(SongInfo const& song);
-    void deleteSong(SongInfo const& song);
-    void addSong(SongInfo const& song);
-    void updateParentWidget(SongInfo const& song);
-    void refreshList();
+    void setActiveSong(int gdSongID, const std::string& uniqueID);
+    void deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio, bool confirm);
+    void downloadSong(int gdSongID, const std::string& uniqueID);
+    void addSong(Nongs&& song, bool popup = true);
+    void updateParentWidget(SongMetadata const& song);
 
     static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, int defaultSongID) {
         auto ret = new NongDropdownLayer;

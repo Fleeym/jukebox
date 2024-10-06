@@ -11,7 +11,7 @@ namespace jukebox {
 
 bool SongCell::init(
     int id,
-    const SongInfo& songInfo,
+    SongMetadata* songInfo,
     const CCSize& size,
     std::function<void()> selectCallback
 ) {
@@ -32,13 +32,13 @@ bool SongCell::init(
     bg->setContentSize(size / bg->getScale());
     this->addChildAtPosition(bg, Anchor::Center);
 
-    auto label = CCLabelBMFont::create(m_active.songName.c_str(), "bigFont.fnt");
+    auto label = CCLabelBMFont::create(songInfo->m_name.c_str(), "bigFont.fnt");
     label->setAnchorPoint(ccp(0, 0.5f));
     label->limitLabelWidth(240.f, 0.8f, 0.1f);
     label->setPosition(ccp(12.f, 40.f));
     this->addChild(label);
     m_songNameLabel = label;
-    auto author = CCLabelBMFont::create(m_active.authorName.c_str(), "goldFont.fnt");
+    auto author = CCLabelBMFont::create(songInfo->m_artist.c_str(), "goldFont.fnt");
     author->setAnchorPoint(ccp(0, 0.5f));
     author->limitLabelWidth(260.f, 0.6f, 0.1f);
     author->setPosition(ccp(12.f, 15.f));
@@ -60,7 +60,7 @@ bool SongCell::init(
     spr->setScale(0.8f);
     auto btn = CCMenuItemSpriteExtra::create(
         spr,
-        this, 
+        this,
         menu_selector(SongCell::onSelectSong)
     );
     menu->addChild(btn);
