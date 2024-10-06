@@ -5,6 +5,7 @@
  * Add metadata parsing for autocompletion of song info (experimental)
  * Add "song offset" option for importing nongs (thanks Flafy)
  * Fix "Level name" doing absolutely nothing in the add popup
+ * Small visual improvements to the app song popup
  * Bump to Geode `v3.1.1`
 
 ## v2.10.1

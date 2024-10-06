@@ -46,12 +46,16 @@
 Source/Geode/pkg/uber-apk-signer.jar
 
 # Ignore build folders
+**/build-win
 **/build
 
 # ILY vscode
 **/.vscode
 
 build-android.bat
+
+# compile_commands.json
+compile_commands.json
 
 # clangd cache
 .cache/clangd
