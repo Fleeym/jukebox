@@ -2,16 +2,16 @@
 
 #include <optional>
 
-#include "../../include/nong.hpp"
-#include "../events/get_song_info_event.hpp"
-#include "../managers/nong_manager.hpp"
 #include "Geode/binding/GameLevelManager.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/cocos/cocoa/CCString.h"
-#include "Geode/loader/Log.hpp"
 #include "Geode/utils/cocos.hpp"
 #include "Geode/utils/string.hpp"
+
+#include "../../include/nong.hpp"
+#include "../events/get_song_info_event.hpp"
+#include "../managers/nong_manager.hpp"
 
 using namespace jukebox;
 
@@ -68,9 +68,10 @@ SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {
     if (og == nullptr) {
         return og;
     }
-    auto res = NongManager::get()->getNongs(id);
-    if (res.has_value()) {
-        auto active = res.value()->activeNong();
+    std::optional<Nongs*> opt = NongManager::get()->getNongs(id);
+    if (opt.has_value()) {
+        Nongs* res = opt.value();
+        Nong active = res->activeNong();
         og->m_songName = active.metadata()->m_name;
         og->m_artistName = active.metadata()->m_artist;
     }
