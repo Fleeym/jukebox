@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Geode/binding/MusicDownloadManager.hpp>
-#include <Geode/modify/MusicDownloadManager.hpp>
+#include "Geode/binding/MusicDownloadManager.hpp"
+#include "Geode/modify/MusicDownloadManager.hpp"  // IWYU pragma: keep
 
 struct JBMusicDownloadManager
     : geode::Modify<JBMusicDownloadManager, MusicDownloadManager> {

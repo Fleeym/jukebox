@@ -1,11 +1,6 @@
-#include <Geode/binding/LevelSelectLayer.hpp>
-#include <Geode/binding/SongInfoObject.hpp>
-#include <Geode/binding/LevelTools.hpp>
-#include <Geode/modify/LevelTools.hpp>
-#include <Geode/modify/LevelSelectLayer.hpp>
-#include <Geode/modify/Modify.hpp>
-#include <Geode/cocos/CCDirector.h>
-#include <Geode/utils/cocos.hpp>
+#include "Geode/binding/LevelSelectLayer.hpp"
+#include "Geode/binding/LevelTools.hpp"
+#include "Geode/modify/LevelTools.hpp"  // IWYU pragma: keep
 
 #include "../managers/nong_manager.hpp"
 
@@ -31,14 +26,13 @@ class $modify(LevelTools) {
     // }
 
     static gd::string getAudioTitle(int id) {
-        if (
-            g_disableTitleOverride ||
-            !jukebox::NongManager::get()->initialized()
-        ) {
+        if (g_disableTitleOverride ||
+            !jukebox::NongManager::get()->initialized()) {
             return LevelTools::getAudioTitle(id);
         }
         int searchID = -id - 1;
-        auto res = jukebox::NongManager::get()->getNongs(searchID);
+        std::optional<jukebox::Nongs*> res =
+            jukebox::NongManager::get()->getNongs(searchID);
         if (res.has_value()) {
             return res.value()->activeNong().metadata()->m_name;
         }
