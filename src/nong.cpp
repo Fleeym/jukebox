@@ -243,22 +243,57 @@ public:
 
     Impl(int songID) : Impl(songID, LocalSong::createUnknown(songID)) {}
 
-    geode::Result<> setActive(const std::string& uniqueID) {
-        auto nong = getNongFromID(uniqueID);
+    geode::Result<> canSetActive(const std::string& uniqueID,
+                                 std::filesystem::path path) {
+        const bool IS_DEFAULT = uniqueID == m_default->metadata()->m_uniqueID;
 
-        if (!nong.has_value()) {
-            return Err("No song found with given path for song ID");
+        std::error_code ec;
+
+        if (!IS_DEFAULT && !std::filesystem::exists(path, ec)) {
+            return Err("Song doesn't exist on disk");
         }
-
-        if (m_default->metadata()->m_uniqueID != uniqueID &&
-            (!nong->path().has_value() ||
-             !std::filesystem::exists(nong->path().value()))) {
-            return Err("Song path doesn't exist");
-        }
-
-        m_active = uniqueID;
 
         return Ok();
+    }
+
+    geode::Result<> setActiveByPath(const std::string& id,
+                                    std::filesystem::path path) {
+        geode::Result<> res = this->canSetActive(id, path);
+
+        if (res.isErr()) {
+            return res;
+        }
+
+        m_active = id;
+        return Ok();
+    }
+
+    geode::Result<> setActive(const std::string& uniqueID) {
+        if (m_active == uniqueID) {
+            return Err("Song is already active");
+        }
+
+        if (auto song = this->getLocalFromID(uniqueID)) {
+            return this->setActiveByPath(uniqueID, song.value()->path());
+        }
+
+        if (auto song = this->getYTFromID(uniqueID)) {
+            if (!song.value()->path()) {
+                return Err("Song is not downloaded");
+            }
+            return this->setActiveByPath(uniqueID,
+                                         song.value()->path().value());
+        }
+
+        if (auto song = this->getHostedFromID(uniqueID)) {
+            if (!song.value()->path()) {
+                return Err("Song is not downloaded");
+            }
+            return this->setActiveByPath(uniqueID,
+                                         song.value()->path().value());
+        }
+
+        return Err("No song found with given path for song ID");
     }
 
     geode::Result<> merge(Nongs&& other) {
@@ -266,7 +301,7 @@ public:
             return Err("Merging with NONGs of a different song ID");
         }
 
-        for (const auto& i : other.locals()) {
+        for (const std::unique_ptr<LocalSong>& i : other.locals()) {
             if (i->path() == other.defaultSong()->path()) {
                 continue;
             }
@@ -285,17 +320,17 @@ public:
     }
 
     geode::Result<> deleteAllSongs() {
-        for (auto& local : m_locals) {
+        for (std::unique_ptr<LocalSong>& local : m_locals) {
             this->deletePath(local->path());
         }
         m_locals.clear();
 
-        for (auto& youtube : m_youtube) {
+        for (std::unique_ptr<YTSong>& youtube : m_youtube) {
             this->deletePath(youtube->path());
         }
         m_youtube.clear();
 
-        for (auto& hosted : m_hosted) {
+        for (std::unique_ptr<HostedSong>& hosted : m_hosted) {
             this->deletePath(hosted->path());
         }
         m_hosted.clear();
@@ -378,6 +413,41 @@ public:
         }
 
         return Err("No song found with given path for song ID");
+    }
+
+    std::optional<LocalSong*> getLocalFromID(const std::string_view uniqueID) {
+        if (m_default->metadata()->m_uniqueID == uniqueID) {
+            return m_default.get();
+        }
+
+        for (const std::unique_ptr<LocalSong>& i : m_locals) {
+            if (i->metadata()->m_uniqueID == uniqueID) {
+                return i.get();
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    std::optional<YTSong*> getYTFromID(const std::string_view uniqueID) {
+        for (const std::unique_ptr<YTSong>& i : m_youtube) {
+            if (i->metadata()->m_uniqueID == uniqueID) {
+                return i.get();
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    std::optional<HostedSong*> getHostedFromID(
+        const std::string_view uniqueID) {
+        for (const std::unique_ptr<HostedSong>& i : m_hosted) {
+            if (i->metadata()->m_uniqueID == uniqueID) {
+                return i.get();
+            }
+        }
+
+        return std::nullopt;
     }
 
     std::optional<Nong> getNongFromID(const std::string& uniqueID) const {
