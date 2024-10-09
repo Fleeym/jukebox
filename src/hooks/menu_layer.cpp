@@ -3,11 +3,12 @@
 #include "Geode/binding/FLAlertLayer.hpp"
 #include "Geode/binding/MenuLayer.hpp"
 #include "Geode/loader/Mod.hpp"
+#include "Geode/modify/MenuLayer.hpp"  // IWYU pragma: keep
 #include "Geode/modify/Modify.hpp"
 
 using namespace geode::prelude;
 
-struct JBMenuLayer : Modify<JBMenuLayer, MenuLayer> {
+class $modify(JBMenuLayer, MenuLayer) {
     bool init() {
         if (!MenuLayer::init()) {
             return false;

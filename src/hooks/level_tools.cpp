@@ -1,4 +1,5 @@
 #include "Geode/binding/LevelSelectLayer.hpp"
+#include "Geode/modify/LevelSelectLayer.hpp"  // IWYU pragma: keep
 #include "Geode/binding/LevelTools.hpp"
 #include "Geode/modify/LevelTools.hpp"  // IWYU pragma: keep
 
