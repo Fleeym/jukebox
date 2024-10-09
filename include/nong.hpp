@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <filesystem>
 #include <fmt/core.h>
 #include <matjson.hpp>
