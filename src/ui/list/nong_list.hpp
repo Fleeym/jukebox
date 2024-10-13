@@ -1,25 +1,22 @@
 #pragma once
 
-#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/cocoa/CCGeometry.h>
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/ui/ScrollLayer.hpp>
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <optional>
 
+#include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/cocos/cocoa/CCGeometry.h"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/ui/ScrollLayer.hpp"
+
 #include "nong_cell.hpp"
-#include "../../../include/nong.hpp"
 
 namespace jukebox {
 
-
 class NongList : public cocos2d::CCNode {
 public:
-    enum class ListType {
-        Single = 0,
-        Multiple = 1
-    };
+    enum class ListType { Single = 0, Multiple = 1 };
+
 protected:
     std::vector<int> m_songIds;
     geode::ScrollLayer* m_list;
@@ -30,7 +27,8 @@ protected:
 
     std::function<void(int, const std::string&)> m_onSetActive;
     std::function<void(int)> m_onFixDefault;
-    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> m_onDelete;
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
+        m_onDelete;
     std::function<void(int, const std::string&)> m_onDownload;
     std::function<void(int, const std::string&)> m_onEdit;
     std::function<void(std::optional<int>)> m_onListTypeChange;
@@ -39,6 +37,8 @@ protected:
 
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
+
+    void addSongToList(Song* nong, Nongs* parent);
 public:
     void scrollToTop();
     void setCurrentSong(int songId);
@@ -48,26 +48,26 @@ public:
     void setDownloadProgress(std::string uniqueID, float progress);
 
     static NongList* create(
-        std::vector<int>& songIds,
-        const cocos2d::CCSize& size,
+        std::vector<int>& songIds, const cocos2d::CCSize& size,
         std::function<void(int, const std::string&)> onSetActive,
         std::function<void(int)> onFixDefault,
-        std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
+        std::function<void(int, const std::string&, bool onlyAudio,
+                           bool confirm)>
+            onDelete,
         std::function<void(int, const std::string&)> onDownload,
         std::function<void(int, const std::string&)> onEdit,
-        std::function<void(std::optional<int>)> onListTypeChange = {}
-    );
+        std::function<void(std::optional<int>)> onListTypeChange = {});
+
 protected:
-    bool init(
-        std::vector<int>& songIds,
-        const cocos2d::CCSize& size,
-        std::function<void(int, const std::string&)> onSetActive,
-        std::function<void(int)> onFixDefault,
-        std::function<void(int, const std::string&, bool onlyAudio, bool confirm)> onDelete,
-        std::function<void(int, const std::string&)> onDownload,
-        std::function<void(int, const std::string&)> onEdit,
-        std::function<void(std::optional<int>)> onListTypeChange = {}
-    );
+    bool init(std::vector<int>& songIds, const cocos2d::CCSize& size,
+              std::function<void(int, const std::string&)> onSetActive,
+              std::function<void(int)> onFixDefault,
+              std::function<void(int, const std::string&, bool onlyAudio,
+                                 bool confirm)>
+                  onDelete,
+              std::function<void(int, const std::string&)> onDownload,
+              std::function<void(int, const std::string&)> onEdit,
+              std::function<void(std::optional<int>)> onListTypeChange = {});
 };
 
-}
+}  // namespace jukebox

@@ -111,7 +111,7 @@ void NongList::build() {
 
     if (!m_currentSong) {
         for (const auto& id : m_songIds) {
-            auto nongs = NongManager::get()->getNongs(id);
+            std::optional<Nongs*> nongs = NongManager::get()->getNongs(id);
 
             if (!nongs) {
                 continue;
@@ -119,9 +119,9 @@ void NongList::build() {
 
             Song* active = nongs.value()->active();
 
-            m_list->m_contentLayer->addChild(jukebox::SongCell::create(
-                id, active->metadata(), itemSize,
-                [this, id]() { this->onSelectSong(id); }));
+            m_list->m_contentLayer->addChild(
+                SongCell::create(id, active->metadata(), itemSize,
+                                 [this, id]() { this->onSelectSong(id); }));
         }
     } else {
         // Single item
@@ -137,8 +137,6 @@ void NongList::build() {
         std::string defaultID = defaultSong->metadata()->uniqueID;
         Song* active = nongs->active();
 
-        // TODO CONTINUE HERE
-
         m_list->m_contentLayer->addChild(NongCell::create(
             id, defaultSong, true,
             defaultSong->metadata()->uniqueID == active->metadata()->uniqueID,
@@ -149,77 +147,52 @@ void NongList::build() {
             [this, id, defaultID]() { m_onEdit(id, defaultID); }));
 
         for (std::unique_ptr<LocalSong>& nong : nongs->locals()) {
-            std::string uniqueID = nong->metadata()->uniqueID;
-            NongCell* cell = NongCell::create(
-                id, nong.get(), uniqueID == defaultSong->metadata()->uniqueID,
-                uniqueID == active->metadata()->uniqueID, itemSize,
-                [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
-                [this, id]() { m_onFixDefault(id); },
-                [this, id, uniqueID]() {
-                    m_onDelete(id, uniqueID, true, true);
-                },
-                [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
-                [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
+            this->addSongToList(nong.get(), nongs);
         }
 
         for (std::unique_ptr<YTSong>& nong : nongs->youtube()) {
-            std::string uniqueID = nong->metadata()->uniqueID;
-            std::optional<std::filesystem::path> path = nong->path();
-            bool isFromIndex = nong->indexID().has_value();
-            bool isDownloaded =
-                path.has_value() && std::filesystem::exists(path.value());
-            bool deleteOnlyAudio = !isFromIndex && isDownloaded;
-            bool deletePopup = !isFromIndex && !isDownloaded;
-            NongCell* cell = NongCell::create(
-                id, nong.get(), uniqueID == defaultSong->metadata()->uniqueID,
-                uniqueID == active->metadata()->uniqueID, itemSize,
-                [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
-                [this, id]() { m_onFixDefault(id); },
-                [this, id, uniqueID, deleteOnlyAudio, deletePopup]() {
-                    m_onDelete(id, uniqueID, deleteOnlyAudio, deletePopup);
-                },
-                [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
-                [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
-
-            if (auto progress =
-                    IndexManager::get()->getSongDownloadProgress(uniqueID);
-                progress.has_value()) {
-                cell->setDownloadProgress(progress.value());
-            };
-
-            m_list->m_contentLayer->addChild(cell);
+            this->addSongToList(nong.get(), nongs);
         }
 
         for (std::unique_ptr<HostedSong>& nong : nongs->hosted()) {
-            std::string uniqueID = nong->metadata()->uniqueID;
-            std::optional<std::filesystem::path> path = nong->path();
-            bool isFromIndex = nong->indexID().has_value();
-            bool isDownloaded =
-                path.has_value() && std::filesystem::exists(path.value());
-            bool deleteOnlyAudio = !isFromIndex && isDownloaded;
-            bool deletePopup = !isFromIndex && !isDownloaded;
-            NongCell* cell = NongCell::create(
-                id, nong.get(), uniqueID == defaultSong->metadata()->uniqueID,
-                uniqueID == active->metadata()->uniqueID, itemSize,
-                [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
-                [this, id]() { m_onFixDefault(id); },
-                [this, id, uniqueID, deleteOnlyAudio, deletePopup]() {
-                    m_onDelete(id, uniqueID, deleteOnlyAudio, deletePopup);
-                },
-                [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
-                [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
-
-            if (auto progress =
-                    IndexManager::get()->getSongDownloadProgress(uniqueID);
-                progress.has_value()) {
-                cell->setDownloadProgress(progress.value());
-            };
-
-            m_list->m_contentLayer->addChild(cell);
+            this->addSongToList(nong.get(), nongs);
         }
     }
     m_list->m_contentLayer->updateLayout();
     this->scrollToTop();
+}
+
+void NongList::addSongToList(Song* nong, Nongs* parent) {
+    int id = m_currentSong.value();
+    Song* defaultSong = parent->defaultSong();
+    Song* active = parent->active();
+
+    CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
+
+    std::string uniqueID = nong->metadata()->uniqueID;
+    std::optional<std::filesystem::path> path = nong->path();
+    bool isFromIndex = nong->indexID().has_value();
+    bool isDownloaded =
+        path.has_value() && std::filesystem::exists(path.value());
+    bool deleteOnlyAudio = !isFromIndex && isDownloaded;
+    bool deletePopup = !isFromIndex && !isDownloaded;
+    NongCell* cell = NongCell::create(
+        id, nong, uniqueID == defaultSong->metadata()->uniqueID,
+        uniqueID == active->metadata()->uniqueID, itemSize,
+        [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
+        [this, id]() { m_onFixDefault(id); },
+        [this, id, uniqueID, deleteOnlyAudio, deletePopup]() {
+            m_onDelete(id, uniqueID, deleteOnlyAudio, deletePopup);
+        },
+        [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
+        [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
+
+    if (auto progress = IndexManager::get()->getSongDownloadProgress(uniqueID);
+        progress.has_value()) {
+        cell->setDownloadProgress(progress.value());
+    };
+
+    m_list->m_contentLayer->addChild(cell);
 }
 
 void NongList::scrollToTop() {
