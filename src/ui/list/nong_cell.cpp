@@ -9,6 +9,7 @@
 #include <Geode/cocos/base_nodes/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/cocos.hpp>
+#include <memory>
 #include <numeric>
 
 #include "../../managers/index_manager.hpp"
@@ -16,7 +17,7 @@
 
 namespace jukebox {
 
-bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
+bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
                     CCSize const& size, std::function<void()> onSelect,
                     std::function<void()> onFixDefault,
                     std::function<void()> onDelete,
@@ -27,14 +28,12 @@ bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
     }
 
     m_songID = songID;
-    m_songInfo = std::move(info);
+    m_songInfo = info;
     m_isDefault = isDefault;
     m_isActive = selected;
-    m_isDownloaded = m_songInfo.path().has_value() &&
-                     std::filesystem::exists(m_songInfo.path().value());
-    m_isDownloadable = m_songInfo.visit<bool>([](auto _) { return false; },
-                                              [](auto _) { return true; },
-                                              [](auto _) { return true; });
+    m_isDownloaded = m_songInfo->path().has_value() &&
+                     std::filesystem::exists(m_songInfo->path().value());
+    m_isDownloadable = m_songInfo->type() != NongType::LOCAL;
     m_onSelect = onSelect;
     m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
@@ -77,7 +76,7 @@ bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
     menu->setLayout(
         RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::End));
 
-    if (!m_isDefault && !m_songInfo.indexID().has_value()) {
+    if (!m_isDefault && !m_songInfo->indexID().has_value()) {
         auto spr = CCSprite::create("JB_Edit.png"_spr);
         spr->setScale(0.7f);
         auto editButton = CCMenuItemSpriteExtra::create(
@@ -137,7 +136,7 @@ bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
     }
 
     if (!m_isDefault &&
-        !(m_songInfo.indexID().has_value() && !m_isDownloaded)) {
+        !(m_songInfo->indexID().has_value() && !m_isDownloaded)) {
         bool trashSprite = m_isDownloadable && m_isDownloaded;
         auto sprite = CCSprite::createWithSpriteFrameName(
             trashSprite ? "GJ_trashBtn_001.png" : "GJ_deleteIcon_001.png");
@@ -153,36 +152,41 @@ bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
     this->addChildAtPosition(menu, Anchor::Right, CCPoint{-5.0f, 0.0f});
 
     m_songInfoLayer = CCLayer::create();
-    auto songMetadata = m_songInfo.metadata();
+    auto songMetadata = m_songInfo->metadata();
 
     std::vector<std::string> metadataList = {};
 
-    m_songInfo.visit<void>(
-        [&metadataList](auto _) {},
-        [&metadataList](YTSong* yt) { metadataList.push_back("youtube"); },
-        [&metadataList](HostedSong* hosted) {
+    switch (m_songInfo->type()) {
+        case NongType::YOUTUBE:
+            metadataList.push_back("youtube");
+            break;
+        case NongType::HOSTED:
             metadataList.push_back("hosted");
-        });
+            break;
+        default:
+            break;
+    }
 
-    if (m_songInfo.indexID().has_value()) {
-        auto indexID = m_songInfo.indexID().value();
+    if (m_songInfo->indexID().has_value()) {
+        auto indexID = m_songInfo->indexID().value();
         auto indexName = IndexManager::get()->getIndexName(indexID);
         metadataList.push_back(indexName.has_value() ? indexName.value()
                                                      : indexID);
     }
 
-    if (m_songInfo.metadata()->m_level.has_value()) {
-        metadataList.push_back(m_songInfo.metadata()->m_level.value());
+    if (m_songInfo->metadata()->level.has_value()) {
+        metadataList.push_back(m_songInfo->metadata()->level.value());
     }
 
     if (metadataList.size() > 0) {
         m_metadataLabel = CCLabelBMFont::create(
             metadataList.size() >= 1
-                ? std::accumulate(std::next(metadataList.begin()),
-                                  metadataList.end(), metadataList[0],
-                                  [](const std::string& a, const std::string& b) {
-                                      return a + ": " + b;
-                                  })
+                ? std::accumulate(
+                      std::next(metadataList.begin()), metadataList.end(),
+                      metadataList[0],
+                      [](const std::string& a, const std::string& b) {
+                          return a + ": " + b;
+                      })
                       .c_str()
                 : "",
             "bigFont.fnt");
@@ -192,7 +196,7 @@ bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
     }
 
     m_songNameLabel =
-        CCLabelBMFont::create(songMetadata->m_name.c_str(), "bigFont.fnt");
+        CCLabelBMFont::create(songMetadata->name.c_str(), "bigFont.fnt");
     m_songNameLabel->limitLabelWidth(220.f, 0.7f, 0.1f);
 
     if (selected) {
@@ -200,7 +204,7 @@ bool NongCell::init(int songID, Nong info, bool isDefault, bool selected,
     }
 
     m_authorNameLabel =
-        CCLabelBMFont::create(songMetadata->m_artist.c_str(), "goldFont.fnt");
+        CCLabelBMFont::create(songMetadata->artist.c_str(), "goldFont.fnt");
     m_authorNameLabel->limitLabelWidth(220.f, 0.7f, 0.1f);
     m_authorNameLabel->setID("author-name");
     m_songNameLabel->setID("song-name");
@@ -264,16 +268,16 @@ void NongCell::onEdit(CCObject* target) { m_onEdit(); }
 
 void NongCell::onDelete(CCObject* target) { m_onDelete(); }
 
-NongCell* NongCell::create(int songID, Nong info, bool isDefault, bool selected,
-                           CCSize const& size, std::function<void()> onSelect,
+NongCell* NongCell::create(int songID, Song* song, bool isDefault,
+                           bool selected, CCSize const& size,
+                           std::function<void()> onSelect,
                            std::function<void()> onFixDefault,
                            std::function<void()> onDelete,
                            std::function<void()> onDownload,
                            std::function<void()> onEdit) {
     auto ret = new NongCell();
-    if (ret &&
-        ret->init(songID, std::move(info), isDefault, selected, size, onSelect,
-                  onFixDefault, onDelete, onDownload, onEdit)) {
+    if (ret && ret->init(songID, song, isDefault, selected, size, onSelect,
+                         onFixDefault, onDelete, onDownload, onEdit)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);

@@ -1,9 +1,11 @@
 #pragma once
 
-#include <Geode/c++stl/gdstdlib.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/c++stl/gdstdlib.hpp>
 #include <functional>
+#include <memory>
+#include <optional>
 
 #include "../../../include/nong.hpp"
 
@@ -36,32 +38,23 @@ protected:
     CCMenu* m_downloadProgressContainer;
     CCProgressTimer* m_downloadProgress;
 
-    bool init(
-        int songID,
-        Nong info,
-        bool isDefault,
-        bool selected,
-        CCSize const& size,
-        std::function<void()> onSelect,
-        std::function<void()> onFixDefault,
-        std::function<void()> onDelete,
-        std::function<void()> onDownload,
-        std::function<void()> onEdit
-    );
+
+    bool init(int songID, Song*, bool isDefault, bool selected,
+              CCSize const& size, std::function<void()> onSelect,
+              std::function<void()> onFixDefault,
+              std::function<void()> onDelete, std::function<void()> onDownload,
+              std::function<void()> onEdit);
+
 public:
-    static NongCell* create(
-        int songID,
-        Nong info,
-        bool isDefault,
-        bool selected,
-        CCSize const& size,
-        std::function<void()> onSelect,
-        std::function<void()> onFixDefault,
-        std::function<void()> onDelete,
-        std::function<void()> onDownload,
-        std::function<void()> onEdit
-    );
-    Nong m_songInfo = Nong(LocalSong::createUnknown(0));
+    Song* m_songInfo;
+    static NongCell* create(int songID, Song* song, bool isDefault,
+                            bool selected, CCSize const& size,
+                            std::function<void()> onSelect,
+                            std::function<void()> onFixDefault,
+                            std::function<void()> onDelete,
+                            std::function<void()> onDownload,
+                            std::function<void()> onEdit);
+
     void onSet(CCObject*);
     void onDelete(CCObject*);
     void onFixDefault(CCObject*);
@@ -70,4 +63,4 @@ public:
     void setDownloadProgress(float progress);
 };
 
-}
+}  // namespace jukebox

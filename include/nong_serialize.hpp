@@ -62,17 +62,18 @@ struct matjson::Serialize<jukebox::LocalSong> {
     static geode::Result<matjson::Value> to_json(
         const jukebox::LocalSong& value) {
         matjson::Object ret = {};
-        ret["name"] = value.metadata()->m_name;
-        ret["unique_id"] = value.metadata()->m_uniqueID;
-        ret["artist"] = value.metadata()->m_artist;
+        ret["name"] = value.metadata()->name;
+        ret["unique_id"] = value.metadata()->uniqueID;
+        ret["artist"] = value.metadata()->artist;
 #ifdef GEODE_IS_WINDOWS
-        ret["path"] = geode::utils::string::wideToUtf8(value.path().c_str());
+        ret["path"] =
+            geode::utils::string::wideToUtf8(value.path().value().c_str());
 #else
         ret["path"] = value.path().string();
 #endif
-        ret["offset"] = value.metadata()->m_startOffset;
-        if (value.metadata()->m_level.has_value()) {
-            ret["level"] = value.metadata()->m_level.value();
+        ret["offset"] = value.metadata()->startOffset;
+        if (value.metadata()->level.has_value()) {
+            ret["level"] = value.metadata()->level.value();
         }
         return geode::Ok(ret);
     }
@@ -115,10 +116,10 @@ struct matjson::Serialize<jukebox::YTSong> {
 
     static geode::Result<matjson::Value> to_json(const jukebox::YTSong& value) {
         matjson::Object ret = {};
-        ret["name"] = value.metadata()->m_name;
-        ret["unique_id"] = value.metadata()->m_uniqueID;
-        ret["artist"] = value.metadata()->m_artist;
-        ret["offset"] = value.metadata()->m_startOffset;
+        ret["name"] = value.metadata()->name;
+        ret["unique_id"] = value.metadata()->uniqueID;
+        ret["artist"] = value.metadata()->artist;
+        ret["offset"] = value.metadata()->startOffset;
         ret["youtube_id"] = value.youtubeID();
         if (value.indexID().has_value()) {
             ret["index_id"] = value.indexID().value();
@@ -133,8 +134,8 @@ struct matjson::Serialize<jukebox::YTSong> {
 #endif
         }
 
-        if (value.metadata()->m_level.has_value()) {
-            ret["level"] = value.metadata()->m_level.value();
+        if (value.metadata()->level.has_value()) {
+            ret["level"] = value.metadata()->level.value();
         }
         return geode::Ok(ret);
     }
@@ -177,10 +178,10 @@ struct matjson::Serialize<jukebox::HostedSong> {
     static geode::Result<matjson::Value> to_json(
         const jukebox::HostedSong& value) {
         matjson::Object ret = {};
-        ret["name"] = value.metadata()->m_name;
-        ret["unique_id"] = value.metadata()->m_uniqueID;
-        ret["artist"] = value.metadata()->m_artist;
-        ret["offset"] = value.metadata()->m_startOffset;
+        ret["name"] = value.metadata()->name;
+        ret["unique_id"] = value.metadata()->uniqueID;
+        ret["artist"] = value.metadata()->artist;
+        ret["offset"] = value.metadata()->startOffset;
         ret["url"] = value.url();
         if (value.indexID().has_value()) {
             ret["index_id"] = value.indexID();
@@ -195,8 +196,8 @@ struct matjson::Serialize<jukebox::HostedSong> {
 #endif
         }
 
-        if (value.metadata()->m_level.has_value()) {
-            ret["level"] = value.metadata()->m_level.value();
+        if (value.metadata()->level.has_value()) {
+            ret["level"] = value.metadata()->level.value();
         }
         return geode::Ok(ret);
     }
@@ -214,7 +215,7 @@ struct matjson::Serialize<jukebox::Nongs> {
         }
         ret["default"] = resDefault.ok();
 
-        ret["active"] = value.active();
+        ret["active"] = value.active()->metadata()->uniqueID;
 
         matjson::Array locals = {};
         for (auto& local : value.locals()) {
@@ -319,14 +320,13 @@ struct matjson::Serialize<jukebox::Nongs> {
 
         if (!value.contains("active") || !value["active"].is_string()) {
             // Can't fail...
-            auto _ =
-                nongs.setActive(defaultSong.unwrap().metadata()->m_uniqueID);
+            auto _ = nongs.setActive(defaultSong.unwrap().metadata()->uniqueID);
         } else {
             if (auto res = nongs.setActive(value["active"].as_string());
                 res.isErr()) {
                 // Can't fail...
-                auto _ = nongs.setActive(
-                    defaultSong.unwrap().metadata()->m_uniqueID);
+                auto _ =
+                    nongs.setActive(defaultSong.unwrap().metadata()->uniqueID);
             }
         }
 

@@ -1,5 +1,6 @@
 #include "nong_dropdown_layer.hpp"
 
+#include <optional>
 #include <sstream>
 
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
@@ -212,15 +213,16 @@ void NongDropdownLayer::createList() {
                 this->downloadSong(gdSongID, uniqueID);
             },
             [this](int gdSongID, const std::string& uniqueID) {
-                auto nongs = NongManager::get()->getNongs(gdSongID);
+                std::optional<Nongs*> nongs =
+                    NongManager::get()->getNongs(gdSongID);
                 if (!nongs.has_value()) {
                     FLAlertLayer::create("Error", "Song is not initialized",
                                          "Ok")
                         ->show();
                     return;
                 }
-                auto nong = nongs.value()->getNongFromID(uniqueID);
-                NongAddPopup::create(this, gdSongID, std::move(nong))->show();
+                std::optional<Song*> nong = nongs.value()->findSong(uniqueID);
+                NongAddPopup::create(this, gdSongID, nong)->show();
             },
             [this](std::optional<int> currentSongID) {
                 m_currentSongID = currentSongID;

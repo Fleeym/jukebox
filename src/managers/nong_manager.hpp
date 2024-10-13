@@ -31,12 +31,6 @@ protected:
         }
     }
 
-    std::filesystem::path baseManifestPath() {
-        static std::filesystem::path path =
-            Mod::get()->getSaveDir() / "manifest";
-        return path;
-    }
-
     bool init();
     Result<> saveNongs(std::optional<int> saveId = std::nullopt);
     EventListener<EventFilter<SongErrorEvent>> m_songErrorListener;
@@ -49,6 +43,12 @@ public:
     std::optional<Nongs*> m_currentlyPreparingNong;
 
     bool initialized() const { return m_initialized; }
+
+    std::filesystem::path baseManifestPath() {
+        static std::filesystem::path path =
+            Mod::get()->getSaveDir() / "manifest";
+        return path;
+    }
 
     void initSongID(SongInfoObject* obj, int id, bool robtop);
 
@@ -71,13 +71,6 @@ public:
      * Gets the current number of song IDs that have been added to the manifest
      */
     int getStoredIDCount();
-
-    /**
-     * Get Nong from manifest
-     * @param gdSongID the id of the song in GD
-     * @param uniqueID the unique id of the song in Jukebox
-     */
-    Result<Nong> getNongFromManifest(int gdSongID, std::string uniqueID);
 
     /**
      * Fetches all NONG data for a certain songID

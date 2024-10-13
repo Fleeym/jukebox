@@ -1,13 +1,13 @@
 #pragma once
 
 #include <filesystem>
-#include <fmt/core.h>
-#include <matjson.hpp>
 #include <memory>
 #include <optional>
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/core.h>
+#include <matjson.hpp>
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/utils/Result.hpp"
 
@@ -16,51 +16,54 @@
 namespace jukebox {
 
 struct JUKEBOX_DLL SongMetadata final {
-    int m_gdID;
-    std::string m_uniqueID;
-    std::string m_name;
-    std::string m_artist;
-    std::optional<std::string> m_level;
-    int m_startOffset;
+    int gdID;
+    std::string uniqueID;
+    std::string name;
+    std::string artist;
+    std::optional<std::string> level;
+    int startOffset;
 
-    SongMetadata(
-        int gdID,
-        std::string uniqueID,
-        std::string name,
-        std::string artist,
-        std::optional<std::string> level = std::nullopt,
-        int offset = 0
-    ) : m_gdID(gdID),
-        m_uniqueID(uniqueID),
-        m_name(name),
-        m_artist(artist),
-        m_level(level),
-        m_startOffset(offset)
-    {}
+    SongMetadata(int gdID, std::string uniqueID, std::string name,
+                 std::string artist,
+                 std::optional<std::string> level = std::nullopt,
+                 int offset = 0)
+        : gdID(gdID),
+          uniqueID(uniqueID),
+          name(name),
+          artist(artist),
+          level(level),
+          startOffset(offset) {}
 
     bool operator==(const SongMetadata& other) const {
-        return m_gdID == other.m_gdID &&
-               m_uniqueID == other.m_uniqueID &&
-               m_name == other.m_name &&
-               m_artist == other.m_artist &&
-               m_level == other.m_level &&
-               m_startOffset == other.m_startOffset;
+        return gdID == other.gdID && uniqueID == other.uniqueID &&
+               name == other.name && artist == other.artist &&
+               level == other.level && startOffset == other.startOffset;
     }
 };
 
-class JUKEBOX_DLL LocalSong final {
+enum class NongType { LOCAL, YOUTUBE, HOSTED };
+
+class Song {
+public:
+    virtual ~Song() = default;
+    virtual NongType type() const = 0;
+    virtual SongMetadata* metadata() const = 0;
+    // For local songs, this will always have a value, otherwise do check
+    virtual std::optional<std::filesystem::path> path() const = 0;
+    virtual std::optional<std::string> indexID() const = 0;
+    virtual void setIndexID(const std::string& id) = 0;
+};
+
+class JUKEBOX_DLL LocalSong final : public Song {
 private:
     class Impl;
 
     std::unique_ptr<Impl> m_impl;
+
 public:
-    LocalSong(
-        SongMetadata&& metadata,
-        const std::filesystem::path& path
-    );
+    LocalSong(SongMetadata&& metadata, const std::filesystem::path& path);
 
     LocalSong(const LocalSong& other);
-
     LocalSong& operator=(const LocalSong& other);
 
     LocalSong(LocalSong&& other);
@@ -68,27 +71,27 @@ public:
 
     ~LocalSong();
 
+    NongType type() const { return NongType::LOCAL; };
     SongMetadata* metadata() const;
-    std::filesystem::path path() const;
+    std::optional<std::filesystem::path> path() const;
+    std::optional<std::string> indexID() const { return std::nullopt; }
+    void setIndexID(const std::string& id) {}
 
     // Might not be used
     static LocalSong createUnknown(int songID);
     static LocalSong fromSongObject(SongInfoObject* obj);
 };
 
-class JUKEBOX_DLL YTSong final {
+class JUKEBOX_DLL YTSong final : public Song {
 private:
     class Impl;
 
     std::unique_ptr<Impl> m_impl;
 
 public:
-    YTSong(
-        SongMetadata&& metadata,
-        std::string youtubeID,
-        std::optional<std::string> m_indexID,
-        std::optional<std::filesystem::path> path = std::nullopt
-    );
+    YTSong(SongMetadata&& metadata, std::string youtubeID,
+           std::optional<std::string> m_indexID,
+           std::optional<std::filesystem::path> path = std::nullopt);
     YTSong(const YTSong& other);
     YTSong& operator=(const YTSong& other);
 
@@ -97,26 +100,24 @@ public:
 
     ~YTSong();
 
+    NongType type() const { return NongType::YOUTUBE; };
     SongMetadata* metadata() const;
     std::string youtubeID() const;
     std::optional<std::string> indexID() const;
+    void setIndexID(const std::string& id);
     std::optional<std::filesystem::path> path() const;
 };
 
-
-class JUKEBOX_DLL HostedSong final {
+class JUKEBOX_DLL HostedSong final : public Song {
 private:
     class Impl;
 
     std::unique_ptr<Impl> m_impl;
 
 public:
-    HostedSong(
-        SongMetadata&& metadata,
-        std::string url,
-        std::optional<std::string> m_indexID,
-        std::optional<std::filesystem::path> path = std::nullopt
-    );
+    HostedSong(SongMetadata&& metadata, std::string url,
+               std::optional<std::string> m_indexID,
+               std::optional<std::filesystem::path> path = std::nullopt);
     HostedSong(const HostedSong& other);
     HostedSong& operator=(const HostedSong& other);
 
@@ -125,19 +126,20 @@ public:
 
     ~HostedSong();
 
+    NongType type() const { return NongType::HOSTED; };
     SongMetadata* metadata() const;
     std::string url() const;
     std::optional<std::string> indexID() const;
+    void setIndexID(const std::string& id);
     std::optional<std::filesystem::path> path() const;
 };
-
-class Nong;
 
 class JUKEBOX_DLL Nongs final {
 private:
     class Impl;
 
     std::unique_ptr<Impl> m_impl;
+
 public:
     Nongs(int songID, LocalSong&& defaultSong);
     Nongs(int songID);
@@ -153,11 +155,11 @@ public:
 
     int songID() const;
     LocalSong* defaultSong() const;
-    std::string active() const;
-    Nong activeNong() const;
+    Song* active() const;
 
     bool isDefaultActive() const;
 
+    geode::Result<> commit();
     /**
      * Returns Err if there is no NONG with the given path for the song ID
      * Otherwise, returns ok
@@ -168,24 +170,27 @@ public:
     geode::Result<> deleteAllSongs();
     geode::Result<> deleteSong(const std::string& uniqueID, bool audio = true);
     geode::Result<> deleteSongAudio(const std::string& uniqueID);
-    std::optional<Nong> getNongFromID(const std::string& uniqueID) const;
-    geode::Result<> replaceSong(std::string prevUniqueID, Nong&& song);
+    std::optional<Song*> findSong(const std::string& uniqueID);
 
     std::vector<std::unique_ptr<LocalSong>>& locals();
     std::vector<std::unique_ptr<YTSong>>& youtube();
     std::vector<std::unique_ptr<HostedSong>>& hosted();
 
-    geode::Result<LocalSong*> add(LocalSong song);
-    geode::Result<YTSong*> add(YTSong song);
-    geode::Result<HostedSong*> add(HostedSong song);
-    geode::Result<> add(Nong&& song);
+    geode::Result<LocalSong*> add(LocalSong&& song);
+    geode::Result<YTSong*> add(YTSong&& song);
+    geode::Result<HostedSong*> add(HostedSong&& song);
+    geode::Result<> replaceSong(const std::string& id, LocalSong&& song);
+    geode::Result<> replaceSong(const std::string& id, YTSong&& song);
+    geode::Result<> replaceSong(const std::string& id, HostedSong&& song);
 };
 
 class JUKEBOX_DLL Manifest {
     friend class NongManager;
+
 private:
     int m_version = s_latestVersion;
     std::unordered_map<int, std::unique_ptr<Nongs>> m_nongs = {};
+
 public:
     constexpr static inline int s_latestVersion = 4;
 
@@ -193,47 +198,7 @@ public:
     Manifest(const Manifest&) = delete;
     Manifest& operator=(const Manifest&) = delete;
 
-    int version() const {
-        return m_version;
-    }
+    int version() const { return m_version; }
 };
 
-class JUKEBOX_DLL Nong final {
-private:
-    class Impl;
-
-    std::unique_ptr<Impl> m_impl;
-public:
-    Nong(const LocalSong& local);
-    Nong(const YTSong& yt);
-    Nong(const HostedSong& hosted);
-
-    Nong(const Nong&);
-    Nong& operator=(const Nong&);
-
-    Nong(Nong&&);
-    Nong& operator=(Nong&&);
-
-    ~Nong();
-
-    enum class Type {
-        Local,
-        YT,
-        Hosted,
-    };
-
-    SongMetadata* metadata() const;
-    std::optional<std::filesystem::path> path() const;
-    std::optional<std::string> indexID() const;
-    geode::Result<Nongs> toNongs() const;
-    Type type() const;
-
-    template <typename ReturnType>
-    ReturnType visit(
-        std::function<ReturnType(LocalSong*)> local,
-        std::function<ReturnType(YTSong*)> yt,
-        std::function<ReturnType(HostedSong*)> hosted
-    ) const;
-};
-
-}
+}  // namespace jukebox

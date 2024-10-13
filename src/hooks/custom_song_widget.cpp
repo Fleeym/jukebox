@@ -72,11 +72,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
                         return ListenerResult::Propagate;
                     }
 
-                    auto active = nongs.value()->activeNong();
+                    Song* active = nongs.value()->active();
 
-                    m_songInfoObject->m_songName = active.metadata()->m_name;
-                    m_songInfoObject->m_artistName =
-                        active.metadata()->m_artist;
+                    m_songInfoObject->m_songName = active->metadata()->name;
+                    m_songInfoObject->m_artistName = active->metadata()->artist;
                     m_songInfoObject->m_songUrl = "local";
                     updateSongInfo();
 
@@ -207,13 +206,13 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         auto nongs = res.value();
-        auto active = nongs->activeNong();
+        Song* active = nongs->active();
         if (m_fields->menu != nullptr) {
             m_fields->menu->removeFromParent();
         }
         auto menu = CCMenu::create();
         menu->setID("song-name-menu");
-        auto label = CCLabelBMFont::create(active.metadata()->m_name.c_str(),
+        auto label = CCLabelBMFont::create(active->metadata()->name.c_str(),
                                            "bigFont.fnt");
         auto songNameMenuLabel = CCMenuItemSpriteExtra::create(
             label, this, menu_selector(JBSongWidget::addNongLayer));
@@ -238,7 +237,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             auto data = NongManager::get()->getNongs(songID).value();
 
             // TODO this might be fuckery
-            if (!std::filesystem::exists(active.path().value()) &&
+            if (!std::filesystem::exists(active->path().value()) &&
                 nongs->isDefaultActive()) {
                 m_songIDLabel->setVisible(true);
                 geode::cocos::handleTouchPriority(this);
@@ -248,9 +247,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }
 
             std::string sizeText;
-            if (std::filesystem::exists(active.path().value())) {
+            if (std::filesystem::exists(active->path().value())) {
                 sizeText =
-                    NongManager::get()->getFormattedSize(active.path().value());
+                    NongManager::get()->getFormattedSize(active->path().value());
             } else {
                 sizeText = "NA";
             }

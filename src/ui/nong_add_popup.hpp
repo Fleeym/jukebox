@@ -1,11 +1,9 @@
 #pragma once
 
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
-#include <Geode/c++stl/gdstdlib.hpp>
-#include <Geode/ui/TextInput.hpp>
+#include "Geode/c++stl/gdstdlib.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/loader/Event.hpp"
+#include "Geode/ui/TextInput.hpp"
 #include "Geode/utils/Result.hpp"
 #include "Geode/utils/Task.hpp"
 
@@ -14,14 +12,13 @@
 #include "nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
-namespace fs = std::filesystem;
 
 namespace jukebox {
 
 class NongDropdownLayer;
 
 class NongAddPopup
-    : public Popup<NongDropdownLayer*, int, std::optional<Nong>> {
+    : public Popup<NongDropdownLayer*, int, std::optional<Song*>> {
 protected:
     enum class NongAddPopupSongType {
         local,
@@ -74,10 +71,10 @@ protected:
 
     EventListener<Task<Result<std::filesystem::path>>> m_pickListener;
 
-    std::optional<Nong> m_replacedNong;
+    std::optional<Song*> m_replacedNong;
 
     bool setup(NongDropdownLayer* parent, int songID,
-               std::optional<Nong> replacedNong) override;
+               std::optional<Song*> replacedNong) override;
     void createInputs();
     void addPathLabel(std::string const& path);
     void onFileOpen(Task<Result<std::filesystem::path>>::Event* event);
@@ -89,13 +86,22 @@ protected:
     CCSize getPopupSize();
     void openFile(CCObject*);
     void addSong(CCObject*);
+    geode::Result<> addLocalSong(const std::string& songName,
+                                 const std::string& artistName,
+                                 const std::optional<std::string> levelName,
+                                 int offset);
+    geode::Result<> addYTSong(const std::string& songName, const std::string& artistName,
+                   const std::optional<std::string> levelName, int offset);
+    geode::Result<> addHostedSong(const std::string& songName,
+                       const std::string& artistName,
+                       const std::optional<std::string> levelName, int offset);
     void onPublish(CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
     void onClose(CCObject*) override;
 
 public:
     static NongAddPopup* create(NongDropdownLayer* parent, int songID,
-                                std::optional<Nong> nong = std::nullopt);
+                                std::optional<Song*> nong = std::nullopt);
 };
 
 }  // namespace jukebox

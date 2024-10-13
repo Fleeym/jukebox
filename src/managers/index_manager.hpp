@@ -58,12 +58,12 @@ public:
 
     std::filesystem::path baseIndexesPath();
 
-    Result<std::vector<Nong>> getNongs(int gdSongID);
+    Result<std::vector<Song*>> getNongs(int gdSongID);
 
     std::function<void(IndexManager::DownloadSongTask::Event*)>
-    createDownloadSongBind(int gdSongID, Nong nong);
+    createDownloadSongBind(int gdSongID, Song* nong);
     Result<> downloadSong(int gdSongID, const std::string& uniqueID);
-    Result<> downloadSong(Nong hosted);
+    Result<> downloadSong(Song* hosted);
 
     static IndexManager* get() {
         if (m_instance == nullptr) {

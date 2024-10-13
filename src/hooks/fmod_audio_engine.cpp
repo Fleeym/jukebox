@@ -12,9 +12,9 @@ class $modify(FMODAudioEngine) {
         if (NongManager::get()->m_currentlyPreparingNong) {
             int additionalOffset = NongManager::get()
                                        ->m_currentlyPreparingNong.value()
-                                       ->activeNong()
-                                       .metadata()
-                                       ->m_startOffset;
+                                       ->active()
+                                       ->metadata()
+                                       ->startOffset;
             FMODAudioEngine::queueStartMusic(audioFilename, p1, p2, p3, p4,
                                              ms + additionalOffset, p6, p7, p8,
                                              p9, p10, p11, p12);
@@ -28,9 +28,9 @@ class $modify(FMODAudioEngine) {
         if (NongManager::get()->m_currentlyPreparingNong) {
             int additionalOffset = NongManager::get()
                                        ->m_currentlyPreparingNong.value()
-                                       ->activeNong()
-                                       .metadata()
-                                       ->m_startOffset;
+                                       ->active()
+                                       ->metadata()
+                                       ->startOffset;
             FMODAudioEngine::setMusicTimeMS(ms + additionalOffset, p1, channel);
         } else {
             FMODAudioEngine::setMusicTimeMS(ms, p1, channel);

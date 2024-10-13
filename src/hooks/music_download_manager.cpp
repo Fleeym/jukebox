@@ -21,14 +21,14 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
     if (!nongs.has_value()) {
         return MusicDownloadManager::pathForSong(id);
     }
-    auto value = nongs.value();
-    auto active = value->activeNong();
-    if (!std::filesystem::exists(active.path().value())) {
+    Nongs* value = nongs.value();
+    Song* active = value->active();
+    if (!std::filesystem::exists(active->path().value())) {
         return MusicDownloadManager::pathForSong(id);
     }
     NongManager::get()->m_currentlyPreparingNong = value;
 #ifdef GEODE_IS_WINDOWS
-    return geode::utils::string::wideToUtf8(active.path().value().c_str());
+    return geode::utils::string::wideToUtf8(active->path().value().c_str());
 #else
     return active.path().value().string();
 #endif
@@ -71,9 +71,9 @@ SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {
     std::optional<Nongs*> opt = NongManager::get()->getNongs(id);
     if (opt.has_value()) {
         Nongs* res = opt.value();
-        Nong active = res->activeNong();
-        og->m_songName = active.metadata()->m_name;
-        og->m_artistName = active.metadata()->m_artist;
+        Song* active = res->active();
+        og->m_songName = active->metadata()->name;
+        og->m_artistName = active->metadata()->artist;
     }
     return og;
 }

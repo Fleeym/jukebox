@@ -50,14 +50,14 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
             }
             auto metadata = song->metadata();
             auto indexMetadata = indexSong->metadata();
-            if (metadata->m_uniqueID != indexMetadata->m_uniqueID) {
+            if (metadata->uniqueID != indexMetadata->uniqueID) {
                 continue;
             }
-            if (metadata->m_gdID == indexMetadata->m_gdID &&
-                metadata->m_name == indexMetadata->m_name &&
-                metadata->m_artist == indexMetadata->m_artist &&
-                metadata->m_level == indexMetadata->m_level &&
-                metadata->m_startOffset == indexMetadata->m_startOffset &&
+            if (metadata->gdID == indexMetadata->gdID &&
+                metadata->name == indexMetadata->name &&
+                metadata->artist == indexMetadata->artist &&
+                metadata->level == indexMetadata->level &&
+                metadata->startOffset == indexMetadata->startOffset &&
                 song->youtubeID() == indexSong->youtubeID()) {
                 continue;
             }
@@ -65,14 +65,12 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
             bool deleteAudio = song->youtubeID() != indexSong->youtubeID();
 
             if (auto res = localNongs->replaceSong(
-                    song->metadata()->m_uniqueID,
-                    Nong{
-                        YTSong{
-                            SongMetadata(*indexSong->metadata()),
-                            indexSong->youtubeID(),
-                            indexSong->indexID(),
-                            deleteAudio ? std::nullopt : song->path(),
-                        },
+                    song->metadata()->uniqueID,
+                    YTSong{
+                        SongMetadata(*indexSong->metadata()),
+                        indexSong->youtubeID(),
+                        indexSong->indexID(),
+                        deleteAudio ? std::nullopt : song->path(),
                     });
                 res.isErr()) {
                 SongErrorEvent(false,
@@ -97,14 +95,14 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
             }
             auto metadata = song->metadata();
             auto indexMetadata = indexSong->metadata();
-            if (metadata->m_uniqueID != indexMetadata->m_uniqueID) {
+            if (metadata->uniqueID != indexMetadata->uniqueID) {
                 continue;
             }
-            if (metadata->m_gdID == indexMetadata->m_gdID &&
-                metadata->m_name == indexMetadata->m_name &&
-                metadata->m_artist == indexMetadata->m_artist &&
-                metadata->m_level == indexMetadata->m_level &&
-                metadata->m_startOffset == indexMetadata->m_startOffset &&
+            if (metadata->gdID == indexMetadata->gdID &&
+                metadata->name == indexMetadata->name &&
+                metadata->artist == indexMetadata->artist &&
+                metadata->level == indexMetadata->level &&
+                metadata->startOffset == indexMetadata->startOffset &&
                 song->url() == indexSong->url()) {
                 continue;
             }
@@ -112,14 +110,12 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
             bool deleteAudio = song->url() != indexSong->url();
 
             if (auto res = localNongs->replaceSong(
-                    song->metadata()->m_uniqueID,
-                    Nong{
-                        HostedSong{
-                            SongMetadata(*indexSong->metadata()),
-                            indexSong->url(),
-                            indexSong->indexID(),
-                            deleteAudio ? std::nullopt : song->path(),
-                        },
+                    song->metadata()->uniqueID,
+                    HostedSong{
+                        SongMetadata(*indexSong->metadata()),
+                        indexSong->url(),
+                        indexSong->indexID(),
+                        deleteAudio ? std::nullopt : song->path(),
                     });
                 res.isErr()) {
                 SongErrorEvent(false,
@@ -138,19 +134,6 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     }
 
     return m_manifest.m_nongs[songID].get();
-}
-
-Result<Nong> NongManager::getNongFromManifest(int gdSongID,
-                                              std::string uniqueID) {
-    auto nongs = getNongs(gdSongID);
-    if (nongs.has_value()) {
-        return Err("Song not initialized in manifest");
-    }
-    auto nong = nongs.value()->getNongFromID(uniqueID);
-    if (!nong.has_value()) {
-        return Err("Nong {} not found in song {}", uniqueID, gdSongID);
-    }
-    return Ok(std::move(nong.value()));
 }
 
 int NongManager::getCurrentManifestVersion() { return m_manifest.m_version; }
@@ -183,7 +166,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
                  LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
                                         obj->m_songName, obj->m_artistName},
                            gdDir / "Resources" / filename}})});
-        saveNongs(adjusted);
+        (void) this->saveNongs(adjusted);
 
         return;
     }
@@ -198,7 +181,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
         MusicDownloadManager::sharedState()->getSongInfo(id, true);
         m_manifest.m_nongs.insert({id, std::make_unique<Nongs>(Nongs{
                                            id, LocalSong::createUnknown(id)})});
-        saveNongs(id);
+        (void) this->saveNongs(id);
         return;
     }
 
@@ -210,7 +193,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
                                    MusicDownloadManager::sharedState()
                                        ->pathForSong(id)
                                        .c_str())}})});
-    saveNongs(id);
+    (void) this->saveNongs(id);
 }
 
 std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
@@ -245,10 +228,7 @@ NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(
                     continue;
                 }
                 auto nongs = result.value();
-                auto path = nongs->getNongFromID(nongs->active())
-                                .value()
-                                .path()
-                                .value();
+                auto path = nongs->active()->path().value();
                 if (path.string().starts_with("songs/")) {
                     path = resources / path;
                 }
@@ -301,17 +281,17 @@ bool NongManager::init() {
         }
         SongMetadata* defaultSongMetadata =
             nongs.value()->defaultSong()->metadata();
-        if (event->songName() == defaultSongMetadata->m_name &&
-            event->artistName() == defaultSongMetadata->m_artist) {
+        if (event->songName() == defaultSongMetadata->name &&
+            event->artistName() == defaultSongMetadata->artist) {
             return ListenerResult::Stop;
         }
 
-        defaultSongMetadata->m_name = event->songName();
-        defaultSongMetadata->m_artist = event->artistName();
+        defaultSongMetadata->name = event->songName();
+        defaultSongMetadata->artist = event->artistName();
 
         log::info("got here?");
 
-        saveNongs(event->gdSongID());
+        (void) this->saveNongs(event->gdSongID());
 
         return ListenerResult::Propagate;
     });
