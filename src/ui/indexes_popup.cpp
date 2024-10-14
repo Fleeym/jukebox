@@ -10,7 +10,7 @@
 #include "Geode/ui/Popup.hpp"
 
 #include "index.hpp"
-#include "list/index_cell.hpp"
+#include "ui/list/index_cell.hpp"
 
 namespace jukebox {
 
