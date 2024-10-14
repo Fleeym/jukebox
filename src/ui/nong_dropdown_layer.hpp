@@ -1,20 +1,22 @@
 #pragma once
 
-#include <Geode/binding/CustomSongWidget.hpp>
-#include <Geode/ui/GeodeUI.hpp>
-#include <Geode/ui/ListView.hpp>
-#include <Geode/ui/Popup.hpp>
-#include <Geode/utils/cocos.hpp>
+#include <vector>
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/binding/CustomSongWidget.hpp"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/Event.hpp"
+#include "Geode/ui/Popup.hpp"
+#include "Geode/utils/cocos.hpp"
 
-#include "../../../include/nong.hpp"
-#include "../events/song_download_progress_event.hpp"
-#include "../events/song_error_event.hpp"
-#include "../events/song_state_changed_event.hpp"
-#include "list/nong_cell.hpp"
-#include "list/nong_list.hpp"
-#include "list/song_cell.hpp"
-#include "nong_add_popup.hpp"
+#include "events/song_download_progress_event.hpp"
+#include "events/song_error_event.hpp"
+#include "events/song_state_changed_event.hpp"
+#include "nong.hpp"
+#include "ui/list/nong_cell.hpp"
+#include "ui/list/nong_list.hpp"
+#include "ui/list/song_cell.hpp"
+#include "ui/nong_add_popup.hpp"
 
 using namespace geode::prelude;
 

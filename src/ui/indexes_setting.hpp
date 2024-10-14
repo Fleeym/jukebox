@@ -1,11 +1,15 @@
 #pragma once
 
+#include <memory>
+#include <string>
+
 #include <matjson.hpp>
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/loader/SettingV3.hpp"
 
-#include "../index/index.hpp"
-#include "../index/index_serialize.hpp"
+#include "index.hpp"
+#include "index_serialize.hpp"
 
 using namespace geode::prelude;
 

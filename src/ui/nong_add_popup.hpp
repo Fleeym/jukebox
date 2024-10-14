@@ -1,15 +1,22 @@
 #pragma once
 
-#include "Geode/c++stl/gdstdlib.hpp"
+#include <filesystem>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "Geode/binding/ButtonSprite.hpp"
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/loader/Event.hpp"
+#include "Geode/ui/Popup.hpp"
 #include "Geode/ui/TextInput.hpp"
 #include "Geode/utils/Result.hpp"
 #include "Geode/utils/Task.hpp"
 
-#include <optional>
-
-#include "nong_dropdown_layer.hpp"
+#include "nong.hpp"
+#include "ui/nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
 
@@ -90,11 +97,14 @@ protected:
                                  const std::string& artistName,
                                  const std::optional<std::string> levelName,
                                  int offset);
-    geode::Result<> addYTSong(const std::string& songName, const std::string& artistName,
-                   const std::optional<std::string> levelName, int offset);
+    geode::Result<> addYTSong(const std::string& songName,
+                              const std::string& artistName,
+                              const std::optional<std::string> levelName,
+                              int offset);
     geode::Result<> addHostedSong(const std::string& songName,
-                       const std::string& artistName,
-                       const std::optional<std::string> levelName, int offset);
+                                  const std::string& artistName,
+                                  const std::optional<std::string> levelName,
+                                  int offset);
     void onPublish(CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
     void onClose(CCObject*) override;

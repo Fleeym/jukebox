@@ -16,6 +16,7 @@ file(GLOB SOURCES
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+target_include_directories(${PROJECT_NAME} PUBLIC include src)
 
 if (PROJECT_IS_TOP_LEVEL)
   target_compile_definitions(${PROJECT_NAME} PRIVATE FLEYM_JUKEBOX_EXPORTING)

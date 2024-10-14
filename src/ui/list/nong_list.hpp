@@ -9,7 +9,7 @@
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/ui/ScrollLayer.hpp"
 
-#include "nong_cell.hpp"
+#include "ui/list/nong_cell.hpp"
 
 namespace jukebox {
 
@@ -39,6 +39,7 @@ protected:
     static constexpr float s_itemSize = 60.f;
 
     void addSongToList(Song* nong, Nongs* parent);
+
 public:
     void scrollToTop();
     void setCurrentSong(int songId);

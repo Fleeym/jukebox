@@ -1,5 +1,6 @@
-#include <fmt/core.h>
+#include <string>
 
+#include <fmt/core.h>
 #include "Geode/binding/FLAlertLayer.hpp"
 #include "Geode/binding/MenuLayer.hpp"
 #include "Geode/loader/Mod.hpp"
@@ -22,7 +23,8 @@ class $modify(JBMenuLayer, MenuLayer) {
                 "<cb>{}</c> for any created backups and report this to me on "
                 "my Discord (fleeym)",
                 Mod::get()->getSaveDir() / "backups");
-            auto popup = FLAlertLayer::create("Jukebox", content.c_str(), "Ok");
+            FLAlertLayer* popup =
+                FLAlertLayer::create("Jukebox", content.c_str(), "Ok");
             popup->m_scene = this;
             popup->show();
         }
@@ -30,4 +32,3 @@ class $modify(JBMenuLayer, MenuLayer) {
         return true;
     }
 };
-

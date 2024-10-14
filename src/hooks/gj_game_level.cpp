@@ -1,12 +1,12 @@
+#include <filesystem>
+#include <optional>
+
 #include "Geode/binding/GJGameLevel.hpp"
 #include "Geode/modify/GJGameLevel.hpp"  // IWYU pragma: keep
 #include "Geode/modify/Modify.hpp"
 #include "Geode/utils/string.hpp"
 
-#include <filesystem>
-#include <optional>
-
-#include "../managers/nong_manager.hpp"
+#include "managers/nong_manager.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox;

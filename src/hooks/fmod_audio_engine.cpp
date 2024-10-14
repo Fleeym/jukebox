@@ -1,7 +1,7 @@
 #include "Geode/binding/FMODAudioEngine.hpp"
 #include "Geode/modify/FMODAudioEngine.hpp"  // IWYU pragma: keep
 
-#include "../managers/nong_manager.hpp"
+#include "managers/nong_manager.hpp"
 
 using namespace jukebox;
 

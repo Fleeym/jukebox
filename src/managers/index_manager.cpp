@@ -1,7 +1,8 @@
-#include "index_manager.hpp"
+#include "managers/index_manager.hpp"
 
 #include <algorithm>
 #include <filesystem>
+#include <matjson.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -10,16 +11,15 @@
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/utils/Result.hpp"
-#include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 
-#include "../../include/nong.hpp"
-#include "../events/song_download_progress_event.hpp"
-#include "../events/song_error_event.hpp"
-#include "../events/song_state_changed_event.hpp"
-#include "../index/index_serialize.hpp"
-#include "../ui/indexes_setting.hpp"
-#include "nong_manager.hpp"
+#include "events/song_download_progress_event.hpp"
+#include "events/song_error_event.hpp"
+#include "events/song_state_changed_event.hpp"
+#include "index_serialize.hpp"
+#include "managers/nong_manager.hpp"
+#include "nong.hpp"
+#include "ui/indexes_setting.hpp"
 
 namespace jukebox {
 

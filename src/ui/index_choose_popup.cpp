@@ -1,25 +1,14 @@
 #include "index_choose_popup.hpp"
 
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
-#include <Geode/cocos/CCDirector.h>
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
-#include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <ccTypes.h>
-#include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
-#include <Geode/binding/FLAlertLayer.hpp>
-#include <Geode/binding/FMODAudioEngine.hpp>
-#include <Geode/cocos/base_nodes/Layout.hpp>
-#include <Geode/loader/Log.hpp>
-#include <Geode/loader/Mod.hpp>
-#include <Geode/ui/Popup.hpp>
-#include <Geode/ui/TextInput.hpp>
-#include <Geode/utils/MiniFunction.hpp>
-#include <Geode/utils/Result.hpp>
-#include <Geode/utils/Task.hpp>
-#include <Geode/utils/file.hpp>
-#include <Geode/utils/string.hpp>
+#include "Geode/binding/ButtonSprite.hpp"
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/cocos/CCDirector.h"
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/cocos/base_nodes/Layout.hpp"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+#include "Geode/cocos/sprite_nodes/CCSprite.h"
 
 #include <fmod_common.h>
 #include <fmt/core.h>
@@ -27,7 +16,6 @@
 #include <optional>
 
 #include "../managers/index_manager.hpp"
-#include "list/index_cell.hpp"
 
 namespace jukebox {
 

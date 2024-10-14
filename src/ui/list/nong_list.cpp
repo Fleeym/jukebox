@@ -1,9 +1,9 @@
-#include "nong_list.hpp"
+#include "ui/list/nong_list.hpp"
 
 #include <filesystem>
 #include <optional>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include "GUI/CCControlExtension/CCScale9Sprite.h"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
@@ -11,10 +11,10 @@
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/ui/ScrollLayer.hpp"
 
-#include "../../managers/index_manager.hpp"
-#include "../../managers/nong_manager.hpp"
-#include "nong_cell.hpp"
-#include "song_cell.hpp"
+#include "managers/index_manager.hpp"
+#include "managers/nong_manager.hpp"
+#include "ui/list/nong_cell.hpp"
+#include "ui/list/song_cell.hpp"
 
 using namespace geode::prelude;
 

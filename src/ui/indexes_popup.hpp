@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Geode/c++stl/gdstdlib.hpp"
-#include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
-#include "Geode/ui/TextInput.hpp"
+#include <functional>
 
-#include "../index/index.hpp"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/ui/ScrollLayer.hpp"
+
+#include "index.hpp"
 
 using namespace geode::prelude;
 

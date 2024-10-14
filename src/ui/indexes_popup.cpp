@@ -2,11 +2,6 @@
 
 #include <optional>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
-#include <ccTypes.h>
-#include <fmod_common.h>
-#include <fmt/core.h>
-#include <fmod.hpp>
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/base_nodes/Layout.hpp"
@@ -14,6 +9,7 @@
 #include "Geode/loader/Log.hpp"
 #include "Geode/ui/Popup.hpp"
 
+#include "index.hpp"
 #include "list/index_cell.hpp"
 
 namespace jukebox {

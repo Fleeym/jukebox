@@ -1,11 +1,15 @@
 #include "indexes_setting.hpp"
 
 #include <memory>
+#include <string>
 #include <vector>
 
+#include <matjson.hpp>
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/SettingV3.hpp"
+#include "Geode/utils/JsonValidation.hpp"
 #include "Geode/utils/Result.hpp"
 
 #include "indexes_popup.hpp"
@@ -87,4 +91,3 @@ Result<std::shared_ptr<IndexSetting>> IndexSetting::parse(
 }
 
 }  // namespace jukebox
-

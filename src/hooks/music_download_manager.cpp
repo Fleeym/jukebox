@@ -1,17 +1,20 @@
-#include "music_download_manager.hpp"
+#include "hooks/music_download_manager.hpp"
 
+#include <cstddef>
 #include <optional>
 
 #include "Geode/binding/GameLevelManager.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
+#include "Geode/c++stl/string.hpp"
+#include "Geode/cocos/cocoa/CCDictionary.h"
 #include "Geode/cocos/cocoa/CCString.h"
 #include "Geode/utils/cocos.hpp"
 #include "Geode/utils/string.hpp"
 
-#include "../../include/nong.hpp"
-#include "../events/get_song_info_event.hpp"
-#include "../managers/nong_manager.hpp"
+#include "events/get_song_info_event.hpp"
+#include "managers/nong_manager.hpp"
+#include "nong.hpp"
 
 using namespace jukebox;
 

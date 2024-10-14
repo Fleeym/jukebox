@@ -14,8 +14,8 @@
 #include "Geode/ui/GeodeUI.hpp"
 #include "Geode/utils/cocos.hpp"
 
-#include "../managers/nong_manager.hpp"
-#include "../ui/nong_dropdown_layer.hpp"
+#include "managers/nong_manager.hpp"
+#include "ui/nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -65,8 +65,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                         return ListenerResult::Propagate;
                     }
 
-                    auto nongs =
-                        NongManager::get().getNongs(event->gdSongID());
+                    auto nongs = NongManager::get().getNongs(event->gdSongID());
 
                     if (!nongs.has_value()) {
                         return ListenerResult::Propagate;
@@ -121,7 +120,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             });
         m_fields->m_multiAssetListener.setFilter(
             NongManager::get().getMultiAssetSizes(m_fields->songIds,
-                                                   m_fields->sfxIds));
+                                                  m_fields->sfxIds));
     }
 
     void restoreUI() {

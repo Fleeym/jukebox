@@ -5,7 +5,7 @@
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 
-#include "../../index/index.hpp"
+#include "index.hpp"
 
 using namespace geode::prelude;
 

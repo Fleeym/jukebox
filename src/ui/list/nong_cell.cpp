@@ -1,19 +1,18 @@
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/cocoa/CCGeometry.h>
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <fmt/format.h>
-#include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
-#include <Geode/binding/FLAlertLayer.hpp>
-#include <Geode/cocos/base_nodes/Layout.hpp>
-#include <Geode/ui/Popup.hpp>
-#include <Geode/utils/cocos.hpp>
-#include <memory>
+#include "ui/list/nong_cell.hpp"
+
 #include <numeric>
 
-#include "../../managers/index_manager.hpp"
-#include "nong_cell.hpp"
+#include <fmt/core.h>
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/binding/FLAlertLayer.hpp"
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/cocos/base_nodes/Layout.hpp"
+#include "Geode/cocos/cocoa/CCGeometry.h"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/sprite_nodes/CCSprite.h"
+#include "Geode/ui/Popup.hpp"
+
+#include "managers/index_manager.hpp"
 
 namespace jukebox {
 

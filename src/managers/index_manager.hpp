@@ -8,9 +8,9 @@
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Task.hpp"
 
-#include "../../include/nong.hpp"
-#include "../index/index.hpp"
-#include "nong_manager.hpp"
+#include "index.hpp"
+#include "managers/nong_manager.hpp"
+#include "nong.hpp"
 
 using namespace geode::prelude;
 
@@ -27,9 +27,7 @@ protected:
     using FetchIndexTask = Task<Result<>, float>;
     using DownloadSongTask = Task<Result<std::filesystem::path>, float>;
 
-    IndexManager() {
-        this->init();
-    }
+    IndexManager() { this->init(); }
 
     bool init();
     // index url -> task listener

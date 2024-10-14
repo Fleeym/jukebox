@@ -1,18 +1,22 @@
-#include "../include/nong.hpp"
+#include "nong.hpp"
 
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <optional>
+#include <string>
 #include <system_error>
 
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <matjson.hpp>
 #include "Geode/binding/MusicDownloadManager.hpp"
-
-#include "../include/nong_serialize.hpp"
-#include "./utils/random_string.hpp"
+#include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/utils/Result.hpp"
+
 #include "managers/nong_manager.hpp"
+#include "nong_serialize.hpp"
+#include "utils/random_string.hpp"
 
 using namespace geode::prelude;
 

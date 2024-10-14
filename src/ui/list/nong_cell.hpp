@@ -1,13 +1,11 @@
 #pragma once
 
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/c++stl/gdstdlib.hpp>
 #include <functional>
-#include <memory>
-#include <optional>
 
-#include "../../../include/nong.hpp"
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/cocos/cocoa/CCObject.h"
+
+#include "nong.hpp"
 
 using namespace geode::prelude;
 
@@ -37,7 +35,6 @@ protected:
     CCMenuItemSpriteExtra* m_downloadButton;
     CCMenu* m_downloadProgressContainer;
     CCProgressTimer* m_downloadProgress;
-
 
     bool init(int songID, Song*, bool isDefault, bool selected,
               CCSize const& size, std::function<void()> onSelect,

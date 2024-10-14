@@ -1,7 +1,10 @@
 #pragma once
 
+#include <string>
+
 #include "Geode/loader/Event.hpp"
-#include "../hooks/music_download_manager.hpp"
+
+#include "hooks/music_download_manager.hpp"
 
 using namespace geode::prelude;
 

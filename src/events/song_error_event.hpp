@@ -1,8 +1,11 @@
 #pragma once
 
-#include "../managers/index_manager.hpp"
-#include "../managers/nong_manager.hpp"
+#include <string>
+
 #include "Geode/loader/Event.hpp"
+
+#include "managers/index_manager.hpp"
+#include "managers/nong_manager.hpp"
 
 using namespace geode::prelude;
 

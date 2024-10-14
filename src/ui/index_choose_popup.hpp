@@ -1,9 +1,6 @@
 #pragma once
 
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
-#include <Geode/c++stl/gdstdlib.hpp>
-#include <Geode/ui/TextInput.hpp>
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 
 using namespace geode::prelude;
 

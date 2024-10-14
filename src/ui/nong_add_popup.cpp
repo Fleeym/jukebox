@@ -11,11 +11,7 @@
 #include <system_error>
 #include <utility>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
-#include <ccTypes.h>
-#include <fmod_common.h>
 #include <fmt/core.h>
-#include <fmod.hpp>
 #include "Geode/binding/ButtonSprite.hpp"
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
@@ -35,10 +31,15 @@
 #include "Geode/utils/Task.hpp"
 #include "Geode/utils/file.hpp"
 #include "Geode/utils/string.hpp"
+#include "ccTypes.h"
+#include "fmod.hpp"
+#include "fmod_common.h"
 
-#include "../managers/index_manager.hpp"
-#include "../utils/random_string.hpp"
-#include "index_choose_popup.hpp"
+#include "managers/index_manager.hpp"
+#include "nong.hpp"
+#include "ui/index_choose_popup.hpp"
+#include "ui/nong_dropdown_layer.hpp"
+#include "utils/random_string.hpp"
 
 std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     std::string ret = "";
@@ -68,7 +69,7 @@ public:
         char const* title, std::string const& content, char const* btn1,
         char const* btn2, float width,
         MiniFunction<void(FLAlertLayer*, bool)> selected) {
-        auto inst = new IndexDisclaimerPopup;
+        auto inst = new IndexDisclaimerPopup();
         inst->m_selected = selected;
         if (inst->init(inst, title, content, btn1, btn2, width, true, .0f,
                        1.0f)) {

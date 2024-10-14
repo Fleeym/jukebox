@@ -10,9 +10,9 @@
 #include "Geode/loader/Mod.hpp"
 #include "Geode/utils/Task.hpp"
 
-#include "../../include/nong.hpp"
-#include "../events/get_song_info_event.hpp"
-#include "../events/song_error_event.hpp"
+#include "events/get_song_info_event.hpp"
+#include "events/song_error_event.hpp"
+#include "nong.hpp"
 
 using namespace geode::prelude;
 
@@ -26,9 +26,7 @@ protected:
     std::unordered_map<std::string, Song*> m_bigmap;
     bool m_initialized = false;
 
-    NongManager() {
-        this->init();
-    }
+    NongManager() { this->init(); }
 
     void setupManifestPath() {
         auto path = this->baseManifestPath();
