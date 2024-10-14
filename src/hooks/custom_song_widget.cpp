@@ -66,7 +66,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                     }
 
                     auto nongs =
-                        NongManager::get()->getNongs(event->gdSongID());
+                        NongManager::get().getNongs(event->gdSongID());
 
                     if (!nongs.has_value()) {
                         return ListenerResult::Propagate;
@@ -120,7 +120,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 }
             });
         m_fields->m_multiAssetListener.setFilter(
-            NongManager::get()->getMultiAssetSizes(m_fields->songIds,
+            NongManager::get().getMultiAssetSizes(m_fields->songIds,
                                                    m_fields->sfxIds));
     }
 
@@ -162,9 +162,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         m_songLabel->setVisible(false);
-        NongManager::get()->initSongID(obj, obj->m_songID, m_isRobtopSong);
-        std::optional<Nongs*> result = NongManager::get()->getNongs(
-            NongManager::get()->adjustSongID(id, m_isRobtopSong));
+        NongManager::get().initSongID(obj, obj->m_songID, m_isRobtopSong);
+        std::optional<Nongs*> result = NongManager::get().getNongs(
+            NongManager::get().adjustSongID(id, m_isRobtopSong));
 
         auto nongs = result.value();
 
@@ -188,8 +188,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
     void getMultiAssetSongInfo() {
         for (auto const& kv : m_songs) {
-            NongManager::get()->initSongID(nullptr, kv.first, false);
-            auto result = NongManager::get()->getNongs(kv.first);
+            NongManager::get().initSongID(nullptr, kv.first, false);
+            auto result = NongManager::get().getNongs(kv.first);
             auto value = result.value();
             m_fields->assetNongData[kv.first] = value;
         }
@@ -201,7 +201,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             songID++;
             songID = -songID;
         }
-        auto res = NongManager::get()->getNongs(songID);
+        auto res = NongManager::get().getNongs(songID);
         if (!res) {
             return;
         }
@@ -234,7 +234,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             if (m_fields->sizeIdLabel != nullptr) {
                 m_fields->sizeIdLabel->removeFromParent();
             }
-            auto data = NongManager::get()->getNongs(songID).value();
+            auto data = NongManager::get().getNongs(songID).value();
 
             // TODO this might be fuckery
             if (!std::filesystem::exists(active->path().value()) &&
@@ -249,7 +249,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             std::string sizeText;
             if (std::filesystem::exists(active->path().value())) {
                 sizeText =
-                    NongManager::get()->getFormattedSize(active->path().value());
+                    NongManager::get().getFormattedSize(active->path().value());
             } else {
                 sizeText = "NA";
             }
@@ -302,7 +302,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
         if (m_songs.size() > 1) {
             for (auto const& kv : m_songs) {
-                if (!NongManager::get()->getNongs(kv.first).has_value()) {
+                if (!NongManager::get().getNongs(kv.first).has_value()) {
                     return;
                 }
                 ids.push_back(kv.first);

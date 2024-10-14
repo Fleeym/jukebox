@@ -31,11 +31,11 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     // Try to update saved songs from the index in case it changed
     Nongs* localNongs = m_manifest.m_nongs[songID].get();
 
-    if (!IndexManager::get()->m_indexNongs.contains(songID)) {
+    if (!IndexManager::get().m_indexNongs.contains(songID)) {
         return localNongs;
     }
 
-    Nongs* indexNongs = &IndexManager::get()->m_indexNongs.at(songID);
+    Nongs* indexNongs = &IndexManager::get().m_indexNongs.at(songID);
 
     bool changed = false;
 

@@ -111,7 +111,7 @@ void NongList::build() {
 
     if (!m_currentSong) {
         for (const auto& id : m_songIds) {
-            std::optional<Nongs*> nongs = NongManager::get()->getNongs(id);
+            std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
 
             if (!nongs) {
                 continue;
@@ -127,7 +127,7 @@ void NongList::build() {
         // Single item
         int id = m_currentSong.value();
 
-        std::optional<Nongs*> optNongs = NongManager::get()->getNongs(id);
+        std::optional<Nongs*> optNongs = NongManager::get().getNongs(id);
         if (!optNongs) {
             return;
         }
@@ -187,7 +187,7 @@ void NongList::addSongToList(Song* nong, Nongs* parent) {
         [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
         [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
 
-    if (auto progress = IndexManager::get()->getSongDownloadProgress(uniqueID);
+    if (auto progress = IndexManager::get().getSongDownloadProgress(uniqueID);
         progress.has_value()) {
         cell->setDownloadProgress(progress.value());
     };

@@ -13,12 +13,12 @@ using namespace jukebox;
 
 class $modify(GJGameLevel) {
     gd::string getAudioFileName() {
-        NongManager::get()->m_currentlyPreparingNong = std::nullopt;
+        NongManager::get().m_currentlyPreparingNong = std::nullopt;
         if (m_songID != 0) {
             return GJGameLevel::getAudioFileName();
         }
         int id = (-m_audioTrack) - 1;
-        std::optional<Nongs*> res = NongManager::get()->getNongs(id);
+        std::optional<Nongs*> res = NongManager::get().getNongs(id);
         if (!res.has_value()) {
             return GJGameLevel::getAudioFileName();
         }
@@ -26,7 +26,7 @@ class $modify(GJGameLevel) {
         if (!std::filesystem::exists(active->path().value())) {
             return GJGameLevel::getAudioFileName();
         }
-        jukebox::NongManager::get()->m_currentlyPreparingNong = res.value();
+        jukebox::NongManager::get().m_currentlyPreparingNong = res.value();
 #ifdef GEODE_IS_WINDOWS
         return geode::utils::string::wideToUtf8(active->path().value().c_str());
 #else

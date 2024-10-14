@@ -18,7 +18,7 @@ class $modify(LevelTools) {
     //         return og;
     //     }
     //     int searchId = -id - 1;
-    //     auto active = jukebox::NongManager::get()->getActiveNong(searchId);
+    //     auto active = jukebox::NongManager::get().getActiveNong(searchId);
     //     if (active.has_value()) {
     //         auto value = active.value();
     //         og->m_songName = value.songName;
@@ -28,11 +28,11 @@ class $modify(LevelTools) {
     // }
 
     static gd::string getAudioTitle(int id) {
-        if (g_disableTitleOverride || !NongManager::get()->initialized()) {
+        if (g_disableTitleOverride || !NongManager::get().initialized()) {
             return LevelTools::getAudioTitle(id);
         }
         int searchID = -id - 1;
-        std::optional<Nongs*> res = NongManager::get()->getNongs(searchID);
+        std::optional<Nongs*> res = NongManager::get().getNongs(searchID);
         if (res.has_value()) {
             return res.value()->active()->metadata()->name;
         }

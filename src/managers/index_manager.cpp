@@ -295,7 +295,7 @@ void IndexManager::cacheIndexName(const std::string& indexId,
 
 Result<std::vector<Song*>> IndexManager::getNongs(int gdSongID) {
     std::vector<Song*> nongs;
-    std::optional<Nongs*> opt = NongManager::get()->getNongs(gdSongID);
+    std::optional<Nongs*> opt = NongManager::get().getNongs(gdSongID);
     if (!opt.has_value()) {
         return Err("Failed to get nongs");
     }
@@ -421,7 +421,7 @@ Result<std::vector<Song*>> IndexManager::getNongs(int gdSongID) {
 }
 
 Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
-    Result<std::vector<Song*>> nongs = IndexManager::get()->getNongs(gdSongID);
+    Result<std::vector<Song*>> nongs = IndexManager::get().getNongs(gdSongID);
     if (!nongs.has_value()) {
         return Err("GD song {} not initialized in manifest", gdSongID);
     }
@@ -558,7 +558,7 @@ Result<> IndexManager::downloadSong(Song* nong) {
                             ByteVector data = event->getValue()->data();
 
                             auto destination =
-                                NongManager::get()->generateSongFilePath("mp3");
+                                NongManager::get().generateSongFilePath("mp3");
                             std::ofstream file(
                                 destination, std::ios::out | std::ios::binary);
                             file.write(
@@ -602,7 +602,7 @@ Result<> IndexManager::downloadSong(Song* nong) {
                         web::WebResponse* response) -> DownloadSongTask::Value {
                         if (response->ok()) {
                             std::filesystem::path destination =
-                                NongManager::get()->generateSongFilePath("mp3");
+                                NongManager::get().generateSongFilePath("mp3");
                             std::ofstream file(
                                 destination, std::ios::out | std::ios::binary);
                             file.write(reinterpret_cast<const char*>(
@@ -651,7 +651,7 @@ Result<> IndexManager::downloadSong(Song* nong) {
 
         nong->setIndexID(id);
 
-        if (auto res = NongManager::get()->setActiveSong(gdSongID, id);
+        if (auto res = NongManager::get().setActiveSong(gdSongID, id);
             res.isErr()) {
             SongErrorEvent(true, "Failed to set song as active: {}",
                            res.error())

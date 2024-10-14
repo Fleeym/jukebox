@@ -258,7 +258,7 @@ public:
             return Err(json.error());
         }
 
-        std::filesystem::path path = NongManager::get()->baseManifestPath();
+        std::filesystem::path path = NongManager::get().baseManifestPath();
 
         auto filepath = fmt::format("{}/{}.json", path.string(), m_songID);
         std::ofstream output(filepath);

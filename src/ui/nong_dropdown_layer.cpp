@@ -24,7 +24,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     m_parentWidget = parent;
     m_defaultSongID = defaultSongID;
     // for (auto const& id : m_songIDS) {
-    //     auto result = NongManager::get()->getNongs(id);
+    //     auto result = NongManager::get().getNongs(id);
     //     auto value = result.value();
     //     m_data[id] = value;
     // }
@@ -35,8 +35,8 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
 
     auto contentSize = m_mainLayer->getContentSize();
 
-    int manifest = NongManager::get()->getCurrentManifestVersion();
-    int count = NongManager::get()->getStoredIDCount();
+    int manifest = NongManager::get().getCurrentManifestVersion();
+    int count = NongManager::get().getStoredIDCount();
     std::stringstream ss;
     ss << "Manifest v" << manifest << ", storing " << count
        << " unique song IDs.";
@@ -186,7 +186,7 @@ void NongDropdownLayer::createList() {
             },
             [this](int gdSongID) {
                 // TODO
-                // if (!NongManager::get()->isFixingDefault(id)) {
+                // if (!NongManager::get().isFixingDefault(id)) {
                 //     this->template addEventListener<GetSongInfoEventFilter>(
                 //         [this](auto song) {
                 //             this->refreshList();
@@ -198,8 +198,8 @@ void NongDropdownLayer::createList() {
                 //             return ListenerResult::Propagate;
                 //         }, id
                 //     );
-                //     NongManager::get()->markAsInvalidDefault(id);
-                //     NongManager::get()->prepareCorrectDefault(id);
+                //     NongManager::get().markAsInvalidDefault(id);
+                //     NongManager::get().prepareCorrectDefault(id);
                 // }
                 MusicDownloadManager::sharedState()->clearSong(gdSongID);
                 MusicDownloadManager::sharedState()->getSongInfo(gdSongID,
@@ -214,7 +214,7 @@ void NongDropdownLayer::createList() {
             },
             [this](int gdSongID, const std::string& uniqueID) {
                 std::optional<Nongs*> nongs =
-                    NongManager::get()->getNongs(gdSongID);
+                    NongManager::get().getNongs(gdSongID);
                 if (!nongs.has_value()) {
                     FLAlertLayer::create("Error", "Song is not initialized",
                                          "Ok")
@@ -251,7 +251,7 @@ CCSize NongDropdownLayer::getCellSize() const { return {320.f, 60.f}; }
 
 void NongDropdownLayer::setActiveSong(int gdSongID,
                                       const std::string& uniqueID) {
-    if (auto err = NongManager::get()->setActiveSong(gdSongID, uniqueID);
+    if (auto err = NongManager::get().setActiveSong(gdSongID, uniqueID);
         err.isErr()) {
         FLAlertLayer::create(
             "Failed", fmt::format("Failed to set song: {}", err.error()), "Ok")
@@ -278,7 +278,7 @@ void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
     auto func = [gdSongID, uniqueID, onlyAudio, confirm]() {
         if (onlyAudio) {
             if (auto err =
-                    NongManager::get()->deleteSongAudio(gdSongID, uniqueID);
+                    NongManager::get().deleteSongAudio(gdSongID, uniqueID);
                 err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
@@ -287,7 +287,7 @@ void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
                 return;
             }
         } else {
-            if (auto err = NongManager::get()->deleteSong(gdSongID, uniqueID);
+            if (auto err = NongManager::get().deleteSong(gdSongID, uniqueID);
                 err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
@@ -322,7 +322,7 @@ void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
 
 void NongDropdownLayer::downloadSong(int gdSongID,
                                      const std::string& uniqueID) {
-    if (auto err = IndexManager::get()->downloadSong(gdSongID, uniqueID);
+    if (auto err = IndexManager::get().downloadSong(gdSongID, uniqueID);
         err.isErr()) {
         FLAlertLayer::create(
             "Failed",
@@ -339,7 +339,7 @@ void NongDropdownLayer::addSong(Nongs&& song, bool popup) {
         return;
     }
     int id = m_currentSongID.value();
-    if (auto err = NongManager::get()->addNongs(std::move(song)); err.isErr()) {
+    if (auto err = NongManager::get().addNongs(std::move(song)); err.isErr()) {
         FLAlertLayer::create(
             "Failed", fmt::format("Failed to add song: {}", err.error()), "Ok")
             ->show();
@@ -367,7 +367,7 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
             }
 
             int id = m_currentSongID.value();
-            if (auto err = NongManager::get()->deleteAllSongs(id);
+            if (auto err = NongManager::get().deleteAllSongs(id);
                 err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
@@ -376,7 +376,7 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
                     ->show();
                 return;
             }
-            auto data = NongManager::get()->getNongs(id).value();
+            auto data = NongManager::get().getNongs(id).value();
             FLAlertLayer::create("Success",
                                  "All nongs were deleted successfully!", "Ok")
                 ->show();

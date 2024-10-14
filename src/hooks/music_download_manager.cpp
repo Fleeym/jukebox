@@ -16,8 +16,8 @@
 using namespace jukebox;
 
 gd::string JBMusicDownloadManager::pathForSong(int id) {
-    NongManager::get()->m_currentlyPreparingNong = std::nullopt;
-    std::optional<Nongs*> nongs = NongManager::get()->getNongs(id);
+    NongManager::get().m_currentlyPreparingNong = std::nullopt;
+    std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
     if (!nongs.has_value()) {
         return MusicDownloadManager::pathForSong(id);
     }
@@ -26,7 +26,7 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
     if (!std::filesystem::exists(active->path().value())) {
         return MusicDownloadManager::pathForSong(id);
     }
-    NongManager::get()->m_currentlyPreparingNong = value;
+    NongManager::get().m_currentlyPreparingNong = value;
 #ifdef GEODE_IS_WINDOWS
     return geode::utils::string::wideToUtf8(active->path().value().c_str());
 #else
@@ -68,7 +68,7 @@ SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {
     if (og == nullptr) {
         return og;
     }
-    std::optional<Nongs*> opt = NongManager::get()->getNongs(id);
+    std::optional<Nongs*> opt = NongManager::get().getNongs(id);
     if (opt.has_value()) {
         Nongs* res = opt.value();
         Song* active = res->active();

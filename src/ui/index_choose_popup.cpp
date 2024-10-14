@@ -105,7 +105,7 @@ bool IndexChoosePopup::setup(
 
 void IndexChoosePopup::updateLabel() {
     m_label->setString(IndexManager::get()
-                           ->getIndexName(m_indexIDs.at(m_currentIndex))
+                           .getIndexName(m_indexIDs.at(m_currentIndex))
                            ->c_str());
 }
 

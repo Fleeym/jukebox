@@ -27,6 +27,10 @@ protected:
     using FetchIndexTask = Task<Result<>, float>;
     using DownloadSongTask = Task<Result<std::filesystem::path>, float>;
 
+    IndexManager() {
+        this->init();
+    }
+
     bool init();
     // index url -> task listener
     std::unordered_map<std::string, EventListener<FetchIndexTask>>
@@ -69,14 +73,9 @@ public:
     Result<> downloadSong(int gdSongID, const std::string& uniqueID);
     Result<> downloadSong(Song* hosted);
 
-    static IndexManager* get() {
-        static std::unique_ptr<IndexManager> instance = nullptr;
-        if (!instance) {
-            instance = std::make_unique<IndexManager>();
-            instance->init();
-        }
-
-        return instance.get();
+    static IndexManager& get() {
+        static IndexManager instance;
+        return instance;
     }
 };
 

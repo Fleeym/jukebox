@@ -116,7 +116,7 @@ bool NongAddPopup::setup(NongDropdownLayer* parent, int songID,
 
             for (const std::pair<const std::string,
                                  std::unique_ptr<IndexMetadata>>& pair :
-                 IndexManager::get()->m_loadedIndexes) {
+                 IndexManager::get().m_loadedIndexes) {
                 if (!pair.second->m_features.m_submit.has_value()) {
                     continue;
                 }
@@ -527,8 +527,8 @@ void NongAddPopup::createInputs() {
 
 void NongAddPopup::onPublish(CCObject* target) {
     IndexChoosePopup::create(m_publishableIndexes, [this](std::string id) {
-        auto index = IndexManager::get()->m_loadedIndexes.at(id).get();
-        auto name = IndexManager::get()->getIndexName(id).value();
+        auto index = IndexManager::get().m_loadedIndexes.at(id).get();
+        auto name = IndexManager::get().getIndexName(id).value();
         auto submit = index->m_features.m_submit.value();
 
         auto submitFunc = [this, index, submit](FLAlertLayer* _,
@@ -697,7 +697,7 @@ geode::Result<> NongAddPopup::addLocalSong(
         SongMetadata{m_songID, id, songName, artistName, levelName, offset},
         destination};
 
-    Nongs* nongs = NongManager::get()->getNongs(m_songID).value();
+    Nongs* nongs = NongManager::get().getNongs(m_songID).value();
 
     if (m_replacedNong.has_value()) {
         auto res = nongs->replaceSong(
@@ -753,7 +753,7 @@ geode::Result<> NongAddPopup::addYTSong(
         return Err("Invalid YouTube video ID");
     }
 
-    Nongs* nongs = NongManager::get()->getNongs(m_songID).value();
+    Nongs* nongs = NongManager::get().getNongs(m_songID).value();
     YTSong song = YTSong{
         SongMetadata{
             m_songID,
@@ -808,7 +808,7 @@ geode::Result<> NongAddPopup::addHostedSong(
         id = jukebox::random_string(16);
     }
 
-    Nongs* nongs = NongManager::get()->getNongs(m_songID).value();
+    Nongs* nongs = NongManager::get().getNongs(m_songID).value();
 
     HostedSong song = HostedSong{
         SongMetadata{

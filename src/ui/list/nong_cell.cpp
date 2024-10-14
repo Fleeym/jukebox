@@ -169,7 +169,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
 
     if (m_songInfo->indexID().has_value()) {
         auto indexID = m_songInfo->indexID().value();
-        auto indexName = IndexManager::get()->getIndexName(indexID);
+        auto indexName = IndexManager::get().getIndexName(indexID);
         metadataList.push_back(indexName.has_value() ? indexName.value()
                                                      : indexID);
     }
