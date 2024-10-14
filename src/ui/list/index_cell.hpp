@@ -1,14 +1,17 @@
 #pragma once
 
-#include <Geode/c++stl/gdstdlib.hpp>
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/cocoa/CCObject.h>
 #include <functional>
-#include "../../../include/index.hpp"
+
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/cocos/cocoa/CCObject.h"
+
+#include "../../index/index.hpp"
 
 using namespace geode::prelude;
 
 namespace jukebox {
+
+using namespace jukebox::index;
 
 class IndexesPopup;
 
@@ -20,22 +23,16 @@ protected:
 
     CCMenuItemToggler* m_toggleButton;
 
-    bool init(
-        IndexesPopup* parentPopup,
-        IndexSource* index,
-        std::function<void()> onDelete,
-        CCSize const& size
-    );
+    bool init(IndexesPopup* parentPopup, IndexSource* index,
+              std::function<void()> onDelete, CCSize const& size);
+
 public:
-    static IndexCell* create(
-        IndexesPopup* parentPopup,
-        IndexSource* index,
-        std::function<void()> onDelete,
-        CCSize const& size
-    );
+    static IndexCell* create(IndexesPopup* parentPopup, IndexSource* index,
+                             std::function<void()> onDelete,
+                             CCSize const& size);
     void updateUI();
     void onToggle(CCObject*);
     void onDelete(CCObject*);
 };
 
-}
+}  // namespace jukebox

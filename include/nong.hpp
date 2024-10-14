@@ -48,10 +48,10 @@ public:
     virtual ~Song() = default;
     virtual NongType type() const = 0;
     virtual SongMetadata* metadata() const = 0;
-    // For local songs, this will always have a value, otherwise do check
-    virtual std::optional<std::filesystem::path> path() const = 0;
     virtual std::optional<std::string> indexID() const = 0;
     virtual void setIndexID(const std::string& id) = 0;
+    // For local songs, this will always have a value, otherwise do check
+    virtual std::optional<std::filesystem::path> path() const = 0;
 };
 
 class JUKEBOX_DLL LocalSong final : public Song {
@@ -172,9 +172,9 @@ public:
     geode::Result<> deleteSongAudio(const std::string& uniqueID);
     std::optional<Song*> findSong(const std::string& uniqueID);
 
-    std::vector<std::unique_ptr<LocalSong>>& locals();
-    std::vector<std::unique_ptr<YTSong>>& youtube();
-    std::vector<std::unique_ptr<HostedSong>>& hosted();
+    std::vector<std::unique_ptr<LocalSong>>& locals() const;
+    std::vector<std::unique_ptr<YTSong>>& youtube() const;
+    std::vector<std::unique_ptr<HostedSong>>& hosted() const;
 
     geode::Result<LocalSong*> add(LocalSong&& song);
     geode::Result<YTSong*> add(YTSong&& song);
@@ -195,6 +195,8 @@ public:
     constexpr static inline int s_latestVersion = 4;
 
     Manifest() = default;
+    Manifest(Manifest&&) = default;
+    Manifest& operator=(Manifest&&) = default;
     Manifest(const Manifest&) = delete;
     Manifest& operator=(const Manifest&) = delete;
 

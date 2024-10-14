@@ -1,23 +1,17 @@
 #pragma once
 
-#include "../../include/index.hpp"
-#include "../../include/index_serialize.hpp"
+#include <matjson.hpp>
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/loader/SettingV3.hpp"
-#include <Geode/c++stl/gdstdlib.hpp>
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
-#include <Geode/loader/Setting.hpp>
-#include <Geode/loader/SettingEvent.hpp>
-#include <Geode/loader/SettingNode.hpp>
-#include <Geode/ui/TextInput.hpp>
-#include <matjson.hpp>
+
+#include "../index/index.hpp"
+#include "../index/index_serialize.hpp"
 
 using namespace geode::prelude;
-using namespace jukebox;
 
-namespace jukebox 
-{
+namespace jukebox {
+
+using namespace jukebox::index;
 
 struct Indexes {
     std::vector<IndexSource> indexes;
@@ -27,10 +21,8 @@ struct Indexes {
 class IndexSetting : public SettingBaseValueV3<Indexes> {
 public:
     static Result<std::shared_ptr<IndexSetting>> parse(
-        const std::string& key,
-        const std::string& modID,
-        const matjson::Value& json
-    );
+        const std::string& key, const std::string& modID,
+        const matjson::Value& json);
 
     SettingNodeV3* createNode(float width) override;
 };
@@ -42,18 +34,17 @@ protected:
     bool init(std::shared_ptr<IndexSetting> setting, float width);
     void onView(CCObject* sender);
     void onToggle(CCObject* sender);
+
 public:
-    static IndexSettingNode* create(
-        std::shared_ptr<IndexSetting> setting,
-        float width
-    );
+    static IndexSettingNode* create(std::shared_ptr<IndexSetting> setting,
+                                    float width);
 };
 
-}
+}  // namespace jukebox
 
 template <>
 struct geode::SettingTypeForValueType<jukebox::Indexes> {
-    using SettingType = IndexSetting;
+    using SettingType = jukebox::IndexSetting;
 };
 
 template <>
@@ -62,16 +53,17 @@ struct matjson::Serialize<jukebox::Indexes> {
         return value.is_array();
     }
 
-    static matjson::Value to_json(const Indexes &value) {
+    static matjson::Value to_json(const jukebox::Indexes& value) {
         matjson::Array arr;
-        for (const IndexSource& elem : value.indexes) {
-            arr.push_back(matjson::Serialize<IndexSource>::to_json(elem));
+        for (const jukebox::IndexSource& elem : value.indexes) {
+            arr.push_back(
+                matjson::Serialize<jukebox::IndexSource>::to_json(elem));
         }
         return arr;
     }
 
-    static Indexes from_json(const matjson::Value& value) {
-        Indexes ret;
+    static jukebox::Indexes from_json(const matjson::Value& value) {
+        jukebox::Indexes ret;
 
         if (!value.is_array()) {
             return ret;
@@ -81,8 +73,7 @@ struct matjson::Serialize<jukebox::Indexes> {
 
         for (const matjson::Value& elem : array) {
             ret.indexes.push_back(
-                matjson::Serialize<IndexSource>::from_json(elem)
-            );
+                matjson::Serialize<jukebox::IndexSource>::from_json(elem));
         }
         return ret;
     }

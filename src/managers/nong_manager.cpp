@@ -29,7 +29,7 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     }
 
     // Try to update saved songs from the index in case it changed
-    auto localNongs = m_manifest.m_nongs[songID].get();
+    Nongs* localNongs = m_manifest.m_nongs[songID].get();
 
     if (!IndexManager::get()->m_indexNongs.contains(songID)) {
         return localNongs;
@@ -166,7 +166,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
                  LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
                                         obj->m_songName, obj->m_artistName},
                            gdDir / "Resources" / filename}})});
-        (void) this->saveNongs(adjusted);
+        (void)this->saveNongs(adjusted);
 
         return;
     }
@@ -181,7 +181,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
         MusicDownloadManager::sharedState()->getSongInfo(id, true);
         m_manifest.m_nongs.insert({id, std::make_unique<Nongs>(Nongs{
                                            id, LocalSong::createUnknown(id)})});
-        (void) this->saveNongs(id);
+        (void)this->saveNongs(id);
         return;
     }
 
@@ -193,7 +193,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
                                    MusicDownloadManager::sharedState()
                                        ->pathForSong(id)
                                        .c_str())}})});
-    (void) this->saveNongs(id);
+    (void)this->saveNongs(id);
 }
 
 std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
@@ -291,7 +291,7 @@ bool NongManager::init() {
 
         log::info("got here?");
 
-        (void) this->saveNongs(event->gdSongID());
+        (void)this->saveNongs(event->gdSongID());
 
         return ListenerResult::Propagate;
     });
@@ -302,11 +302,12 @@ bool NongManager::init() {
         return true;
     }
 
-    for (const auto& entry : std::filesystem::directory_iterator(path)) {
+    for (const std::filesystem::directory_entry& entry :
+         std::filesystem::directory_iterator(path)) {
         if (entry.path().extension() != ".json") {
             continue;
         }
-        log::info("Loading nong from {}", entry.path().string());
+        log::info("Loading nongs from {}", entry.path().string());
 
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
@@ -317,8 +318,21 @@ bool NongManager::init() {
             continue;
         }
 
-        m_manifest.m_nongs.insert(
-            {res.unwrap()->songID(), std::move(res.unwrap())});
+        std::unique_ptr<Nongs> ptr = std::move(res.unwrap());
+        int id = ptr->songID();
+
+        for (const std::unique_ptr<YTSong>& song : ptr->youtube()) {
+            m_bigmap.insert({fmt::format("{}|{}", song->indexID().value(),
+                                         song->metadata()->uniqueID),
+                             song.get()});
+        }
+        for (const std::unique_ptr<HostedSong>& song : ptr->hosted()) {
+            m_bigmap.insert({fmt::format("{}|{}", song->indexID().value(),
+                                         song->metadata()->uniqueID),
+                             song.get()});
+        }
+
+        m_manifest.m_nongs.insert({id, std::move(ptr)});
     }
 
     m_initialized = true;

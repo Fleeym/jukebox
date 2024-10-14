@@ -1,35 +1,42 @@
 #include "index_manager.hpp"
 
+#include <algorithm>
 #include <filesystem>
+#include <memory>
+#include <optional>
+#include <vector>
 
 #include <matjson.hpp>
 #include "Geode/loader/Event.hpp"
+#include "Geode/loader/Log.hpp"
 #include "Geode/utils/Result.hpp"
 #include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 
-#include "../../include/index_serialize.hpp"
 #include "../../include/nong.hpp"
 #include "../events/song_download_progress_event.hpp"
 #include "../events/song_error_event.hpp"
 #include "../events/song_state_changed_event.hpp"
+#include "../index/index_serialize.hpp"
 #include "../ui/indexes_setting.hpp"
 #include "nong_manager.hpp"
 
 namespace jukebox {
+
+using namespace jukebox::index;
 
 bool IndexManager::init() {
     if (m_initialized) {
         return true;
     }
 
-    auto path = this->baseIndexesPath();
+    std::filesystem::path path = this->baseIndexesPath();
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directory(path);
         return true;
     }
 
-    if (auto err = fetchIndexes().error(); !err.empty()) {
+    if (std::string err = this->fetchIndexes().error(); !err.empty()) {
         SongErrorEvent(false, "Failed to fetch indexes: {}", err).post();
         return false;
     }
@@ -72,28 +79,39 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
     input.close();
 
     std::string error;
-    std::optional<matjson::Value> jsonObj = matjson::parse(contents, error);
+    std::optional<matjson::Value> jsonRes = matjson::parse(contents, error);
 
-    if (!jsonObj.has_value()) {
+    if (!jsonRes.has_value()) {
         return Err(error);
     }
 
-    const auto indexRes =
-        matjson::Serialize<IndexMetadata>::from_json(jsonObj.value());
+    matjson::Value jsonObj = jsonRes.value();
+
+    Result<IndexMetadata> indexRes =
+        matjson::Serialize<IndexMetadata>::from_json(jsonObj);
 
     if (indexRes.isErr()) {
         return Err(indexRes.error());
     }
 
-    const auto&& index = std::move(indexRes.value());
+    std::unique_ptr<IndexMetadata> index =
+        std::make_unique<IndexMetadata>(indexRes.unwrap());
 
-    cacheIndexName(index.m_id, index.m_name);
+    this->cacheIndexName(index->m_id, index->m_name);
 
-    for (const auto& [key, ytNong] :
-         jsonObj.value()["nongs"]["youtube"].as_object()) {
-        const auto& gdSongIDs = ytNong["songs"].as_array();
-        for (const auto& gdSongIDValue : gdSongIDs) {
-            int gdSongID = gdSongIDValue.as_int();
+    for (const auto& [key, ytNong] : jsonObj["nongs"]["youtube"].as_object()) {
+        Result<IndexSongMetadata> r =
+            matjson::Serialize<IndexSongMetadata>::from_json(ytNong);
+        if (r.isErr()) {
+            log::error("{}", r.error());
+            continue;
+        }
+        std::unique_ptr<IndexSongMetadata> song =
+            std::make_unique<IndexSongMetadata>(r.unwrap());
+        song->uniqueID = key;
+        song->parentID = index.get();
+
+        for (int gdSongID : song->songIDs) {
             if (!m_indexNongs.contains(gdSongID)) {
                 m_indexNongs.emplace(gdSongID, Nongs(gdSongID));
             }
@@ -103,7 +121,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                                  ytNong.contains("startOffset")
                                      ? ytNong["startOffset"].as_int()
                                      : 0),
-                    ytNong["ytID"].as_string(), index.m_id, std::nullopt));
+                    ytNong["ytID"].as_string(), index->m_id, std::nullopt));
                 err.isErr()) {
                 SongErrorEvent(false, "Failed to add YT song from index: {}",
                                err.error())
@@ -113,9 +131,10 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
     }
 
     for (const auto& [key, hostedNong] :
-         jsonObj.value()["nongs"]["hosted"].as_object()) {
-        const auto& gdSongIDs = hostedNong["songs"].as_array();
-        for (const auto& gdSongIDValue : gdSongIDs) {
+         jsonObj["nongs"]["hosted"].as_object()) {
+        const std::vector<matjson::Value>& gdSongIDs =
+            hostedNong["songs"].as_array();
+        for (const matjson::Value& gdSongIDValue : gdSongIDs) {
             int gdSongID = gdSongIDValue.as_int();
             if (!m_indexNongs.contains(gdSongID)) {
                 m_indexNongs.emplace(gdSongID, Nongs(gdSongID));
@@ -126,7 +145,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
                                  hostedNong.contains("startOffset")
                                      ? hostedNong["startOffset"].as_int()
                                      : 0),
-                    hostedNong["url"].as_string(), index.m_id, std::nullopt));
+                    hostedNong["url"].as_string(), index->m_id, std::nullopt));
                 err.isErr()) {
                 SongErrorEvent(false,
                                "Failed to add Hosted song from index: {}",
@@ -136,11 +155,12 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         }
     }
 
-    m_loadedIndexes.emplace(index.m_id, std::make_unique<IndexMetadata>(index));
+    IndexMetadata* ref = index.get();
 
-    log::info(
-        "Index \"{}\" ({}) Loaded. There are currently {} index Nongs objects.",
-        index.m_name, index.m_id, m_indexNongs.size());
+    m_loadedIndexes.emplace(ref->m_id, std::move(index));
+
+    log::info("Index \"{}\" ({}) loaded. Total index objects: {}.", ref->m_name,
+              ref->m_id, m_indexNongs.size());
 
     return Ok();
 }
@@ -150,13 +170,13 @@ Result<> IndexManager::fetchIndexes() {
     m_indexNongs.clear();
     m_downloadSongListeners.clear();
 
-    const auto indexesRes = getIndexes();
+    const Result<std::vector<IndexSource>> indexesRes = this->getIndexes();
     if (indexesRes.isErr()) {
         return Err(indexesRes.error());
     }
-    const auto indexes = indexesRes.value();
+    const std::vector<IndexSource> indexes = std::move(indexesRes.unwrap());
 
-    for (const auto index : indexes) {
+    for (const IndexSource& index : indexes) {
         log::info("Fetching index {}", index.m_url);
         if (!index.m_enabled || index.m_url.size() < 3) {
             continue;
@@ -168,8 +188,8 @@ Result<> IndexManager::fetchIndexes() {
         std::stringstream hashStream;
         hashStream << std::hex << hashValue;
 
-        auto filepath =
-            baseIndexesPath() / fmt::format("{}.json", hashStream.str());
+        std::filesystem::path filepath =
+            this->baseIndexesPath() / fmt::format("{}.json", hashStream.str());
 
         FetchIndexTask task =
             web::WebRequest()
@@ -236,7 +256,7 @@ Result<> IndexManager::fetchIndexes() {
             } else if (event->isCancelled()) {
             }
 
-            if (auto err = loadIndex(filepath).error(); !err.empty()) {
+            if (auto err = this->loadIndex(filepath).error(); !err.empty()) {
                 SongErrorEvent(false, "Failed to load index: {}", err).post();
             }
         });
@@ -274,24 +294,27 @@ void IndexManager::cacheIndexName(const std::string& indexId,
 }
 
 Result<std::vector<Song*>> IndexManager::getNongs(int gdSongID) {
-    auto nongs = std::vector<Song*>();
-    auto localNongs = NongManager::get()->getNongs(gdSongID);
-    if (!localNongs.has_value()) {
+    std::vector<Song*> nongs;
+    std::optional<Nongs*> opt = NongManager::get()->getNongs(gdSongID);
+    if (!opt.has_value()) {
         return Err("Failed to get nongs");
     }
+
+    Nongs* localNongs = opt.value();
+
     std::optional<Nongs*> indexNongs =
         m_indexNongs.contains(gdSongID)
             ? std::optional(&m_indexNongs.at(gdSongID))
             : std::nullopt;
 
-    nongs.push_back(localNongs.value()->defaultSong());
+    nongs.push_back(localNongs->defaultSong());
 
-    for (std::unique_ptr<LocalSong>& song : localNongs.value()->locals()) {
+    for (std::unique_ptr<LocalSong>& song : localNongs->locals()) {
         nongs.push_back(song.get());
     }
 
     std::vector<std::string> addedIndexSongs;
-    for (std::unique_ptr<YTSong>& song : localNongs.value()->youtube()) {
+    for (std::unique_ptr<YTSong>& song : localNongs->youtube()) {
         // Check if song is from an index
         if (indexNongs.has_value() && song->indexID().has_value()) {
             for (std::unique_ptr<YTSong>& indexSong :
@@ -305,7 +328,7 @@ Result<std::vector<Song*>> IndexManager::getNongs(int gdSongID) {
         nongs.push_back(song.get());
     }
 
-    for (std::unique_ptr<HostedSong>& song : localNongs.value()->hosted()) {
+    for (std::unique_ptr<HostedSong>& song : localNongs->hosted()) {
         // Check if song is from an index
         if (indexNongs.has_value() && song->indexID().has_value()) {
             for (std::unique_ptr<HostedSong>& indexSong :
@@ -342,55 +365,57 @@ Result<std::vector<Song*>> IndexManager::getNongs(int gdSongID) {
     std::unordered_map<NongType, int> sortedNongType = {
         {NongType::LOCAL, 1}, {NongType::HOSTED, 2}, {NongType::YOUTUBE, 3}};
 
-    std::sort(nongs.begin(), nongs.end(),
-              [&sortedNongType,
-               defaultUniqueID =
-                   localNongs.value()->defaultSong()->metadata()->uniqueID](
-                  const Song* a, const Song* b) {
-                  // Place the object with isDefault == true at the front
-                  if (a->metadata()->uniqueID == defaultUniqueID) {
-                      return true;
-                  }
-                  if (b->metadata()->uniqueID == defaultUniqueID) {
-                      return false;
-                  }
+    std::sort(
+        nongs.begin(), nongs.end(),
+        [&sortedNongType,
+         defaultUniqueID = localNongs->defaultSong()->metadata()->uniqueID](
+            const Song* a, const Song* b) {
+            std::optional<std::string> aIndexID = std::nullopt;
+            std::optional<std::string> bIndexID = std::nullopt;
 
-                  // Next, those without an index
-                  if (!a->indexID().has_value() && b->indexID().has_value()) {
-                      return true;
-                  }
-                  if (a->indexID().has_value() && !b->indexID().has_value()) {
-                      return false;
-                  }
+            // Place the object with isDefault == true at the front
+            if (a->metadata()->uniqueID == defaultUniqueID) {
+                return true;
+            }
+            if (b->metadata()->uniqueID == defaultUniqueID) {
+                return false;
+            }
 
-                  // Next, compare whether path exists or not
-                  if (a->path().has_value() &&
-                      std::filesystem::exists(a->path().value())) {
-                      if (!b->path().has_value() ||
-                          !std::filesystem::exists(b->path().value())) {
-                          return true;
-                      }
-                  } else if (b->path().has_value() &&
-                             std::filesystem::exists(b->path().value())) {
-                      return false;
-                  }
+            // Next, those without an index
+            if (!a->indexID().has_value() && b->indexID().has_value()) {
+                return true;
+            }
+            if (a->indexID().has_value() && !b->indexID().has_value()) {
+                return false;
+            }
 
-                  // Next, compare by type
-                  if (a->type() != b->type()) {
-                      return sortedNongType.at(a->type()) <
-                             sortedNongType.at(b->type());
-                  }
+            // Next, compare whether path exists or not
+            if (a->path().has_value() &&
+                std::filesystem::exists(a->path().value())) {
+                if (!b->path().has_value() ||
+                    !std::filesystem::exists(b->path().value())) {
+                    return true;
+                }
+            } else if (b->path().has_value() &&
+                       std::filesystem::exists(b->path().value())) {
+                return false;
+            }
 
-                  // Next, compare whether indexID exists or not (std::nullopt
-                  // should be first)
-                  if (a->indexID().has_value() != b->indexID().has_value()) {
-                      return !a->indexID().has_value() &&
-                             b->indexID().has_value();
-                  }
+            // Next, compare by type
+            if (a->type() != b->type()) {
+                return sortedNongType.at(a->type()) <
+                       sortedNongType.at(b->type());
+            }
 
-                  // Finally, compare by name
-                  return a->metadata()->name < b->metadata()->name;
-              });
+            // Next, compare whether indexID exists or not (std::nullopt
+            // should be first)
+            if (a->indexID().has_value() != b->indexID().has_value()) {
+                return !a->indexID().has_value() && b->indexID().has_value();
+            }
+
+            // Finally, compare by name
+            return a->metadata()->name < b->metadata()->name;
+        });
 
     return Ok(std::move(nongs));
 }

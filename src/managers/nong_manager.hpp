@@ -1,7 +1,9 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
+#include <unordered_map>
 
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Event.hpp"
@@ -18,11 +20,15 @@ namespace jukebox {
 
 class SongErrorEvent;
 
-class NongManager : public CCObject {
+class NongManager {
 protected:
-    inline static NongManager* m_instance = nullptr;
     Manifest m_manifest;
+    std::unordered_map<std::string, Song*> m_bigmap;
     bool m_initialized = false;
+
+    NongManager() {
+        this->init();
+    }
 
     void setupManifestPath() {
         auto path = this->baseManifestPath();
@@ -145,14 +151,9 @@ public:
         const std::string& extension,
         std::optional<std::string> filename = std::nullopt);
 
-    static NongManager* get() {
-        if (m_instance == nullptr) {
-            m_instance = new NongManager();
-            m_instance->retain();
-            m_instance->init();
-        }
-
-        return m_instance;
+    static NongManager& get() {
+        static NongManager instance;
+        return instance;
     }
 };
 

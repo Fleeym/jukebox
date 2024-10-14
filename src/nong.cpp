@@ -661,15 +661,15 @@ Result<> Nongs::deleteSongAudio(const std::string& uniqueID) {
     return m_impl->deleteSongAudio(uniqueID);
 }
 
-std::vector<std::unique_ptr<LocalSong>>& Nongs::locals() {
+std::vector<std::unique_ptr<LocalSong>>& Nongs::locals() const {
     return m_impl->locals();
 }
 
-std::vector<std::unique_ptr<YTSong>>& Nongs::youtube() {
+std::vector<std::unique_ptr<YTSong>>& Nongs::youtube() const {
     return m_impl->youtube();
 }
 
-std::vector<std::unique_ptr<HostedSong>>& Nongs::hosted() {
+std::vector<std::unique_ptr<HostedSong>>& Nongs::hosted() const {
     return m_impl->hosted();
 }
 

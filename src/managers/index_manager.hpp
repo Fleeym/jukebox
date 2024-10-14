@@ -1,25 +1,27 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <unordered_map>
 
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Task.hpp"
 
-#include "../../include/index.hpp"
 #include "../../include/nong.hpp"
+#include "../index/index.hpp"
 #include "nong_manager.hpp"
 
 using namespace geode::prelude;
 
 namespace jukebox {
 
-class IndexManager : public CCObject {
+using namespace jukebox::index;
+
+class IndexManager {
     friend class NongManager;
 
 protected:
-    inline static IndexManager* m_instance = nullptr;
     bool m_initialized = false;
 
     using FetchIndexTask = Task<Result<>, float>;
@@ -31,6 +33,8 @@ protected:
         m_indexListeners;
 
     std::unordered_map<int, Nongs> m_indexNongs;
+    std::unordered_map<int, std::vector<std::unique_ptr<IndexSongMetadata>>>
+        m_nongsForId;
     // song id -> download song task
     std::unordered_map<std::string, EventListener<DownloadSongTask>>
         m_downloadSongListeners;
@@ -66,13 +70,13 @@ public:
     Result<> downloadSong(Song* hosted);
 
     static IndexManager* get() {
-        if (m_instance == nullptr) {
-            m_instance = new IndexManager();
-            m_instance->retain();
-            m_instance->init();
+        static std::unique_ptr<IndexManager> instance = nullptr;
+        if (!instance) {
+            instance = std::make_unique<IndexManager>();
+            instance->init();
         }
 
-        return m_instance;
+        return instance.get();
     }
 };
 

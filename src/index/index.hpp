@@ -2,19 +2,23 @@
 
 #include <fmt/core.h>
 #include <matjson.hpp>
+#include <memory>
 #include <optional>
-
-#include "platform.hpp"
 
 namespace jukebox {
 
-struct JUKEBOX_DLL IndexSource final {
+namespace index {
+
+class IndexSongMetadata;
+
+struct IndexSource final {
     std::string m_url;
     bool m_userAdded;
     bool m_enabled;
 
     bool operator==(IndexSource const& other) const {
-        return m_url == other.m_url && m_userAdded == other.m_userAdded && m_enabled == other.m_enabled;
+        return m_url == other.m_url && m_userAdded == other.m_userAdded &&
+               m_enabled == other.m_enabled;
     }
 };
 
@@ -67,4 +71,17 @@ struct IndexMetadata final {
     Features m_features;
 };
 
-}
+struct IndexSongMetadata final {
+    std::string uniqueID;
+    std::string name;
+    std::string artist;
+    std::optional<std::string> url;
+    std::optional<std::string> ytId;
+    std::vector<int> songIDs;
+    int startOffset = 0;
+    IndexMetadata* parentID;
+};
+
+}  // namespace index
+
+}  // namespace jukebox
