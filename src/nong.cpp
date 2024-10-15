@@ -10,10 +10,12 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <matjson.hpp>
+#include <vector>
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/utils/Result.hpp"
 
+#include "index.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong_serialize.hpp"
 #include "utils/random_string.hpp"
@@ -232,6 +234,8 @@ private:
     std::vector<std::unique_ptr<LocalSong>> m_locals;
     std::vector<std::unique_ptr<YTSong>> m_youtube;
     std::vector<std::unique_ptr<HostedSong>> m_hosted;
+
+    std::vector<IndexSongMetadata*> m_indexSongs;
 
     void deletePath(std::optional<std::filesystem::path> path) {
         std::error_code ec;
@@ -611,6 +615,30 @@ public:
                m_default->metadata()->uniqueID;
     }
 
+    geode::Result<> registerIndexSong(index::IndexSongMetadata* song) {
+        bool hasSongID = false;
+        for (int id : song->songIDs) {
+            if (id == m_songID) {
+                hasSongID = true;
+            }
+        }
+
+        if (!hasSongID) {
+            return Err("Index song {} doesn't apply for ID {}", song->uniqueID,
+                       m_songID);
+        }
+
+        for (index::IndexSongMetadata* i : m_indexSongs) {
+            if (i == song) {
+                return Err("Song {} already registered for ID {}",
+                           song->uniqueID, m_songID);
+            }
+        }
+
+        m_indexSongs.push_back(song);
+        return Ok();
+    }
+
     int songID() const { return m_songID; }
     LocalSong* defaultSong() const { return m_default.get(); }
     Song* active() const { return m_active; }
@@ -622,15 +650,12 @@ public:
 Nongs::Nongs(int songID, LocalSong&& defaultSong)
     : m_impl(std::make_unique<Impl>(
           songID, std::make_unique<LocalSong>(defaultSong))) {}
-
 Nongs::Nongs(int songID) : m_impl(std::make_unique<Impl>(songID)) {}
 
 std::optional<Song*> Nongs::findSong(const std::string& uniqueID) {
     return m_impl->findSong(uniqueID);
 }
-
 Result<> Nongs::commit() { return m_impl->commit(this); }
-
 geode::Result<> Nongs::replaceSong(const std::string& id, LocalSong&& song) {
     return m_impl->replaceSong(id, std::move(song));
 }
@@ -640,43 +665,36 @@ geode::Result<> Nongs::replaceSong(const std::string& id, YTSong&& song) {
 geode::Result<> Nongs::replaceSong(const std::string& id, HostedSong&& song) {
     return m_impl->replaceSong(id, std::move(song));
 }
-
+geode::Result<> Nongs::registerIndexSong(index::IndexSongMetadata* song) {
+    return m_impl->registerIndexSong(song);
+}
 bool Nongs::isDefaultActive() const { return m_impl->isDefaultActive(); }
-
 int Nongs::songID() const { return m_impl->songID(); }
-
 LocalSong* Nongs::defaultSong() const { return m_impl->defaultSong(); }
-
 Song* Nongs::active() const { return m_impl->active(); }
-
 Result<> Nongs::setActive(const std::string& uniqueID) {
     return m_impl->setActive(uniqueID);
 }
-
 Result<> Nongs::merge(Nongs&& other) { return m_impl->merge(std::move(other)); }
-
 Result<> Nongs::deleteAllSongs() { return m_impl->deleteAllSongs(); }
-
 Result<> Nongs::deleteSong(const std::string& uniqueID, bool audio) {
     return m_impl->deleteSong(uniqueID, audio);
 }
-
 Result<> Nongs::deleteSongAudio(const std::string& uniqueID) {
     return m_impl->deleteSongAudio(uniqueID);
 }
-
 std::vector<std::unique_ptr<LocalSong>>& Nongs::locals() const {
     return m_impl->locals();
 }
-
 std::vector<std::unique_ptr<YTSong>>& Nongs::youtube() const {
     return m_impl->youtube();
 }
-
 std::vector<std::unique_ptr<HostedSong>>& Nongs::hosted() const {
     return m_impl->hosted();
 }
-
+std::vector<index::IndexSongMetadata*>& Nongs::indexSongs() const {
+    return m_impl->m_indexSongs;
+}
 geode::Result<LocalSong*> Nongs::add(LocalSong&& song) {
     return m_impl->add(std::move(song));
 }

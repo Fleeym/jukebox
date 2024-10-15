@@ -129,16 +129,16 @@ bool NongAddPopup::setup(NongDropdownLayer* parent, int songID,
                 switch (m_replacedNong.value()->type()) {
                     case NongType::LOCAL:
                         shouldSubmit = submit.m_supportedSongTypes.at(
-                            IndexMetadata::Features::SupportedSongType::local);
+                            IndexMetadata::Features::SupportedSongType::LOCAL);
                         break;
                     case NongType::YOUTUBE:
                         shouldSubmit = submit.m_supportedSongTypes.at(
                             IndexMetadata::Features::SupportedSongType::
-                                youtube);
+                                YOUTUBE);
                         break;
                     case NongType::HOSTED:
                         shouldSubmit = submit.m_supportedSongTypes.at(
-                            IndexMetadata::Features::SupportedSongType::hosted);
+                            IndexMetadata::Features::SupportedSongType::HOSTED);
                         break;
                 }
 

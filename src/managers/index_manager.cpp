@@ -95,7 +95,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
     }
 
     std::unique_ptr<IndexMetadata> index =
-        std::make_unique<IndexMetadata>(indexRes.unwrap());
+        std::make_unique<IndexMetadata>(std::move(indexRes.unwrap()));
 
     this->cacheIndexName(index->m_id, index->m_name);
 
@@ -103,7 +103,8 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         Result<IndexSongMetadata> r =
             matjson::Serialize<IndexSongMetadata>::from_json(ytNong);
         if (r.isErr()) {
-            log::error("{}", r.error());
+            SongErrorEvent(false, "Failed to parse index song: {}", r.error())
+                .post();
             continue;
         }
         std::unique_ptr<IndexSongMetadata> song =
@@ -111,48 +112,56 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         song->uniqueID = key;
         song->parentID = index.get();
 
-        for (int gdSongID : song->songIDs) {
-            if (!m_indexNongs.contains(gdSongID)) {
-                m_indexNongs.emplace(gdSongID, Nongs(gdSongID));
+        for (int id : song->songIDs) {
+            std::optional<Nongs*> opt = NongManager::get().getNongs(id);
+            if (!opt.has_value()) {
+                continue;
             }
-            if (auto err = m_indexNongs.at(gdSongID).add(YTSong(
-                    SongMetadata(gdSongID, key, ytNong["name"].as_string(),
-                                 ytNong["artist"].as_string(), std::nullopt,
-                                 ytNong.contains("startOffset")
-                                     ? ytNong["startOffset"].as_int()
-                                     : 0),
-                    ytNong["ytID"].as_string(), index->m_id, std::nullopt));
-                err.isErr()) {
-                SongErrorEvent(false, "Failed to add YT song from index: {}",
-                               err.error())
+
+            Nongs* nongs = opt.value();
+
+            if (geode::Result<> r = nongs->registerIndexSong(song.get());
+                r.isErr()) {
+                SongErrorEvent(false, "Failed to register index song: {}",
+                               r.error())
                     .post();
             }
         }
+        index->m_songs.m_youtube.push_back(std::move(song));
     }
 
     for (const auto& [key, hostedNong] :
          jsonObj["nongs"]["hosted"].as_object()) {
-        const std::vector<matjson::Value>& gdSongIDs =
-            hostedNong["songs"].as_array();
-        for (const matjson::Value& gdSongIDValue : gdSongIDs) {
-            int gdSongID = gdSongIDValue.as_int();
-            if (!m_indexNongs.contains(gdSongID)) {
-                m_indexNongs.emplace(gdSongID, Nongs(gdSongID));
+        Result<IndexSongMetadata> r =
+            matjson::Serialize<IndexSongMetadata>::from_json(hostedNong);
+        if (r.isErr()) {
+            SongErrorEvent(false, "Failed to parse index song: {}", r.error())
+                .post();
+            continue;
+        }
+        std::unique_ptr<IndexSongMetadata> song =
+            std::make_unique<IndexSongMetadata>(r.unwrap());
+
+        song->uniqueID = key;
+        song->parentID = index.get();
+
+        for (int id : song->songIDs) {
+            std::optional<Nongs*> opt = NongManager::get().getNongs(id);
+            if (!opt.has_value()) {
+                continue;
             }
-            if (auto err = m_indexNongs.at(gdSongID).add(HostedSong(
-                    SongMetadata(gdSongID, key, hostedNong["name"].as_string(),
-                                 hostedNong["artist"].as_string(), std::nullopt,
-                                 hostedNong.contains("startOffset")
-                                     ? hostedNong["startOffset"].as_int()
-                                     : 0),
-                    hostedNong["url"].as_string(), index->m_id, std::nullopt));
-                err.isErr()) {
-                SongErrorEvent(false,
-                               "Failed to add Hosted song from index: {}",
-                               err.error())
+
+            Nongs* nongs = opt.value();
+
+            if (geode::Result<> r = nongs->registerIndexSong(song.get());
+                r.isErr()) {
+                SongErrorEvent(false, "Failed to register index song: {}",
+                               r.error())
                     .post();
             }
         }
+
+        index->m_songs.m_youtube.push_back(std::move(song));
     }
 
     IndexMetadata* ref = index.get();

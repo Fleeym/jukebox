@@ -29,111 +29,114 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     }
 
     // Try to update saved songs from the index in case it changed
-    Nongs* localNongs = m_manifest.m_nongs[songID].get();
-
-    if (!IndexManager::get().m_indexNongs.contains(songID)) {
-        return localNongs;
-    }
-
-    Nongs* indexNongs = &IndexManager::get().m_indexNongs.at(songID);
-
-    bool changed = false;
-
-    for (std::unique_ptr<YTSong>& song : localNongs->youtube()) {
-        // Check if song is from an index
-        if (!song->indexID().has_value()) {
-            continue;
-        }
-        for (std::unique_ptr<YTSong>& indexSong : indexNongs->youtube()) {
-            if (song->indexID() != indexSong->indexID()) {
-                continue;
-            }
-            auto metadata = song->metadata();
-            auto indexMetadata = indexSong->metadata();
-            if (metadata->uniqueID != indexMetadata->uniqueID) {
-                continue;
-            }
-            if (metadata->gdID == indexMetadata->gdID &&
-                metadata->name == indexMetadata->name &&
-                metadata->artist == indexMetadata->artist &&
-                metadata->level == indexMetadata->level &&
-                metadata->startOffset == indexMetadata->startOffset &&
-                song->youtubeID() == indexSong->youtubeID()) {
-                continue;
-            }
-
-            bool deleteAudio = song->youtubeID() != indexSong->youtubeID();
-
-            if (auto res = localNongs->replaceSong(
-                    song->metadata()->uniqueID,
-                    YTSong{
-                        SongMetadata(*indexSong->metadata()),
-                        indexSong->youtubeID(),
-                        indexSong->indexID(),
-                        deleteAudio ? std::nullopt : song->path(),
-                    });
-                res.isErr()) {
-                SongErrorEvent(false,
-                               "Failed to replace song while updating saved "
-                               "songs from index: {}",
-                               res.error())
-                    .post();
-                continue;
-            }
-            changed = true;
-        }
-    }
-
-    for (std::unique_ptr<HostedSong>& song : localNongs->hosted()) {
-        // Check if song is from an index
-        if (!song->indexID().has_value()) {
-            continue;
-        }
-        for (std::unique_ptr<HostedSong>& indexSong : indexNongs->hosted()) {
-            if (song->indexID() != indexSong->indexID()) {
-                continue;
-            }
-            auto metadata = song->metadata();
-            auto indexMetadata = indexSong->metadata();
-            if (metadata->uniqueID != indexMetadata->uniqueID) {
-                continue;
-            }
-            if (metadata->gdID == indexMetadata->gdID &&
-                metadata->name == indexMetadata->name &&
-                metadata->artist == indexMetadata->artist &&
-                metadata->level == indexMetadata->level &&
-                metadata->startOffset == indexMetadata->startOffset &&
-                song->url() == indexSong->url()) {
-                continue;
-            }
-
-            bool deleteAudio = song->url() != indexSong->url();
-
-            if (auto res = localNongs->replaceSong(
-                    song->metadata()->uniqueID,
-                    HostedSong{
-                        SongMetadata(*indexSong->metadata()),
-                        indexSong->url(),
-                        indexSong->indexID(),
-                        deleteAudio ? std::nullopt : song->path(),
-                    });
-                res.isErr()) {
-                SongErrorEvent(false,
-                               "Failed to replace song while updating saved "
-                               "songs from index: {}",
-                               res.error())
-                    .post();
-                continue;
-            }
-            changed = true;
-        }
-    }
-
-    if (changed) {
-        (void)this->saveNongs(songID);
-    }
-
     return m_manifest.m_nongs[songID].get();
+
+    /*if (!IndexManager::get().m_indexNongs.contains(songID)) {*/
+    /*    return localNongs;*/
+    /*}*/
+    /**/
+    /*Nongs* indexNongs = &IndexManager::get().m_indexNongs.at(songID);*/
+    /**/
+    /*bool changed = false;*/
+    /**/
+    /*for (std::unique_ptr<YTSong>& song : localNongs->youtube()) {*/
+    /*    // Check if song is from an index*/
+    /*    if (!song->indexID().has_value()) {*/
+    /*        continue;*/
+    /*    }*/
+    /*    for (std::unique_ptr<YTSong>& indexSong : indexNongs->youtube()) {*/
+    /*        if (song->indexID() != indexSong->indexID()) {*/
+    /*            continue;*/
+    /*        }*/
+    /*        auto metadata = song->metadata();*/
+    /*        auto indexMetadata = indexSong->metadata();*/
+    /*        if (metadata->uniqueID != indexMetadata->uniqueID) {*/
+    /*            continue;*/
+    /*        }*/
+    /*        if (metadata->gdID == indexMetadata->gdID &&*/
+    /*            metadata->name == indexMetadata->name &&*/
+    /*            metadata->artist == indexMetadata->artist &&*/
+    /*            metadata->level == indexMetadata->level &&*/
+    /*            metadata->startOffset == indexMetadata->startOffset &&*/
+    /*            song->youtubeID() == indexSong->youtubeID()) {*/
+    /*            continue;*/
+    /*        }*/
+    /**/
+    /*        bool deleteAudio = song->youtubeID() != indexSong->youtubeID();*/
+    /**/
+    /*        if (auto res = localNongs->replaceSong(*/
+    /*                song->metadata()->uniqueID,*/
+    /*                YTSong{*/
+    /*                    SongMetadata(*indexSong->metadata()),*/
+    /*                    indexSong->youtubeID(),*/
+    /*                    indexSong->indexID(),*/
+    /*                    deleteAudio ? std::nullopt : song->path(),*/
+    /*                });*/
+    /*            res.isErr()) {*/
+    /*            SongErrorEvent(false,*/
+    /*                           "Failed to replace song while updating saved
+     * "*/
+    /*                           "songs from index: {}",*/
+    /*                           res.error())*/
+    /*                .post();*/
+    /*            continue;*/
+    /*        }*/
+    /*        changed = true;*/
+    /*    }*/
+    /*}*/
+    /**/
+    /*for (std::unique_ptr<HostedSong>& song : localNongs->hosted()) {*/
+    /*    // Check if song is from an index*/
+    /*    if (!song->indexID().has_value()) {*/
+    /*        continue;*/
+    /*    }*/
+    /*    for (std::unique_ptr<HostedSong>& indexSong : indexNongs->hosted())
+     * {*/
+    /*        if (song->indexID() != indexSong->indexID()) {*/
+    /*            continue;*/
+    /*        }*/
+    /*        auto metadata = song->metadata();*/
+    /*        auto indexMetadata = indexSong->metadata();*/
+    /*        if (metadata->uniqueID != indexMetadata->uniqueID) {*/
+    /*            continue;*/
+    /*        }*/
+    /*        if (metadata->gdID == indexMetadata->gdID &&*/
+    /*            metadata->name == indexMetadata->name &&*/
+    /*            metadata->artist == indexMetadata->artist &&*/
+    /*            metadata->level == indexMetadata->level &&*/
+    /*            metadata->startOffset == indexMetadata->startOffset &&*/
+    /*            song->url() == indexSong->url()) {*/
+    /*            continue;*/
+    /*        }*/
+    /**/
+    /*        bool deleteAudio = song->url() != indexSong->url();*/
+    /**/
+    /*        if (auto res = localNongs->replaceSong(*/
+    /*                song->metadata()->uniqueID,*/
+    /*                HostedSong{*/
+    /*                    SongMetadata(*indexSong->metadata()),*/
+    /*                    indexSong->url(),*/
+    /*                    indexSong->indexID(),*/
+    /*                    deleteAudio ? std::nullopt : song->path(),*/
+    /*                });*/
+    /*            res.isErr()) {*/
+    /*            SongErrorEvent(false,*/
+    /*                           "Failed to replace song while updating saved
+     * "*/
+    /*                           "songs from index: {}",*/
+    /*                           res.error())*/
+    /*                .post();*/
+    /*            continue;*/
+    /*        }*/
+    /*        changed = true;*/
+    /*    }*/
+    /*}*/
+    /**/
+    /*if (changed) {*/
+    /*    (void)this->saveNongs(songID);*/
+    /*}*/
+    /**/
+    /*return m_manifest.m_nongs[songID].get();*/
 }
 
 int NongManager::getCurrentManifestVersion() { return m_manifest.m_version; }
@@ -473,7 +476,7 @@ Result<> NongManager::deleteSongAudio(int gdSongID, std::string uniqueID) {
 }
 
 Result<> NongManager::deleteSong(int gdSongID, std::string uniqueID) {
-    auto nongs = getNongs(gdSongID);
+    std::optional<Nongs*> nongs = this->getNongs(gdSongID);
     if (!nongs.has_value()) {
         return Err("Song not initialized in manifest");
     }

@@ -1,9 +1,13 @@
 #pragma once
 
-#include <fmt/core.h>
-#include <matjson.hpp>
 #include <memory>
 #include <optional>
+#include <string>
+#include <unordered_map>
+
+#include <fmt/core.h>
+#include <matjson.hpp>
+#include <vector>
 
 namespace jukebox {
 
@@ -38,18 +42,18 @@ struct IndexMetadata final {
         };
 
         enum class SupportedSongType {
-            local,
-            youtube,
-            hosted,
+            LOCAL,
+            YOUTUBE,
+            HOSTED,
         };
 
         struct Submit final {
             std::optional<RequestParams> m_requestParams = std::nullopt;
             std::optional<std::string> m_preSubmitMessage;
             std::unordered_map<SupportedSongType, bool> m_supportedSongTypes = {
-                {SupportedSongType::local, false},
-                {SupportedSongType::youtube, false},
-                {SupportedSongType::hosted, false},
+                {SupportedSongType::LOCAL, false},
+                {SupportedSongType::YOUTUBE, false},
+                {SupportedSongType::HOSTED, false},
             };
         };
 
@@ -61,6 +65,11 @@ struct IndexMetadata final {
         std::optional<Report> m_report = std::nullopt;
     };
 
+    struct Songs final {
+        std::vector<std::unique_ptr<IndexSongMetadata>> m_youtube;
+        std::vector<std::unique_ptr<IndexSongMetadata>> m_hosted;
+    };
+
     int m_manifest;
     std::string m_url;
     std::string m_id;
@@ -69,6 +78,7 @@ struct IndexMetadata final {
     std::optional<int> m_lastUpdate;
     Links m_links;
     Features m_features;
+    Songs m_songs;
 };
 
 struct IndexSongMetadata final {

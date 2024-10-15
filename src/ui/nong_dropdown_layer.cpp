@@ -294,11 +294,8 @@ void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
             if (auto err =
                     NongManager::get().deleteSongAudio(gdSongID, uniqueID);
                 err.isErr()) {
-                FLAlertLayer::create(
-                    "Failed",
-                    fmt::format("Failed to delete song: {}", err.error()), "Ok")
-                    ->show();
-                return;
+                log::error("Failed to delete audio for {}: {}", uniqueID,
+                           err.error());
             }
         } else {
             if (auto err = NongManager::get().deleteSong(gdSongID, uniqueID);

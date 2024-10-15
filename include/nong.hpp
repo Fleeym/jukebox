@@ -11,6 +11,7 @@
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/utils/Result.hpp"
 
+#include "index.hpp"
 #include "platform.hpp"
 
 namespace jukebox {
@@ -175,6 +176,7 @@ public:
     std::vector<std::unique_ptr<LocalSong>>& locals() const;
     std::vector<std::unique_ptr<YTSong>>& youtube() const;
     std::vector<std::unique_ptr<HostedSong>>& hosted() const;
+    std::vector<index::IndexSongMetadata*>& indexSongs() const;
 
     geode::Result<LocalSong*> add(LocalSong&& song);
     geode::Result<YTSong*> add(YTSong&& song);
@@ -182,6 +184,8 @@ public:
     geode::Result<> replaceSong(const std::string& id, LocalSong&& song);
     geode::Result<> replaceSong(const std::string& id, YTSong&& song);
     geode::Result<> replaceSong(const std::string& id, HostedSong&& song);
+
+    geode::Result<> registerIndexSong(index::IndexSongMetadata* song);
 };
 
 class JUKEBOX_DLL Manifest {

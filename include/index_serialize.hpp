@@ -41,15 +41,15 @@ protected:
     getSupportedSongTypeFromString(const std::string& str) {
         if (str == "local") {
             return geode::Ok(jukebox::index::IndexMetadata::Features::
-                                 SupportedSongType::local);
+                                 SupportedSongType::LOCAL);
         }
         if (str == "youtube") {
             return geode::Ok(jukebox::index::IndexMetadata::Features::
-                                 SupportedSongType::youtube);
+                                 SupportedSongType::YOUTUBE);
         }
         if (str == "hosted") {
             return geode::Ok(jukebox::index::IndexMetadata::Features::
-                                 SupportedSongType::hosted);
+                                 SupportedSongType::HOSTED);
         }
         return geode::Err("Invalid supported song type: " + str);
     }

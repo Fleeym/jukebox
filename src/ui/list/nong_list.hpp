@@ -39,6 +39,7 @@ protected:
     static constexpr float s_itemSize = 60.f;
 
     void addSongToList(Song* nong, Nongs* parent);
+    void addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent);
 
 public:
     void scrollToTop();

@@ -7,12 +7,15 @@
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/ui/ScrollLayer.hpp"
 
+#include "index.hpp"
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
+#include "ui/list/index_song_cell.hpp"
 #include "ui/list/nong_cell.hpp"
 #include "ui/list/song_cell.hpp"
 
@@ -110,7 +113,7 @@ void NongList::build() {
     }
 
     if (!m_currentSong) {
-        for (const auto& id : m_songIds) {
+        for (int id : m_songIds) {
             std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
 
             if (!nongs) {
@@ -146,6 +149,21 @@ void NongList::build() {
             [this, id, defaultID]() { m_onDownload(id, defaultID); },
             [this, id, defaultID]() { m_onEdit(id, defaultID); }));
 
+        CCLabelBMFont* localSongs =
+            CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
+        localSongs->setLayoutOptions(
+            AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+        m_list->m_contentLayer->addChild(localSongs);
+
+        if (nongs->locals().size() == 0 && nongs->youtube().size() == 0 &&
+            nongs->hosted().size() == 0) {
+            CCLabelBMFont* label =
+                CCLabelBMFont::create("You have no stored nongs :(", "bigFont.fnt");
+            label->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
+            label->limitLabelWidth(150.0f, 0.7f, 0.1f);
+            m_list->m_contentLayer->addChild(label);
+        }
+
         for (std::unique_ptr<LocalSong>& nong : nongs->locals()) {
             this->addSongToList(nong.get(), nongs);
         }
@@ -156,6 +174,18 @@ void NongList::build() {
 
         for (std::unique_ptr<HostedSong>& nong : nongs->hosted()) {
             this->addSongToList(nong.get(), nongs);
+        }
+
+        if (nongs->indexSongs().size() > 0) {
+            CCLabelBMFont* indexLabel =
+                CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            indexLabel->setLayoutOptions(
+                AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+            m_list->m_contentLayer->addChild(indexLabel);
+        }
+
+        for (index::IndexSongMetadata* index : nongs->indexSongs()) {
+            this->addIndexSongToList(index, nongs);
         }
     }
     m_list->m_contentLayer->updateLayout();
@@ -174,16 +204,12 @@ void NongList::addSongToList(Song* nong, Nongs* parent) {
     bool isFromIndex = nong->indexID().has_value();
     bool isDownloaded =
         path.has_value() && std::filesystem::exists(path.value());
-    bool deleteOnlyAudio = !isFromIndex && isDownloaded;
-    bool deletePopup = !isFromIndex && !isDownloaded;
     NongCell* cell = NongCell::create(
         id, nong, uniqueID == defaultSong->metadata()->uniqueID,
         uniqueID == active->metadata()->uniqueID, itemSize,
         [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
         [this, id]() { m_onFixDefault(id); },
-        [this, id, uniqueID, deleteOnlyAudio, deletePopup]() {
-            m_onDelete(id, uniqueID, deleteOnlyAudio, deletePopup);
-        },
+        [this, id, uniqueID]() { m_onDelete(id, uniqueID, false, true); },
         [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
         [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
 
@@ -191,6 +217,14 @@ void NongList::addSongToList(Song* nong, Nongs* parent) {
         progress.has_value()) {
         cell->setDownloadProgress(progress.value());
     };
+
+    m_list->m_contentLayer->addChild(cell);
+}
+
+void NongList::addIndexSongToList(index::IndexSongMetadata* song,
+                                  Nongs* parent) {
+    const CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
+    IndexSongCell* cell = IndexSongCell::create(song, itemSize);
 
     m_list->m_contentLayer->addChild(cell);
 }
