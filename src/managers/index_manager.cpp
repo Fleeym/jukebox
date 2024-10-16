@@ -8,6 +8,8 @@
 #include <vector>
 
 #include <matjson.hpp>
+#include "Geode/binding/MusicDownloadManager.hpp"
+#include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/utils/Result.hpp"
@@ -16,6 +18,8 @@
 #include "events/song_download_progress_event.hpp"
 #include "events/song_error_event.hpp"
 #include "events/song_state_changed_event.hpp"
+#include "events/start_download_signal.hpp"
+#include "index.hpp"
 #include "index_serialize.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
@@ -35,6 +39,8 @@ bool IndexManager::init() {
         std::filesystem::create_directory(path);
         return true;
     }
+
+    m_downloadSignalListener.bind(&IndexManager::onDownloadSignal);
 
     if (std::string err = this->fetchIndexes().error(); !err.empty()) {
         SongErrorEvent(false, "Failed to fetch indexes: {}", err).post();
@@ -113,6 +119,12 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         song->parentID = index.get();
 
         for (int id : song->songIDs) {
+            if (!m_nongsForId.contains(id)) {
+                m_nongsForId[id] = {song.get()};
+            } else {
+                m_nongsForId[id].push_back(song.get());
+            }
+
             std::optional<Nongs*> opt = NongManager::get().getNongs(id);
             if (!opt.has_value()) {
                 continue;
@@ -146,6 +158,11 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         song->parentID = index.get();
 
         for (int id : song->songIDs) {
+            if (!m_nongsForId.contains(id)) {
+                m_nongsForId[id] = {song.get()};
+            } else {
+                m_nongsForId[id].push_back(song.get());
+            }
             std::optional<Nongs*> opt = NongManager::get().getNongs(id);
             if (!opt.has_value()) {
                 continue;
@@ -430,13 +447,42 @@ Result<std::vector<Song*>> IndexManager::getNongs(int gdSongID) {
 }
 
 Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
-    Result<std::vector<Song*>> nongs = IndexManager::get().getNongs(gdSongID);
-    if (!nongs.has_value()) {
-        return Err("GD song {} not initialized in manifest", gdSongID);
+    if (!m_nongsForId.contains(gdSongID)) {
+        return Err("Can't download nong for id {}. No index songs found.",
+                   gdSongID);
     }
-    for (Song* nong : nongs.value()) {
-        if (nong->metadata()->uniqueID == uniqueID) {
-            return this->downloadSong(nong);
+
+    std::optional<Nongs*> optNongs = NongManager::get().getNongs(gdSongID);
+    if (!optNongs.has_value()) {
+        SongInfoObject* obj =
+            MusicDownloadManager::sharedState()->getSongInfoObject(gdSongID);
+
+        NongManager::get().initSongID(obj, gdSongID, false);
+    }
+
+    optNongs = NongManager::get().getNongs(gdSongID);
+    
+    // This should honestly never happen, but who knows
+    if (!optNongs.has_value()) {
+        return Err("Couldn't initialize song ID {}", gdSongID);
+    }
+
+    Nongs* nongs = optNongs.value();
+
+    std::vector<IndexSongMetadata*> songs = m_nongsForId[gdSongID];
+    for (IndexSongMetadata* s : songs) {
+        if (s->uniqueID != uniqueID) {
+            continue;
+        }
+
+        if (s->url.has_value()) {
+            this->startHostedDownload(s, nongs);
+            return Ok();
+        }
+
+        if (s->ytId.has_value()) {
+            this->startYtDownload(s, nongs);
+            return Ok();
         }
     }
 
@@ -676,6 +722,10 @@ Result<> IndexManager::downloadSong(Song* nong) {
     m_downloadProgress[id] = 0.f;
     SongDownloadProgressEvent(gdSongID, id, 0.f).post();
     return Ok();
+}
+
+void IndexManager::onDownloadSignal(StartDownloadSignal* e) {
+    this->downloadSong(e->gdId(), e->song()->uniqueID);
 }
 
 };  // namespace jukebox

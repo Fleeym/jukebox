@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
-#include <unordered_map>
 
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Event.hpp"
@@ -23,7 +22,6 @@ class SongErrorEvent;
 class NongManager {
 protected:
     Manifest m_manifest;
-    std::unordered_map<std::string, Song*> m_bigmap;
     bool m_initialized = false;
 
     NongManager() { this->init(); }

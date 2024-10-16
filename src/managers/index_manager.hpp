@@ -8,6 +8,7 @@
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Task.hpp"
 
+#include "events/start_download_signal.hpp"
 #include "index.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
@@ -35,7 +36,7 @@ protected:
         m_indexListeners;
 
     std::unordered_map<int, Nongs> m_indexNongs;
-    std::unordered_map<int, std::vector<std::unique_ptr<IndexSongMetadata>>>
+    std::unordered_map<int, std::vector<IndexSongMetadata*>>
         m_nongsForId;
     // song id -> download song task
     std::unordered_map<std::string, EventListener<DownloadSongTask>>
@@ -43,6 +44,12 @@ protected:
     // song id -> current download progress (used when opening NongDropdownLayer
     // while a song is being downloaded)
     std::unordered_map<std::string, float> m_downloadProgress;
+
+    EventListener<EventFilter<StartDownloadSignal>> m_downloadSignalListener;
+
+    void onDownloadSignal(StartDownloadSignal* e);
+    void startHostedDownload(IndexSongMetadata* song, Nongs* destination);
+    void startYtDownload(IndexSongMetadata* song, Nongs* destination);
 
 public:
     // index id -> index metadata

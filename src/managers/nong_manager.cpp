@@ -324,17 +324,6 @@ bool NongManager::init() {
         std::unique_ptr<Nongs> ptr = std::move(res.unwrap());
         int id = ptr->songID();
 
-        for (const std::unique_ptr<YTSong>& song : ptr->youtube()) {
-            m_bigmap.insert({fmt::format("{}|{}", song->indexID().value(),
-                                         song->metadata()->uniqueID),
-                             song.get()});
-        }
-        for (const std::unique_ptr<HostedSong>& song : ptr->hosted()) {
-            m_bigmap.insert({fmt::format("{}|{}", song->indexID().value(),
-                                         song->metadata()->uniqueID),
-                             song.get()});
-        }
-
         m_manifest.m_nongs.insert({id, std::move(ptr)});
     }
 

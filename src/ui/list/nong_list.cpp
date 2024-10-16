@@ -157,9 +157,10 @@ void NongList::build() {
 
         if (nongs->locals().size() == 0 && nongs->youtube().size() == 0 &&
             nongs->hosted().size() == 0) {
-            CCLabelBMFont* label =
-                CCLabelBMFont::create("You have no stored nongs :(", "bigFont.fnt");
-            label->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
+            CCLabelBMFont* label = CCLabelBMFont::create(
+                "You have no stored nongs :(", "bigFont.fnt");
+            label->setLayoutOptions(
+                AxisLayoutOptions::create()->setAutoScale(false));
             label->limitLabelWidth(150.0f, 0.7f, 0.1f);
             m_list->m_contentLayer->addChild(label);
         }
@@ -224,7 +225,8 @@ void NongList::addSongToList(Song* nong, Nongs* parent) {
 void NongList::addIndexSongToList(index::IndexSongMetadata* song,
                                   Nongs* parent) {
     const CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
-    IndexSongCell* cell = IndexSongCell::create(song, itemSize);
+    IndexSongCell* cell =
+        IndexSongCell::create(song, m_currentSong.value(), itemSize);
 
     m_list->m_contentLayer->addChild(cell);
 }
