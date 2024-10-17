@@ -41,6 +41,8 @@
 #include "ui/nong_dropdown_layer.hpp"
 #include "utils/random_string.hpp"
 
+using namespace jukebox::index;
+
 std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     std::string ret = "";
 #ifdef GEODE_IS_WINDOWS

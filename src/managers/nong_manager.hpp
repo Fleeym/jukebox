@@ -9,15 +9,13 @@
 #include "Geode/loader/Mod.hpp"
 #include "Geode/utils/Task.hpp"
 
-#include "events/get_song_info_event.hpp"
-#include "events/song_error_event.hpp"
+#include "events/get_song_info.hpp"
+#include "events/song_error.hpp"
 #include "nong.hpp"
 
 using namespace geode::prelude;
 
 namespace jukebox {
-
-class SongErrorEvent;
 
 class NongManager {
 protected:
@@ -35,8 +33,8 @@ protected:
 
     bool init();
     Result<> saveNongs(std::optional<int> saveId = std::nullopt);
-    EventListener<EventFilter<SongErrorEvent>> m_songErrorListener;
-    EventListener<EventFilter<GetSongInfoEvent>> m_songInfoListener;
+    EventListener<EventFilter<jukebox::event::SongError>> m_songErrorListener;
+    EventListener<EventFilter<jukebox::event::GetSongInfo>> m_songInfoListener;
     Result<std::unique_ptr<Nongs>> loadNongsFromPath(
         const std::filesystem::path& path);
 
@@ -49,6 +47,12 @@ public:
     std::filesystem::path baseManifestPath() {
         static std::filesystem::path path =
             Mod::get()->getSaveDir() / "manifest";
+        return path;
+    }
+
+    std::filesystem::path baseNongsPath() {
+        static std::filesystem::path path =
+            Mod::get()->getSaveDir() / "nongs";
         return path;
     }
 

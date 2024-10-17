@@ -12,7 +12,7 @@
 #include "Geode/utils/cocos.hpp"
 #include "Geode/utils/string.hpp"
 
-#include "events/get_song_info_event.hpp"
+#include "events/get_song_info.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
 
@@ -62,7 +62,7 @@ void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
         return;
     }
 
-    GetSongInfoEvent(songName->getCString(), artistName->getCString(), songID)
+    event::GetSongInfo(songName->getCString(), artistName->getCString(), songID)
         .post();
 }
 

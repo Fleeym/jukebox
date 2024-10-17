@@ -9,10 +9,12 @@
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
+#include "Geode/loader/Event.hpp"
+#include "Geode/loader/Log.hpp"
 #include "ccTypes.h"
 
-#include "events/song_download_progress_event.hpp"
-#include "events/start_download_signal.hpp"
+#include "events/song_download_progress.hpp"
+#include "events/start_download.hpp"
 #include "index.hpp"
 
 using namespace jukebox::index;
@@ -28,7 +30,7 @@ bool IndexSongCell::init(IndexSongMetadata* song, int gdId,
     m_song = song;
     m_gdId = gdId;
 
-    m_downloadListener.bind(&IndexSongCell::onDownloadProgress);
+    m_downloadListener.bind(this, &IndexSongCell::onDownloadProgress);
 
     this->setContentSize(size);
     this->setAnchorPoint({0.5f, 0.5f});
@@ -144,15 +146,17 @@ void IndexSongCell::onDownload(CCObject*) {
     m_progressContainer->setVisible(true);
     m_progressBar->setPercentage(0.0f);
 
-    StartDownloadSignal(m_song, m_gdId).post();
+    event::StartDownload(m_song, m_gdId).post();
 }
 
-void IndexSongCell::onDownloadProgress(SongDownloadProgressEvent* e) {
+ListenerResult IndexSongCell::onDownloadProgress(
+    event::SongDownloadProgress* e) {
     if (e->gdSongID() != m_gdId || e->uniqueID() != m_song->uniqueID) {
-        return;
+        return ListenerResult::Propagate;
     }
 
-    m_progressBar->setPercentage(e->progress() / 100.0f);
+    m_progressBar->setPercentage(e->progress());
+    return ListenerResult::Propagate;
 }
 
 IndexSongCell* IndexSongCell::create(IndexSongMetadata* song, int gdId,

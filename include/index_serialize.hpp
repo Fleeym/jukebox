@@ -259,8 +259,8 @@ struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
             .url = value.contains("url")
                        ? std::optional(value["url"].as_string())
                        : std::nullopt,
-            .ytId = value.contains("ytId")
-                        ? std::optional(value["ytId"].as_string())
+            .ytId = value.contains("ytID")
+                        ? std::optional(value["ytID"].as_string())
                         : std::nullopt,
             .songIDs = std::move(songs),
             .startOffset = value["startOffset"].as_int(),

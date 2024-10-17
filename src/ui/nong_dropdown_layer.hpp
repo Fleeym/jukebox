@@ -9,9 +9,9 @@
 #include "Geode/ui/Popup.hpp"
 #include "Geode/utils/cocos.hpp"
 
-#include "events/song_download_progress_event.hpp"
-#include "events/song_error_event.hpp"
-#include "events/song_state_changed_event.hpp"
+#include "events/song_download_progress.hpp"
+#include "events/song_error.hpp"
+#include "events/song_state_changed.hpp"
 #include "nong.hpp"
 #include "ui/list/nong_cell.hpp"
 #include "ui/list/nong_list.hpp"
@@ -34,9 +34,9 @@ protected:
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 
-    EventListener<EventFilter<SongErrorEvent>> m_songErrorListener;
-    EventListener<EventFilter<SongDownloadProgressEvent>> m_downloadListener;
-    EventListener<EventFilter<SongStateChangedEvent>> m_songStateListener;
+    EventListener<EventFilter<event::SongError>> m_songErrorListener;
+    EventListener<EventFilter<event::SongDownloadProgress>> m_downloadListener;
+    EventListener<EventFilter<event::SongStateChanged>> m_songStateListener;
 
     bool m_fetching = false;
 

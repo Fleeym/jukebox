@@ -32,7 +32,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool searching = false;
         std::unordered_map<int, Nongs*> assetNongData;
         EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
-        std::unique_ptr<EventListener<EventFilter<SongStateChangedEvent>>>
+        std::unique_ptr<EventListener<EventFilter<event::SongStateChanged>>>
             m_songStateListener;
     };
 
@@ -55,31 +55,31 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->setupJBSW();
         m_fields->firstRun = false;
 
-        m_fields->m_songStateListener =
-            std::make_unique<EventListener<EventFilter<SongStateChangedEvent>>>(
-                ([this](SongStateChangedEvent* event) {
-                    if (!m_songInfoObject) {
-                        return ListenerResult::Propagate;
-                    }
-                    if (event->gdSongID() != m_songInfoObject->m_songID) {
-                        return ListenerResult::Propagate;
-                    }
-
-                    auto nongs = NongManager::get().getNongs(event->gdSongID());
-
-                    if (!nongs.has_value()) {
-                        return ListenerResult::Propagate;
-                    }
-
-                    Song* active = nongs.value()->active();
-
-                    m_songInfoObject->m_songName = active->metadata()->name;
-                    m_songInfoObject->m_artistName = active->metadata()->artist;
-                    m_songInfoObject->m_songUrl = "local";
-                    updateSongInfo();
-
+        m_fields->m_songStateListener = std::make_unique<
+            EventListener<EventFilter<event::SongStateChanged>>>(
+            ([this](event::SongStateChanged* event) {
+                if (!m_songInfoObject) {
                     return ListenerResult::Propagate;
-                }));
+                }
+                if (event->gdSongID() != m_songInfoObject->m_songID) {
+                    return ListenerResult::Propagate;
+                }
+
+                auto nongs = NongManager::get().getNongs(event->gdSongID());
+
+                if (!nongs.has_value()) {
+                    return ListenerResult::Propagate;
+                }
+
+                Song* active = nongs.value()->active();
+
+                m_songInfoObject->m_songName = active->metadata()->name;
+                m_songInfoObject->m_artistName = active->metadata()->artist;
+                m_songInfoObject->m_songUrl = "local";
+                updateSongInfo();
+
+                return ListenerResult::Propagate;
+            }));
 
         return true;
     }

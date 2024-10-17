@@ -6,27 +6,24 @@
 #include <unordered_map>
 
 #include "Geode/loader/Event.hpp"
+#include "Geode/utils/Result.hpp"
 #include "Geode/utils/Task.hpp"
+#include "Geode/utils/general.hpp"
 
-#include "events/start_download_signal.hpp"
+#include "events/start_download.hpp"
 #include "index.hpp"
-#include "managers/nong_manager.hpp"
 #include "nong.hpp"
 
 using namespace geode::prelude;
 
 namespace jukebox {
 
-using namespace jukebox::index;
-
 class IndexManager {
-    friend class NongManager;
-
 protected:
     bool m_initialized = false;
 
     using FetchIndexTask = Task<Result<>, float>;
-    using DownloadSongTask = Task<Result<std::filesystem::path>, float>;
+    using DownloadSongTask = Task<Result<ByteVector>, float>;
 
     IndexManager() { this->init(); }
 
@@ -36,7 +33,7 @@ protected:
         m_indexListeners;
 
     std::unordered_map<int, Nongs> m_indexNongs;
-    std::unordered_map<int, std::vector<IndexSongMetadata*>>
+    std::unordered_map<int, std::vector<index::IndexSongMetadata*>>
         m_nongsForId;
     // song id -> download song task
     std::unordered_map<std::string, EventListener<DownloadSongTask>>
@@ -45,15 +42,18 @@ protected:
     // while a song is being downloaded)
     std::unordered_map<std::string, float> m_downloadProgress;
 
-    EventListener<EventFilter<StartDownloadSignal>> m_downloadSignalListener;
+    EventListener<EventFilter<event::StartDownload>> m_downloadSignalListener;
 
-    void onDownloadSignal(StartDownloadSignal* e);
-    void startHostedDownload(IndexSongMetadata* song, Nongs* destination);
-    void startYtDownload(IndexSongMetadata* song, Nongs* destination);
+    geode::ListenerResult onDownloadStart(event::StartDownload* e);
+    void onDownloadProgress(index::IndexSongMetadata* metadata,
+                            Nongs* destination, float progress);
+    void onDownloadFinish(index::IndexSongMetadata* metadata,
+                          Nongs* destination, ByteVector&& data);
+    void writeDownloadedFile(ByteVector&& data, std::filesystem::path& path);
 
 public:
     // index id -> index metadata
-    std::unordered_map<std::string, std::unique_ptr<IndexMetadata>>
+    std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>>
         m_loadedIndexes;
 
     bool initialized() const { return m_initialized; }
@@ -62,7 +62,7 @@ public:
 
     Result<> loadIndex(std::filesystem::path path);
 
-    Result<std::vector<IndexSource>> getIndexes();
+    Result<std::vector<index::IndexSource>> getIndexes();
 
     std::optional<float> getSongDownloadProgress(const std::string& uniqueID);
     std::optional<std::string> getIndexName(const std::string& indexID);
@@ -76,7 +76,6 @@ public:
     std::function<void(IndexManager::DownloadSongTask::Event*)>
     createDownloadSongBind(int gdSongID, Song* nong);
     Result<> downloadSong(int gdSongID, const std::string& uniqueID);
-    Result<> downloadSong(Song* hosted);
 
     static IndexManager& get() {
         static IndexManager instance;

@@ -21,6 +21,7 @@
 #include "utils/random_string.hpp"
 
 using namespace geode::prelude;
+using namespace jukebox::index;
 
 namespace jukebox {
 

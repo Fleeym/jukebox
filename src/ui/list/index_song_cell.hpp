@@ -8,9 +8,9 @@
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/misc_nodes/CCProgressTimer.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
-
 #include "Geode/loader/Event.hpp"
-#include "events/song_download_progress_event.hpp"
+
+#include "events/song_download_progress.hpp"
 #include "index.hpp"
 
 using namespace geode::prelude;
@@ -38,15 +38,16 @@ protected:
 
     bool m_downloading = false;
 
-    EventListener<EventFilter<SongDownloadProgressEvent>> m_downloadListener;
+    EventListener<EventFilter<event::SongDownloadProgress>> m_downloadListener;
 
     bool init(IndexSongMetadata* song, int gdId, const CCSize& size);
 
     void onDownload(CCObject*);
-    void onDownloadProgress(SongDownloadProgressEvent* e);
+    geode::ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
 
 public:
-    static IndexSongCell* create(IndexSongMetadata* song, int gdId, const CCSize& size);
+    static IndexSongCell* create(IndexSongMetadata* song, int gdId,
+                                 const CCSize& size);
 };
 
 }  // namespace jukebox

@@ -23,8 +23,8 @@
 #include "Geode/utils/web.hpp"
 #include "ccTypes.h"
 
-#include "events/song_download_progress_event.hpp"
-#include "events/song_state_changed_event.hpp"
+#include "events/song_download_progress.hpp"
+#include "events/song_state_changed.hpp"
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
@@ -147,14 +147,14 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     m_mainLayer->addChild(title);
     handleTouchPriority(this);
 
-    m_songErrorListener.bind([](SongErrorEvent* event) {
+    m_songErrorListener.bind([](event::SongError* event) {
         if (event->notifyUser()) {
             FLAlertLayer::create("Error", event->error(), "OK")->show();
         }
         return ListenerResult::Propagate;
     });
 
-    m_songStateListener.bind([this](SongStateChangedEvent* event) {
+    m_songStateListener.bind([this](event::SongStateChanged* event) {
         if (!m_list || m_currentSongID != event->gdSongID()) {
             return ListenerResult::Propagate;
         }
@@ -165,7 +165,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         return ListenerResult::Propagate;
     });
 
-    m_downloadListener.bind([this](SongDownloadProgressEvent* event) {
+    m_downloadListener.bind([this](event::SongDownloadProgress* event) {
         if (!m_list || m_currentSongID != event->gdSongID()) {
             return ListenerResult::Propagate;
         }

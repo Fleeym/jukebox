@@ -2,23 +2,32 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <ios>
 #include <matjson.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
 
+#include <fmt/core.h>
+#include <fmt/format.h>
 #include <matjson.hpp>
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Log.hpp"
+#include "Geode/loader/Mod.hpp"
 #include "Geode/utils/Result.hpp"
+#include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 
-#include "events/song_download_progress_event.hpp"
-#include "events/song_error_event.hpp"
-#include "events/song_state_changed_event.hpp"
-#include "events/start_download_signal.hpp"
+#include "download/hosted.hpp"
+#include "download/youtube.hpp"
+#include "events/song_download_finished.hpp"
+#include "events/song_download_progress.hpp"
+#include "events/song_error.hpp"
+#include "events/song_state_changed.hpp"
+#include "events/start_download.hpp"
 #include "index.hpp"
 #include "index_serialize.hpp"
 #include "managers/nong_manager.hpp"
@@ -40,10 +49,11 @@ bool IndexManager::init() {
         return true;
     }
 
-    m_downloadSignalListener.bind(&IndexManager::onDownloadSignal);
+    m_downloadSignalListener.bind(this, &IndexManager::onDownloadStart);
 
     if (std::string err = this->fetchIndexes().error(); !err.empty()) {
-        SongErrorEvent(false, "Failed to fetch indexes: {}", err).post();
+        event::SongError(false, fmt::format("Failed to fetch indexes: {}", err))
+            .post();
         return false;
     }
 
@@ -109,7 +119,8 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         Result<IndexSongMetadata> r =
             matjson::Serialize<IndexSongMetadata>::from_json(ytNong);
         if (r.isErr()) {
-            SongErrorEvent(false, "Failed to parse index song: {}", r.error())
+            event::SongError(
+                false, fmt::format("Failed to parse index song: {}", r.error()))
                 .post();
             continue;
         }
@@ -134,8 +145,9 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
 
             if (geode::Result<> r = nongs->registerIndexSong(song.get());
                 r.isErr()) {
-                SongErrorEvent(false, "Failed to register index song: {}",
-                               r.error())
+                event::SongError(
+                    false,
+                    fmt::format("Failed to register index song: {}", r.error()))
                     .post();
             }
         }
@@ -147,7 +159,8 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         Result<IndexSongMetadata> r =
             matjson::Serialize<IndexSongMetadata>::from_json(hostedNong);
         if (r.isErr()) {
-            SongErrorEvent(false, "Failed to parse index song: {}", r.error())
+            event::SongError(
+                false, fmt::format("Failed to parse index song: {}", r.error()))
                 .post();
             continue;
         }
@@ -172,8 +185,9 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
 
             if (geode::Result<> r = nongs->registerIndexSong(song.get());
                 r.isErr()) {
-                SongErrorEvent(false, "Failed to register index song: {}",
-                               r.error())
+                event::SongError(
+                    false,
+                    fmt::format("Failed to register index song: {}", r.error()))
                     .post();
             }
         }
@@ -273,8 +287,9 @@ Result<> IndexManager::fetchIndexes() {
 
             if (FetchIndexTask::Value* result = event->getValue()) {
                 if (result->isErr()) {
-                    SongErrorEvent(false, "Failed to fetch index: {}",
-                                   result->error())
+                    event::SongError(false,
+                                     fmt::format("Failed to fetch index: {}",
+                                                 result->error()))
                         .post();
                 } else {
                     log::info("Index fetched and cached: {}", index.m_url);
@@ -283,7 +298,9 @@ Result<> IndexManager::fetchIndexes() {
             }
 
             if (auto err = this->loadIndex(filepath).error(); !err.empty()) {
-                SongErrorEvent(false, "Failed to load index: {}", err).post();
+                event::SongError(false,
+                                 fmt::format("Failed to load index: {}", err))
+                    .post();
             }
         });
         listener.setFilter(task);
@@ -461,7 +478,7 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
     }
 
     optNongs = NongManager::get().getNongs(gdSongID);
-    
+
     // This should honestly never happen, but who knows
     if (!optNongs.has_value()) {
         return Err("Couldn't initialize song ID {}", gdSongID);
@@ -475,257 +492,337 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
             continue;
         }
 
-        if (s->url.has_value()) {
-            this->startHostedDownload(s, nongs);
-            return Ok();
-        }
+        DownloadSongTask task;
 
-        if (s->ytId.has_value()) {
-            this->startYtDownload(s, nongs);
-            return Ok();
-        }
+        if (s->url.has_value()) {
+            log::info("{}", s->url.value());
+            task = jukebox::download::startHostedDownload(s->url.value());
+        } else if (s->ytId.has_value()) {
+            log::info("{}", s->ytId.value());
+            task = jukebox::download::startYoutubeDownload(s->ytId.value());
+        } 
+
+        log::info("download start");
+        task.listen(
+            [this, s, nongs](Result<ByteVector>* vector) {
+                log::info("download end");
+                if (vector->isErr()) {
+                    return;
+                }
+                this->onDownloadFinish(s, nongs, std::move(vector->unwrap()));
+            },
+            [this, s, nongs](float* progress) {
+                this->onDownloadProgress(s, nongs, *progress);
+            });
+        return Ok();
     }
 
     return Err("Song {} not found in manifest", uniqueID);
 }
 
-Result<> IndexManager::downloadSong(Song* nong) {
-    if (nong->type() == NongType::LOCAL) {
-        return Err("Can't download local song");
-    }
-    const std::string id = nong->metadata()->uniqueID;
-    int gdSongID = nong->metadata()->gdID;
-
-    if (m_downloadSongListeners.contains(id)) {
-        m_downloadSongListeners.at(id).getFilter().cancel();
-    }
-    DownloadSongTask task;
-
-    if (nong->type() == NongType::YOUTUBE) {  // yt
-        EventListener<web::WebTask>* cobaltMetadataListener =
-            new EventListener<web::WebTask>();
-        EventListener<web::WebTask>* cobaltSongListener =
-            new EventListener<web::WebTask>();
-
-        YTSong* yt = static_cast<YTSong*>(nong);
-
-        task = DownloadSongTask::runWithCallback(
-            [this, yt, cobaltMetadataListener, cobaltSongListener](
-                utils::MiniFunction<void(DownloadSongTask::Value)> finish,
-                utils::MiniFunction<void(DownloadSongTask::Progress)> progress,
-                utils::MiniFunction<bool()> hasBeenCancelled) {
-                if (yt->youtubeID().length() != 11) {
-                    return finish(Err("Invalid YouTube ID"));
-                }
-
-                std::function<void(std::string)> finishErr =
-                    [finish, cobaltMetadataListener,
-                     cobaltSongListener](std::string err) {
-                        delete cobaltSongListener;
-                        delete cobaltMetadataListener;
-                        finish(Err(err));
-                    };
-
-                cobaltMetadataListener->bind([this, hasBeenCancelled,
-                                              cobaltMetadataListener,
-                                              cobaltSongListener, yt, finishErr,
-                                              finish](
-                                                 web::WebTask::Event* event) {
-                    if (hasBeenCancelled() || event->isCancelled()) {
-                        return finishErr(
-                            "Cancelled while fetching song metadata from "
-                            "Cobalt");
-                    }
-
-                    if (event->getProgress() != nullptr) {
-                        float progress =
-                            event->getProgress()->downloadProgress().value_or(
-                                0) /
-                            1000.f;
-                        m_downloadProgress[yt->metadata()->uniqueID] = progress;
-                        SongDownloadProgressEvent(yt->metadata()->gdID,
-                                                  yt->metadata()->uniqueID,
-                                                  progress)
-                            .post();
-                        return;
-                    }
-
-                    if (event->getValue() == nullptr) {
-                        return;
-                    }
-
-                    if (!event->getValue()->ok() ||
-                        !event->getValue()->json().isOk()) {
-                        return finishErr(
-                            "Unable to get/parse Cobalt metadata response");
-                    }
-
-                    matjson::Value jsonObj = event->getValue()->json().unwrap();
-
-                    if (!jsonObj.contains("status") ||
-                        jsonObj["status"] != "stream") {
-                        return finishErr(
-                            "Cobalt metadata response is not a stream");
-                    }
-
-                    if (!jsonObj.contains("url") ||
-                        !jsonObj["url"].is_string()) {
-                        return finishErr("Cobalt metadata bad response");
-                    }
-
-                    std::string audio_url = jsonObj["url"].as_string();
-                    log::info("Cobalt metadata response: {}", audio_url);
-
-                    cobaltSongListener->bind(
-                        [this, hasBeenCancelled, cobaltMetadataListener,
-                         cobaltSongListener, finishErr, yt,
-                         finish](web::WebTask::Event* event) {
-                            if (hasBeenCancelled() || event->isCancelled()) {
-                                return finishErr(
-                                    "Cancelled while fetching song data from "
-                                    "Cobalt");
-                            }
-
-                            if (event->getProgress() != nullptr) {
-                                float progress = event->getProgress()
-                                                         ->downloadProgress()
-                                                         .value_or(0) /
-                                                     100.f * 0.9f +
-                                                 0.1f;
-                                m_downloadProgress[yt->metadata()->uniqueID] =
-                                    progress;
-                                SongDownloadProgressEvent(
-                                    yt->metadata()->gdID,
-                                    yt->metadata()->uniqueID, progress)
-                                    .post();
-                                return;
-                            }
-
-                            if (event->getValue() == nullptr) {
-                                return;
-                            }
-
-                            if (!event->getValue()->ok()) {
-                                return finishErr(
-                                    "Unable to get Cobalt song response");
-                            }
-
-                            ByteVector data = event->getValue()->data();
-
-                            auto destination =
-                                NongManager::get().generateSongFilePath("mp3");
-                            std::ofstream file(
-                                destination, std::ios::out | std::ios::binary);
-                            file.write(
-                                reinterpret_cast<const char*>(data.data()),
-                                data.size());
-                            file.close();
-
-                            delete cobaltSongListener;
-                            delete cobaltMetadataListener;
-                            finish(Ok(destination));
-                        });
-
-                    cobaltSongListener->setFilter(
-                        web::WebRequest()
-                            .timeout(std::chrono::seconds(30))
-                            .get(audio_url));
-                });
-
-                cobaltMetadataListener->setFilter(
-                    web::WebRequest()
-                        .timeout(std::chrono::seconds(30))
-                        .bodyJSON(matjson::Object{
-                            {"url",
-                             fmt::format("https://www.youtube.com/watch?v={}",
-                                         yt->youtubeID())},
-                            {"aFormat", "mp3"},
-                            {"isAudioOnly", "true"}})
-                        .header("Accept", "application/json")
-                        .header("Content-Type", "application/json")
-                        .post("https://api.cobalt.tools/api/json"));
-            },
-            "Download a YouTube song from Cobalt");
-    } else {  // hosted
-        HostedSong* hosted = static_cast<HostedSong*>(nong);
-        task =
-            web::WebRequest()
-                .timeout(std::chrono::seconds(30))
-                .get(hosted->url())
-                .map(
-                    [this](
-                        web::WebResponse* response) -> DownloadSongTask::Value {
-                        if (response->ok()) {
-                            std::filesystem::path destination =
-                                NongManager::get().generateSongFilePath("mp3");
-                            std::ofstream file(
-                                destination, std::ios::out | std::ios::binary);
-                            file.write(reinterpret_cast<const char*>(
-                                           response->data().data()),
-                                       response->data().size());
-                            file.close();
-
-                            return Ok(destination);
-                        }
-                        return Err("Web request failed");
-                    },
-                    [](web::WebProgress* progress)
-                        -> DownloadSongTask::Progress {
-                        return progress->downloadProgress().value_or(0) / 100.f;
-                    });
-    }
-
-    auto listener = EventListener<DownloadSongTask>();
-
-    listener.bind([this, gdSongID, id, nong](DownloadSongTask::Event* event) {
-        if (float* progress = event->getProgress()) {
-            m_downloadProgress[id] = *progress;
-            SongDownloadProgressEvent(gdSongID, id, *event->getProgress())
-                .post();
-            return;
-        }
-        m_downloadProgress.erase(id);
-        m_downloadSongListeners.erase(id);
-        if (event->isCancelled()) {
-            SongErrorEvent(false, "Failed to fetch song: cancelled").post();
-            SongStateChangedEvent(gdSongID).post();
-            return;
-        }
-        DownloadSongTask::Value* result = event->getValue();
-        if (result->isErr()) {
-            SongErrorEvent(true, "Failed to fetch song: {}", result->error())
-                .post();
-            SongStateChangedEvent(gdSongID).post();
-            return;
-        }
-
-        if (result->value().string().size() == 0) {
-            SongStateChangedEvent(gdSongID).post();
-            return;
-        }
-
-        nong->setIndexID(id);
-
-        if (auto res = NongManager::get().setActiveSong(gdSongID, id);
-            res.isErr()) {
-            SongErrorEvent(true, "Failed to set song as active: {}",
-                           res.error())
-                .post();
-            SongStateChangedEvent(gdSongID).post();
-            return;
-        }
-
-        SongStateChangedEvent(gdSongID).post();
-    });
-    listener.setFilter(task);
-    m_downloadSongListeners.emplace(id, std::move(listener));
-    m_downloadProgress[id] = 0.f;
-    SongDownloadProgressEvent(gdSongID, id, 0.f).post();
-    return Ok();
+void IndexManager::onDownloadProgress(IndexSongMetadata* metadata,
+                                      Nongs* destination, float progress) {
+    event::SongDownloadProgress(destination->songID(), metadata->uniqueID,
+                                progress)
+        .post();
 }
 
-void IndexManager::onDownloadSignal(StartDownloadSignal* e) {
+void IndexManager::writeDownloadedFile(ByteVector&& data,
+                                       std::filesystem::path& path) {
+    std::ofstream out(path, std::ios_base::out | std::ios_base::binary);
+
+    out.write(reinterpret_cast<const char*>(data.data()), data.size());
+    out.close();
+}
+
+void IndexManager::onDownloadFinish(IndexSongMetadata* metadata,
+                                    Nongs* destination, ByteVector&& data) {
+    // TODO: hopefully all indexes have mp3 :troll:
+    std::filesystem::path path =
+        NongManager::get().baseNongsPath() /
+        fmt::format("{}-{}.mp3", metadata->parentID->m_id, metadata->uniqueID);
+    this->writeDownloadedFile(std::move(data), path);
+
+    Result<Song*> result;
+
+    if (metadata->url.has_value()) {
+        result = destination->add(
+            HostedSong(SongMetadata(destination->songID(), metadata->uniqueID,
+                                    metadata->name, metadata->artist,
+                                    std::nullopt, metadata->startOffset),
+                       metadata->url.value(), metadata->parentID->m_id, path));
+    } else if (metadata->ytId.has_value()) {
+        result = destination->add(
+            YTSong(SongMetadata(destination->songID(), metadata->uniqueID,
+                                metadata->name, metadata->artist, std::nullopt,
+                                metadata->startOffset),
+                   metadata->ytId.value(), metadata->parentID->m_id, path));
+    }
+
+    if (result.isErr()) {
+        std::error_code ec;
+        std::filesystem::remove(path, ec);
+
+        // SongDownloadErrorEvent
+        return;
+    }
+
+    (void)destination->commit();
+
+    event::SongDownloadFinished(metadata, result.unwrap()).post();
+}
+
+/*Result<> IndexManager::downloadSong(Song* nong) {*/
+/*    if (nong->type() == NongType::LOCAL) {*/
+/*        return Err("Can't download local song");*/
+/*    }*/
+/*    const std::string id = nong->metadata()->uniqueID;*/
+/*    int gdSongID = nong->metadata()->gdID;*/
+/**/
+/*    if (m_downloadSongListeners.contains(id)) {*/
+/*        m_downloadSongListeners.at(id).getFilter().cancel();*/
+/*    }*/
+/*    DownloadSongTask task;*/
+/**/
+/*    if (nong->type() == NongType::YOUTUBE) {  // yt*/
+/*        EventListener<web::WebTask>* cobaltMetadataListener =*/
+/*            new EventListener<web::WebTask>();*/
+/*        EventListener<web::WebTask>* cobaltSongListener =*/
+/*            new EventListener<web::WebTask>();*/
+/**/
+/*        YTSong* yt = static_cast<YTSong*>(nong);*/
+/**/
+/*        task = DownloadSongTask::runWithCallback(*/
+/*            [this, yt, cobaltMetadataListener, cobaltSongListener](*/
+/*                utils::MiniFunction<void(DownloadSongTask::Value)> finish,*/
+/*                utils::MiniFunction<void(DownloadSongTask::Progress)>
+ * progress,*/
+/*                utils::MiniFunction<bool()> hasBeenCancelled) {*/
+/*                if (yt->youtubeID().length() != 11) {*/
+/*                    return finish(Err("Invalid YouTube ID"));*/
+/*                }*/
+/**/
+/*                std::function<void(std::string)> finishErr =*/
+/*                    [finish, cobaltMetadataListener,*/
+/*                     cobaltSongListener](std::string err) {*/
+/*                        delete cobaltSongListener;*/
+/*                        delete cobaltMetadataListener;*/
+/*                        finish(Err(err));*/
+/*                    };*/
+/**/
+/*                cobaltMetadataListener->bind([this, hasBeenCancelled,*/
+/*                                              cobaltMetadataListener,*/
+/*                                              cobaltSongListener, yt,
+ * finishErr,*/
+/*                                              finish](*/
+/*                                                 web::WebTask::Event* event)
+ * {*/
+/*                    if (hasBeenCancelled() || event->isCancelled()) {*/
+/*                        return finishErr(*/
+/*                            "Cancelled while fetching song metadata from "*/
+/*                            "Cobalt");*/
+/*                    }*/
+/**/
+/*                    if (event->getProgress() != nullptr) {*/
+/*                        float progress =*/
+/*                            event->getProgress()->downloadProgress().value_or(*/
+/*                                0) /*/
+/*                            1000.f;*/
+/*                        m_downloadProgress[yt->metadata()->uniqueID] =
+ * progress;*/
+/*                        event::SongDownloadProgress(yt->metadata()->gdID,*/
+/*                                                    yt->metadata()->uniqueID,*/
+/*                                                    progress)*/
+/*                            .post();*/
+/*                        return;*/
+/*                    }*/
+/**/
+/*                    if (event->getValue() == nullptr) {*/
+/*                        return;*/
+/*                    }*/
+/**/
+/*                    if (!event->getValue()->ok() ||*/
+/*                        !event->getValue()->json().isOk()) {*/
+/*                        return finishErr(*/
+/*                            "Unable to get/parse Cobalt metadata response");*/
+/*                    }*/
+/**/
+/*                    matjson::Value jsonObj =
+ * event->getValue()->json().unwrap();*/
+/**/
+/*                    if (!jsonObj.contains("status") ||*/
+/*                        jsonObj["status"] != "stream") {*/
+/*                        return finishErr(*/
+/*                            "Cobalt metadata response is not a stream");*/
+/*                    }*/
+/**/
+/*                    if (!jsonObj.contains("url") ||*/
+/*                        !jsonObj["url"].is_string()) {*/
+/*                        return finishErr("Cobalt metadata bad response");*/
+/*                    }*/
+/**/
+/*                    std::string audio_url = jsonObj["url"].as_string();*/
+/*                    log::info("Cobalt metadata response: {}", audio_url);*/
+/**/
+/*                    cobaltSongListener->bind(*/
+/*                        [this, hasBeenCancelled, cobaltMetadataListener,*/
+/*                         cobaltSongListener, finishErr, yt,*/
+/*                         finish](web::WebTask::Event* event) {*/
+/*                            if (hasBeenCancelled() || event->isCancelled())
+ * {*/
+/*                                return finishErr(*/
+/*                                    "Cancelled while fetching song data from
+ * "*/
+/*                                    "Cobalt");*/
+/*                            }*/
+/**/
+/*                            if (event->getProgress() != nullptr) {*/
+/*                                float progress = event->getProgress()*/
+/*                                                         ->downloadProgress()*/
+/*                                                         .value_or(0) /*/
+/*                                                     100.f * 0.9f +*/
+/*                                                 0.1f;*/
+/*                                m_downloadProgress[yt->metadata()->uniqueID]
+ * =*/
+/*                                    progress;*/
+/*                                event::SongDownloadProgress(*/
+/*                                    yt->metadata()->gdID,*/
+/*                                    yt->metadata()->uniqueID, progress)*/
+/*                                    .post();*/
+/*                                return;*/
+/*                            }*/
+/**/
+/*                            if (event->getValue() == nullptr) {*/
+/*                                return;*/
+/*                            }*/
+/**/
+/*                            if (!event->getValue()->ok()) {*/
+/*                                return finishErr(*/
+/*                                    "Unable to get Cobalt song response");*/
+/*                            }*/
+/**/
+/*                            ByteVector data = event->getValue()->data();*/
+/**/
+/*                            auto destination =*/
+/*                                NongManager::get().generateSongFilePath("mp3");*/
+/*                            std::ofstream file(*/
+/*                                destination, std::ios::out |
+ * std::ios::binary);*/
+/*                            file.write(*/
+/*                                reinterpret_cast<const char*>(data.data()),*/
+/*                                data.size());*/
+/*                            file.close();*/
+/**/
+/*                            delete cobaltSongListener;*/
+/*                            delete cobaltMetadataListener;*/
+/*                            finish(Ok(destination));*/
+/*                        });*/
+/**/
+/*                    cobaltSongListener->setFilter(*/
+/*                        web::WebRequest()*/
+/*                            .timeout(std::chrono::seconds(30))*/
+/*                            .get(audio_url));*/
+/*                });*/
+/**/
+/*                cobaltMetadataListener->setFilter(*/
+/*                    web::WebRequest()*/
+/*                        .timeout(std::chrono::seconds(30))*/
+/*                        .bodyJSON(matjson::Object{*/
+/*                            {"url",*/
+/*                             fmt::format("https://www.youtube.com/watch?v={}",*/
+/*                                         yt->youtubeID())},*/
+/*                            {"aFormat", "mp3"},*/
+/*                            {"isAudioOnly", "true"}})*/
+/*                        .header("Accept", "application/json")*/
+/*                        .header("Content-Type", "application/json")*/
+/*                        .post("https://api.cobalt.tools/api/json"));*/
+/*            },*/
+/*            "Download a YouTube song from Cobalt");*/
+/*    } else {  // hosted*/
+/*        HostedSong* hosted = static_cast<HostedSong*>(nong);*/
+/*        task =*/
+/*            web::WebRequest()*/
+/*                .timeout(std::chrono::seconds(30))*/
+/*                .get(hosted->url())*/
+/*                .map(*/
+/*                    [this](*/
+/*                        web::WebResponse* response) -> DownloadSongTask::Value
+ * {*/
+/*                        if (response->ok()) {*/
+/*                            std::filesystem::path destination =*/
+/*                                NongManager::get().generateSongFilePath("mp3");*/
+/*                            std::ofstream file(*/
+/*                                destination, std::ios::out |
+ * std::ios::binary);*/
+/*                            file.write(reinterpret_cast<const char*>(*/
+/*                                           response->data().data()),*/
+/*                                       response->data().size());*/
+/*                            file.close();*/
+/**/
+/*                            return Ok(destination);*/
+/*                        }*/
+/*                        return Err("Web request failed");*/
+/*                    },*/
+/*                    [](web::WebProgress* progress)*/
+/*                        -> DownloadSongTask::Progress {*/
+/*                        return progress->downloadProgress().value_or(0) /
+ * 100.f;*/
+/*                    });*/
+/*    }*/
+/**/
+/*    auto listener = EventListener<DownloadSongTask>();*/
+/**/
+/*    listener.bind([this, gdSongID, id, nong](DownloadSongTask::Event* event)
+ * {*/
+/*        if (float* progress = event->getProgress()) {*/
+/*            m_downloadProgress[id] = *progress;*/
+/*            SongDownloadProgressEvent(gdSongID, id, *event->getProgress())*/
+/*                .post();*/
+/*            return;*/
+/*        }*/
+/*        m_downloadProgress.erase(id);*/
+/*        m_downloadSongListeners.erase(id);*/
+/*        if (event->isCancelled()) {*/
+/*            SongError(false, "Failed to fetch song: cancelled").post();*/
+/*            hanged(gdSongID).post();*/
+/*            return;*/
+/*        }*/
+/*        DownloadSongTask::Value* result = event->getValue();*/
+/*        if (result->isErr()) {*/
+/*            SongError(true, "Failed to fetch song: {}",
+ * result->error()).post();*/
+/*            hanged(gdSongID).post();*/
+/*            return;*/
+/*        }*/
+/**/
+/*        if (result->value().string().size() == 0) {*/
+/*            hanged(gdSongID).post();*/
+/*            return;*/
+/*        }*/
+/**/
+/*        nong->setIndexID(id);*/
+/**/
+/*        if (auto res = NongManager::get().setActiveSong(gdSongID, id);*/
+/*            res.isErr()) {*/
+/*            SongError(true, "Failed to set song as active: {}", res.error())*/
+/*                .post();*/
+/*            hanged(gdSongID).post();*/
+/*            return;*/
+/*        }*/
+/**/
+/*        hanged(gdSongID).post();*/
+/*    });*/
+/*    listener.setFilter(task);*/
+/*    m_downloadSongListeners.emplace(id, std::move(listener));*/
+/*    m_downloadProgress[id] = 0.f;*/
+/*    event::SongDownloadProgress(gdSongID, id, 0.f).post();*/
+/*    return Ok();*/
+/*}*/
+
+ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
+    log::info("starting download");
     this->downloadSong(e->gdId(), e->song()->uniqueID);
+    return ListenerResult::Propagate;
 }
 
 };  // namespace jukebox

@@ -15,7 +15,7 @@
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Log.hpp"
 
-#include "events/song_state_changed_event.hpp"
+#include "events/song_state_changed.hpp"
 #include "managers/index_manager.hpp"
 #include "nong.hpp"
 #include "nong_serialize.hpp"
@@ -269,12 +269,12 @@ bool NongManager::init() {
         return true;
     }
 
-    m_songErrorListener.bind([this](SongErrorEvent* event) {
+    m_songErrorListener.bind([this](event::SongError* event) {
         log::error("{}", event->error());
         return ListenerResult::Propagate;
     });
 
-    m_songInfoListener.bind([this](GetSongInfoEvent* event) {
+    m_songInfoListener.bind([this](event::GetSongInfo* event) {
         log::info("Song info event for {}", event->gdSongID());
         log::info("info: {} - {}", event->songName(), event->artistName());
 
@@ -362,7 +362,7 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
     }
 
     if (saveID.has_value()) {
-        jukebox::SongStateChangedEvent(saveID.value()).post();
+        event::SongStateChanged(saveID.value()).post();
     }
 
     return Ok();
