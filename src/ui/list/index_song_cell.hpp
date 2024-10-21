@@ -46,6 +46,8 @@ protected:
     geode::ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
 
 public:
+    IndexSongMetadata* song() const { return m_song; }
+
     static IndexSongCell* create(IndexSongMetadata* song, int gdId,
                                  const CCSize& size);
 };

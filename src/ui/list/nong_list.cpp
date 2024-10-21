@@ -1,20 +1,29 @@
 #include "ui/list/nong_list.hpp"
+#include <fmt/core.h>
 
 #include <filesystem>
+#include <memory>
 #include <optional>
+#include <unordered_set>
 
 #include "GUI/CCControlExtension/CCScale9Sprite.h"
+#include "Geode/binding/OptionsScrollLayer.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
+#include "Geode/loader/Event.hpp"
+#include "Geode/platform/windows.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
+#include "Geode/utils/cocos.hpp"
+#include "events/song_download_finished.hpp"
 #include "index.hpp"
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
+#include "nong.hpp"
 #include "ui/list/index_song_cell.hpp"
 #include "ui/list/nong_cell.hpp"
 #include "ui/list/song_cell.hpp"
@@ -97,7 +106,6 @@ void NongList::setDownloadProgress(std::string uniqueID, float progress) {
 }
 
 void NongList::build() {
-    listedNongCells.clear();
     if (m_list->m_contentLayer->getChildrenCount() > 0) {
         m_list->m_contentLayer->removeAllChildren();
     }
@@ -155,6 +163,9 @@ void NongList::build() {
             AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
         m_list->m_contentLayer->addChild(localSongs);
 
+        std::unordered_set<std::string> localYt;
+        std::unordered_set<std::string> localHosted;
+
         if (nongs->locals().size() == 0 && nongs->youtube().size() == 0 &&
             nongs->hosted().size() == 0) {
             CCLabelBMFont* label = CCLabelBMFont::create(
@@ -171,10 +182,18 @@ void NongList::build() {
 
         for (std::unique_ptr<YTSong>& nong : nongs->youtube()) {
             this->addSongToList(nong.get(), nongs);
+            if (nong->indexID().has_value()) {
+                localYt.insert(fmt::format("{}|{}", nong->indexID().value(),
+                                           nong->metadata()->uniqueID));
+            }
         }
 
         for (std::unique_ptr<HostedSong>& nong : nongs->hosted()) {
             this->addSongToList(nong.get(), nongs);
+            if (nong->indexID().has_value()) {
+                localHosted.insert(fmt::format("{}|{}", nong->indexID().value(),
+                                               nong->metadata()->uniqueID));
+            }
         }
 
         if (nongs->indexSongs().size() > 0) {
@@ -186,6 +205,17 @@ void NongList::build() {
         }
 
         for (index::IndexSongMetadata* index : nongs->indexSongs()) {
+            const std::string id =
+                fmt::format("{}|{}", index->parentID->m_id, index->uniqueID);
+
+            if (index->ytId.has_value() && localYt.contains(id)) {
+                continue;
+            }
+
+            if (index->url.has_value() && localHosted.contains(id)) {
+                continue;
+            }
+
             this->addIndexSongToList(index, nongs);
         }
     }
@@ -266,6 +296,46 @@ void NongList::onSelectSong(int songId) {
     this->build();
     this->scrollToTop();
     m_backBtn->setVisible(true);
+}
+
+ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
+    if (!m_currentSong.has_value()) {
+        return ListenerResult::Propagate;
+    }
+    std::optional<Nongs*> optNongs =
+        NongManager::get().getNongs(m_currentSong.value());
+
+    if (!optNongs.has_value()) {
+        return ListenerResult::Propagate;
+    }
+
+    Nongs* nongs = optNongs.value();
+
+    if (e->destination()->type() == NongType::HOSTED) {
+        HostedSong* destination = static_cast<HostedSong*>(e->destination());
+        for (const std::unique_ptr<HostedSong>& song : nongs->hosted()) {
+            if (destination != song.get()) {
+                continue;
+            }
+
+            this->build();
+            return ListenerResult::Propagate;
+        }
+    }
+
+    if (e->destination()->type() == NongType::YOUTUBE) {
+        YTSong* destination = static_cast<YTSong*>(e->destination());
+        for (const std::unique_ptr<YTSong>& song : nongs->youtube()) {
+            if (destination != song.get()) {
+                continue;
+            }
+
+            this->build();
+            break;
+        }
+    }
+
+    return ListenerResult::Propagate;
 }
 
 NongList* NongList::create(

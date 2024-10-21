@@ -45,11 +45,9 @@ protected:
     EventListener<EventFilter<event::StartDownload>> m_downloadSignalListener;
 
     geode::ListenerResult onDownloadStart(event::StartDownload* e);
-    void onDownloadProgress(index::IndexSongMetadata* metadata,
-                            Nongs* destination, float progress);
+    void onDownloadProgress(int gdSongID, const std::string& uniqueId, float progress);
     void onDownloadFinish(index::IndexSongMetadata* metadata,
                           Nongs* destination, ByteVector&& data);
-    void writeDownloadedFile(ByteVector&& data, std::filesystem::path& path);
 
 public:
     // index id -> index metadata

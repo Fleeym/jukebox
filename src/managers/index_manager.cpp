@@ -26,7 +26,6 @@
 #include "events/song_download_finished.hpp"
 #include "events/song_download_progress.hpp"
 #include "events/song_error.hpp"
-#include "events/song_state_changed.hpp"
 #include "events/start_download.hpp"
 #include "index.hpp"
 #include "index_serialize.hpp"
@@ -486,62 +485,104 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
 
     Nongs* nongs = optNongs.value();
 
-    std::vector<IndexSongMetadata*> songs = m_nongsForId[gdSongID];
-    for (IndexSongMetadata* s : songs) {
-        if (s->uniqueID != uniqueID) {
+    DownloadSongTask task;
+    std::optional<IndexSongMetadata*> indexMeta = std::nullopt;
+    bool found = false;
+
+    // Try starting download from local reference first
+    for (const std::unique_ptr<YTSong>& song : nongs->youtube()) {
+        if (song->metadata()->uniqueID != uniqueID) {
             continue;
         }
 
-        DownloadSongTask task;
+        Result<DownloadSongTask> t = song->startDownload();
+        if (t.isErr()) {
+            return Err("Failed to start download: {}", t.error());
+        }
 
-        if (s->url.has_value()) {
-            log::info("{}", s->url.value());
-            task = jukebox::download::startHostedDownload(s->url.value());
-        } else if (s->ytId.has_value()) {
-            log::info("{}", s->ytId.value());
-            task = jukebox::download::startYoutubeDownload(s->ytId.value());
-        } 
-
-        log::info("download start");
-        task.listen(
-            [this, s, nongs](Result<ByteVector>* vector) {
-                log::info("download end");
-                if (vector->isErr()) {
-                    return;
-                }
-                this->onDownloadFinish(s, nongs, std::move(vector->unwrap()));
-            },
-            [this, s, nongs](float* progress) {
-                this->onDownloadProgress(s, nongs, *progress);
-            });
-        return Ok();
+        task = t.unwrap();
+        found = true;
+        break;
     }
 
-    return Err("Song {} not found in manifest", uniqueID);
+    if (!found) {
+        for (const std::unique_ptr<HostedSong>& song : nongs->hosted()) {
+            if (song->metadata()->uniqueID != uniqueID) {
+                continue;
+            }
+
+            Result<DownloadSongTask> t = song->startDownload();
+            if (t.isErr()) {
+                return Err("Failed to start download: {}", t.error());
+            }
+
+            task = t.unwrap();
+            found = true;
+            break;
+        }
+    }
+
+    // Look in indexes otherwise
+    if (!found) {
+        std::vector<IndexSongMetadata*> songs = m_nongsForId[gdSongID];
+        for (IndexSongMetadata* s : songs) {
+            if (s->uniqueID != uniqueID) {
+                continue;
+            }
+
+            if (s->url.has_value()) {
+                task = jukebox::download::startHostedDownload(s->url.value());
+                found = true;
+            } else if (s->ytId.has_value()) {
+                task = jukebox::download::startYoutubeDownload(s->ytId.value());
+                found = true;
+            }
+        }
+    }
+
+    if (!found) {
+        return Err("Couldn't download song. Reference not found");
+    }
+
+    task.listen(
+        [this, indexMeta, nongs](Result<ByteVector>* vector) {
+            if (vector->isErr()) {
+                return;
+            }
+            this->onDownloadFinish(s, nongs, std::move(vector->unwrap()));
+        },
+        [this, uniqueID, gdSongID](float* progress) {
+            this->onDownloadProgress(gdSongID, uniqueID, *progress);
+        });
+    return Ok();
 }
 
-void IndexManager::onDownloadProgress(IndexSongMetadata* metadata,
-                                      Nongs* destination, float progress) {
-    event::SongDownloadProgress(destination->songID(), metadata->uniqueID,
-                                progress)
-        .post();
-}
-
-void IndexManager::writeDownloadedFile(ByteVector&& data,
-                                       std::filesystem::path& path) {
-    std::ofstream out(path, std::ios_base::out | std::ios_base::binary);
-
-    out.write(reinterpret_cast<const char*>(data.data()), data.size());
-    out.close();
+void IndexManager::onDownloadProgress(int gdSongID, const std::string& uniqueId,
+                                      float progress) {
+    event::SongDownloadProgress(gdSongID, uniqueId, progress).post();
 }
 
 void IndexManager::onDownloadFinish(IndexSongMetadata* metadata,
                                     Nongs* destination, ByteVector&& data) {
+    if (data.size() == 0) {
+        log::error("Failed to store downloaded file. ByteVector empty.");
+        return;
+    }
     // TODO: hopefully all indexes have mp3 :troll:
-    std::filesystem::path path =
+    const std::filesystem::path path =
         NongManager::get().baseNongsPath() /
         fmt::format("{}-{}.mp3", metadata->parentID->m_id, metadata->uniqueID);
-    this->writeDownloadedFile(std::move(data), path);
+
+    std::ofstream out(path, std::ios_base::out | std::ios_base::binary);
+
+    if (!out.is_open()) {
+        log::error(
+            "Failed to store downloaded file. Couldn't open file for write");
+        return;
+    }
+
+    out.write(reinterpret_cast<const char*>(data.data()), data.size());
+    out.close();
 
     Result<Song*> result;
 
@@ -557,13 +598,19 @@ void IndexManager::onDownloadFinish(IndexSongMetadata* metadata,
                                 metadata->name, metadata->artist, std::nullopt,
                                 metadata->startOffset),
                    metadata->ytId.value(), metadata->parentID->m_id, path));
+    } else {
+        log::error("Couldn't store index song. No URL or YouTube ID.");
+        // Don't really care about this, just don't throw an exception
+        std::error_code ec;
+        std::filesystem::remove(path, ec);
+        return;
     }
 
     if (result.isErr()) {
+        log::error("Failed to add song to manifest: {}", result.error());
+        // Don't really care about this, just don't throw an exception
         std::error_code ec;
         std::filesystem::remove(path, ec);
-
-        // SongDownloadErrorEvent
         return;
     }
 
@@ -821,8 +868,7 @@ void IndexManager::onDownloadFinish(IndexSongMetadata* metadata,
 
 ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
     log::info("starting download");
-    this->downloadSong(e->gdId(), e->song()->uniqueID);
+    (void)this->downloadSong(e->gdId(), e->song()->uniqueID);
     return ListenerResult::Propagate;
 }
-
 };  // namespace jukebox

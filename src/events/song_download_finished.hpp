@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include "Geode/loader/Event.hpp"
 
 #include "index.hpp"
@@ -14,10 +15,11 @@ class SongDownloadFinished final : public geode::Event {
 protected:
     friend class ::jukebox::IndexManager;
 
-    index::IndexSongMetadata* m_song = nullptr;
+    std::optional<index::IndexSongMetadata*> m_song = nullptr;
     Song* m_destination;
 
-    SongDownloadFinished(index::IndexSongMetadata* song, Song* destination);
+    SongDownloadFinished(std::optional<index::IndexSongMetadata*> song,
+                         Song* destination);
 
 public:
     index::IndexSongMetadata* song();

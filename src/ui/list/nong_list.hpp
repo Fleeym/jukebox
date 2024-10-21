@@ -7,8 +7,11 @@
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/loader/Event.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
+#include "events/song_download_finished.hpp"
+#include "nong.hpp"
 #include "ui/list/nong_cell.hpp"
 
 namespace jukebox {
@@ -35,11 +38,15 @@ protected:
 
     std::vector<NongCell*> listedNongCells;
 
+    geode::EventListener<EventFilter<event::SongDownloadFinished>>
+        m_downloadFinishedListener = {this, &NongList::onDownloadFinish};
+
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
 
     void addSongToList(Song* nong, Nongs* parent);
     void addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent);
+    geode::ListenerResult onDownloadFinish(event::SongDownloadFinished* e);
 
 public:
     void scrollToTop();

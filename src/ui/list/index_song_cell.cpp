@@ -155,6 +155,15 @@ ListenerResult IndexSongCell::onDownloadProgress(
         return ListenerResult::Propagate;
     }
 
+    if (!m_progressContainer->isVisible()) {
+        CCSprite* newSpr =
+            CCSprite::createWithSpriteFrameName("GJ_cancelDownloadBtn_001.png");
+        newSpr->setScale(0.7f);
+        m_downloadButton->setSprite(newSpr);
+        m_downloadButton->setColor(ccc3(105, 105, 105));
+        m_progressContainer->setVisible(true);
+    }
+
     m_progressBar->setPercentage(e->progress());
     return ListenerResult::Propagate;
 }

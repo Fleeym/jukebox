@@ -6,15 +6,19 @@
 #include <optional>
 #include <string>
 #include <system_error>
+#include <vector>
 
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <matjson.hpp>
-#include <vector>
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/utils/Result.hpp"
 
+#include "Geode/utils/Task.hpp"
+#include "Geode/utils/general.hpp"
+#include "download/hosted.hpp"
+#include "download/youtube.hpp"
 #include "index.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong_serialize.hpp"
@@ -122,6 +126,14 @@ public:
     std::optional<std::filesystem::path> path() const { return m_path; }
     std::string youtubeID() const { return m_youtubeID; }
     std::optional<std::string> indexID() const { return m_indexID; }
+    Result<Task<Result<ByteVector>, float>> startDownload() {
+        std::error_code ec;
+        if (m_path.has_value() && std::filesystem::exists(m_path.value(), ec)) {
+            return Err("Song already is downloaded");
+        }
+
+        return Ok(download::startYoutubeDownload(m_youtubeID));
+    }
 };
 
 YTSong::YTSong(SongMetadata&& metadata, std::string youtubeID,
@@ -158,6 +170,10 @@ std::optional<std::filesystem::path> YTSong::path() const {
     return m_impl->path();
 }
 
+Result<Task<Result<ByteVector>, float>> YTSong::startDownload() {
+    return m_impl->startDownload();
+}
+
 class HostedSong::Impl {
 private:
     friend class HostedSong;
@@ -192,6 +208,14 @@ public:
     std::string url() const { return m_url; }
     std::optional<std::string> indexID() const { return m_indexID; }
     std::optional<std::filesystem::path> path() const { return m_path; }
+    Result<Task<Result<ByteVector>, float>> startDownload() {
+        std::error_code ec;
+        if (m_path.has_value() && std::filesystem::exists(m_path.value(), ec)) {
+            return Err("Song already is downloaded");
+        }
+
+        return Ok(download::startHostedDownload(m_url));
+    }
 };
 
 HostedSong::HostedSong(SongMetadata&& metadata, std::string url,
@@ -219,6 +243,10 @@ std::optional<std::string> HostedSong::indexID() const {
 void HostedSong::setIndexID(const std::string& id) { m_impl->m_indexID = id; }
 std::optional<std::filesystem::path> HostedSong::path() const {
     return m_impl->path();
+}
+
+Result<Task<Result<ByteVector>, float>> HostedSong::startDownload() {
+    return m_impl->startDownload();
 }
 
 HostedSong::HostedSong(HostedSong&& other) = default;
@@ -267,13 +295,15 @@ public:
             return Err(json.error());
         }
 
-        std::filesystem::path path = NongManager::get().baseManifestPath();
+        const std::filesystem::path path =
+            NongManager::get().baseManifestPath() /
+            fmt::format("{}.json", m_songID);
 
-        auto filepath = fmt::format("{}/{}.json", path.string(), m_songID);
-        std::ofstream output(filepath);
+        std::ofstream output(path);
         if (!output.is_open()) {
-            return Err(fmt::format("Couldn't open file: {}", filepath));
+            return Err(fmt::format("Couldn't open file: {}", path));
         }
+
         output << json.unwrap().dump(matjson::NO_INDENTATION);
         output.close();
 

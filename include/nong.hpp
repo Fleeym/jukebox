@@ -11,6 +11,8 @@
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/utils/Result.hpp"
 
+#include "Geode/utils/Task.hpp"
+#include "Geode/utils/general.hpp"
 #include "index.hpp"
 #include "platform.hpp"
 
@@ -107,6 +109,8 @@ public:
     std::optional<std::string> indexID() const;
     void setIndexID(const std::string& id);
     std::optional<std::filesystem::path> path() const;
+    geode::Result<geode::Task<geode::Result<geode::ByteVector>, float>>
+    startDownload();
 };
 
 class JUKEBOX_DLL HostedSong final : public Song {
@@ -133,6 +137,8 @@ public:
     std::optional<std::string> indexID() const;
     void setIndexID(const std::string& id);
     std::optional<std::filesystem::path> path() const;
+    geode::Result<geode::Task<geode::Result<geode::ByteVector>, float>>
+    startDownload();
 };
 
 class JUKEBOX_DLL Nongs final {
