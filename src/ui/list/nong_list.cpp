@@ -7,7 +7,6 @@
 #include <unordered_set>
 
 #include "GUI/CCControlExtension/CCScale9Sprite.h"
-#include "Geode/binding/OptionsScrollLayer.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
@@ -16,14 +15,11 @@
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Log.hpp"
-#include "Geode/platform/windows.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
-#include "Geode/utils/casts.hpp"
 #include "Geode/utils/cocos.hpp"
 #include "events/song_download_finished.hpp"
 #include "index.hpp"
-#include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
 #include "ui/list/index_song_cell.hpp"
