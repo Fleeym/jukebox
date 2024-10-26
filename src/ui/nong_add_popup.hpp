@@ -7,6 +7,7 @@
 
 #include "Geode/binding/ButtonSprite.hpp"
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
+#include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/loader/Event.hpp"
@@ -27,10 +28,10 @@ class NongDropdownLayer;
 class NongAddPopup
     : public Popup<NongDropdownLayer*, int, std::optional<Song*>> {
 protected:
-    enum class NongAddPopupSongType {
-        local,
-        yt,
-        hosted,
+    enum class SongType {
+        LOCAL,
+        YOUTUBE,
+        HOSTED,
     };
 
     struct ParsedMetadata {
@@ -44,37 +45,33 @@ protected:
 
     std::vector<std::string> m_publishableIndexes;
 
-    CCMenuItemSpriteExtra* m_addSongButton;
-    CCMenuItemSpriteExtra* m_switchLocalButton;
-    CCMenuItemSpriteExtra* m_switchYTButton;
-    CCMenuItemSpriteExtra* m_switchHostedButton;
-    // CCMenu* m_selectSongMenu;
-    CCMenu* m_addSongMenu;
-    CCMenu* m_switchLocalMenu;
-    CCMenu* m_switchYTMenu;
-    CCMenu* m_switchHostedMenu;
-    ButtonSprite* m_switchLocalButtonSprite;
-    ButtonSprite* m_switchYTButtonSprite;
-    ButtonSprite* m_switchHostedButtonSprite;
+    std::string m_memoizedLocalInput;
+    std::string m_memoizedHostedInput;
 
-    CCMenu* m_switchButtonsMenu;
-    CCMenu* m_specificInputsMenu;
+    CCNode* m_container = nullptr;
+    TextInput* m_songNameInput = nullptr;
+    TextInput* m_artistNameInput = nullptr;
+    TextInput* m_levelNameInput = nullptr;
+    TextInput* m_startOffsetInput = nullptr;
+    
+    CCMenu* m_switchMenu = nullptr;
+    ButtonSprite* m_switchLocalSpr = nullptr;
+    CCMenuItemSpriteExtra* m_switchLocalButton = nullptr;
+    ButtonSprite* m_switchYTSpr = nullptr;
+    CCMenuItemSpriteExtra* m_switchYTButton = nullptr;
+    ButtonSprite* m_switchHostedSpr = nullptr;
+    CCMenuItemSpriteExtra* m_switchHostedButton = nullptr;
 
-    CCMenu* m_localMenu;
-    CCMenu* m_localSongButtonMenu;
-    CCMenuItemSpriteExtra* m_localSongButton;
-    TextInput* m_localLinkInput;
+    CCNode* m_specialInfoNode = nullptr;
+    TextInput* m_specialInput = nullptr;
+    CCMenu* m_localSongMenu = nullptr;
+    CCMenuItemSpriteExtra* m_localSongButton = nullptr;
 
-    TextInput* m_ytLinkInput;
+    CCMenu* m_addSongMenu = nullptr;
+    CCMenuItemSpriteExtra* m_addSongButton = nullptr;
+    CCMenuItemSpriteExtra* m_publishSongButton = nullptr;
 
-    TextInput* m_hostedLinkInput;
-
-    NongAddPopupSongType m_songType;
-
-    TextInput* m_songNameInput;
-    TextInput* m_artistNameInput;
-    TextInput* m_levelNameInput;
-    TextInput* m_startOffsetInput;
+    SongType m_songType;
 
     EventListener<Task<Result<std::filesystem::path>>> m_pickListener;
 
@@ -82,10 +79,9 @@ protected:
 
     bool setup(NongDropdownLayer* parent, int songID,
                std::optional<Song*> replacedNong) override;
-    void createInputs();
     void addPathLabel(std::string const& path);
     void onFileOpen(Task<Result<std::filesystem::path>>::Event* event);
-    void setSongType(NongAddPopupSongType type);
+    void setSongType(SongType type);
     void onSwitchToLocal(CCObject*);
     void onSwitchToYT(CCObject*);
     void onSwitchToHosted(CCObject*);
