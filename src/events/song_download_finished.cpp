@@ -1,5 +1,7 @@
 #include "events/song_download_finished.hpp"
 
+#include <optional>
+
 #include "index.hpp"
 #include "nong.hpp"
 
@@ -9,10 +11,12 @@ namespace jukebox {
 
 namespace event {
 
-SongDownloadFinished::SongDownloadFinished(IndexSongMetadata* song,
-                                           Song* destination)
-    : m_song(song), m_destination(destination) {}
-IndexSongMetadata* SongDownloadFinished::song() { return m_song; }
+SongDownloadFinished::SongDownloadFinished(
+    std::optional<index::IndexSongMetadata*> song, Song* destination)
+    : m_indexSource(song), m_destination(destination) {}
+std::optional<IndexSongMetadata*> SongDownloadFinished::indexSource() {
+    return m_indexSource;
+}
 Song* SongDownloadFinished::destination() { return m_destination; }
 
 }  // namespace event

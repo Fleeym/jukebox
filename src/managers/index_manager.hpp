@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <variant>
 
 #include "Geode/loader/Event.hpp"
 #include "Geode/utils/Result.hpp"
@@ -45,9 +46,11 @@ protected:
     EventListener<EventFilter<event::StartDownload>> m_downloadSignalListener;
 
     geode::ListenerResult onDownloadStart(event::StartDownload* e);
-    void onDownloadProgress(int gdSongID, const std::string& uniqueId, float progress);
-    void onDownloadFinish(index::IndexSongMetadata* metadata,
-                          Nongs* destination, ByteVector&& data);
+    void onDownloadProgress(int gdSongID, const std::string& uniqueId,
+                            float progress);
+    void onDownloadFinish(
+        std::variant<index::IndexSongMetadata*, Song*>&& source,
+        Nongs* destination, ByteVector&& data);
 
 public:
     // index id -> index metadata

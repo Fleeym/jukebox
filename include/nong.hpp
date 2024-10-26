@@ -80,7 +80,6 @@ public:
     std::optional<std::string> indexID() const { return std::nullopt; }
     void setIndexID(const std::string& id) {}
 
-    // Might not be used
     static LocalSong createUnknown(int songID);
     static LocalSong fromSongObject(SongInfoObject* obj);
 };

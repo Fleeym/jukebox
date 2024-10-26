@@ -7,6 +7,7 @@
 #include <matjson.hpp>
 #include <memory>
 #include <optional>
+#include <variant>
 #include <vector>
 
 #include <fmt/core.h>
@@ -114,44 +115,48 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
 
     this->cacheIndexName(index->m_id, index->m_name);
 
-    for (const auto& [key, ytNong] : jsonObj["nongs"]["youtube"].as_object()) {
-        Result<IndexSongMetadata> r =
-            matjson::Serialize<IndexSongMetadata>::from_json(ytNong);
-        if (r.isErr()) {
-            event::SongError(
-                false, fmt::format("Failed to parse index song: {}", r.error()))
-                .post();
-            continue;
-        }
-        std::unique_ptr<IndexSongMetadata> song =
-            std::make_unique<IndexSongMetadata>(r.unwrap());
-        song->uniqueID = key;
-        song->parentID = index.get();
-
-        for (int id : song->songIDs) {
-            if (!m_nongsForId.contains(id)) {
-                m_nongsForId[id] = {song.get()};
-            } else {
-                m_nongsForId[id].push_back(song.get());
-            }
-
-            std::optional<Nongs*> opt = NongManager::get().getNongs(id);
-            if (!opt.has_value()) {
-                continue;
-            }
-
-            Nongs* nongs = opt.value();
-
-            if (geode::Result<> r = nongs->registerIndexSong(song.get());
-                r.isErr()) {
-                event::SongError(
-                    false,
-                    fmt::format("Failed to register index song: {}", r.error()))
-                    .post();
-            }
-        }
-        index->m_songs.m_youtube.push_back(std::move(song));
-    }
+    // TODO: re-enable youtube downloads at a later date
+    /*for (const auto& [key, ytNong] : jsonObj["nongs"]["youtube"].as_object())
+     * {*/
+    /*    Result<IndexSongMetadata> r =*/
+    /*        matjson::Serialize<IndexSongMetadata>::from_json(ytNong);*/
+    /*    if (r.isErr()) {*/
+    /*        event::SongError(*/
+    /*            false, fmt::format("Failed to parse index song: {}",
+     * r.error()))*/
+    /*            .post();*/
+    /*        continue;*/
+    /*    }*/
+    /*    std::unique_ptr<IndexSongMetadata> song =*/
+    /*        std::make_unique<IndexSongMetadata>(r.unwrap());*/
+    /*    song->uniqueID = key;*/
+    /*    song->parentID = index.get();*/
+    /**/
+    /*    for (int id : song->songIDs) {*/
+    /*        if (!m_nongsForId.contains(id)) {*/
+    /*            m_nongsForId[id] = {song.get()};*/
+    /*        } else {*/
+    /*            m_nongsForId[id].push_back(song.get());*/
+    /*        }*/
+    /**/
+    /*        std::optional<Nongs*> opt = NongManager::get().getNongs(id);*/
+    /*        if (!opt.has_value()) {*/
+    /*            continue;*/
+    /*        }*/
+    /**/
+    /*        Nongs* nongs = opt.value();*/
+    /**/
+    /*        if (geode::Result<> r = nongs->registerIndexSong(song.get());*/
+    /*            r.isErr()) {*/
+    /*            event::SongError(*/
+    /*                false,*/
+    /*                fmt::format("Failed to register index song: {}",
+     * r.error()))*/
+    /*                .post();*/
+    /*        }*/
+    /*    }*/
+    /*    index->m_songs.m_youtube.push_back(std::move(song));*/
+    /*}*/
 
     for (const auto& [key, hostedNong] :
          jsonObj["nongs"]["hosted"].as_object()) {
@@ -487,6 +492,7 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
 
     DownloadSongTask task;
     std::optional<IndexSongMetadata*> indexMeta = std::nullopt;
+    Song* local = nullptr;
     bool found = false;
 
     // Try starting download from local reference first
@@ -495,14 +501,19 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
             continue;
         }
 
-        Result<DownloadSongTask> t = song->startDownload();
-        if (t.isErr()) {
-            return Err("Failed to start download: {}", t.error());
-        }
-
-        task = t.unwrap();
-        found = true;
+        return Err(
+            "YouTube song downloads will be enabled in a future release!");
         break;
+
+        /*Result<DownloadSongTask> t = song->startDownload();*/
+        /*if (t.isErr()) {*/
+        /*    return Err("Failed to start download: {}", t.error());*/
+        /*}*/
+        /**/
+        /*task = t.unwrap();*/
+        /*found = true;*/
+        /*local = song.get();*/
+        /*break;*/
     }
 
     if (!found) {
@@ -518,6 +529,7 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
 
             task = t.unwrap();
             found = true;
+            local = song.get();
             break;
         }
     }
@@ -532,10 +544,19 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
 
             if (s->url.has_value()) {
                 task = jukebox::download::startHostedDownload(s->url.value());
+                indexMeta = s;
                 found = true;
+                break;
             } else if (s->ytId.has_value()) {
+                return Err(
+                    "YouTube song downloads will be enabled in a future "
+                    "release!");
+                break;
+
                 task = jukebox::download::startYoutubeDownload(s->ytId.value());
+                indexMeta = s;
                 found = true;
+                break;
             }
         }
     }
@@ -545,11 +566,25 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
     }
 
     task.listen(
-        [this, indexMeta, nongs](Result<ByteVector>* vector) {
+        [this, indexMeta, local, nongs](Result<ByteVector>* vector) {
             if (vector->isErr()) {
                 return;
             }
-            this->onDownloadFinish(s, nongs, std::move(vector->unwrap()));
+
+            std::variant<index::IndexSongMetadata*, Song*> source;
+
+            if (indexMeta.has_value()) {
+                source = indexMeta.value();
+            } else {
+                source = local;
+            }
+
+            if (auto s = std::get<index::IndexSongMetadata*>(source)) {
+                log::info("{}", s->name);
+            }
+
+            this->onDownloadFinish(std::move(source), nongs,
+                                   std::move(vector->unwrap()));
         },
         [this, uniqueID, gdSongID](float* progress) {
             this->onDownloadProgress(gdSongID, uniqueID, *progress);
@@ -562,16 +597,24 @@ void IndexManager::onDownloadProgress(int gdSongID, const std::string& uniqueId,
     event::SongDownloadProgress(gdSongID, uniqueId, progress).post();
 }
 
-void IndexManager::onDownloadFinish(IndexSongMetadata* metadata,
-                                    Nongs* destination, ByteVector&& data) {
+void IndexManager::onDownloadFinish(
+    std::variant<index::IndexSongMetadata*, Song*>&& source, Nongs* destination,
+    ByteVector&& data) {
     if (data.size() == 0) {
         log::error("Failed to store downloaded file. ByteVector empty.");
         return;
     }
-    // TODO: hopefully all indexes have mp3 :troll:
-    const std::filesystem::path path =
-        NongManager::get().baseNongsPath() /
-        fmt::format("{}-{}.mp3", metadata->parentID->m_id, metadata->uniqueID);
+
+    std::filesystem::path path;
+
+    if (auto s = std::get<index::IndexSongMetadata*>(source)) {
+        path = NongManager::get().baseNongsPath() /
+               fmt::format("{}-{}.mp3", s->parentID->m_id, s->uniqueID);
+    } else {
+        path = NongManager::get().baseNongsPath() /
+               fmt::format("{}.mp3",
+                           std::get<Song*>(source)->metadata()->uniqueID);
+    }
 
     std::ofstream out(path, std::ios_base::out | std::ios_base::binary);
 
@@ -585,6 +628,15 @@ void IndexManager::onDownloadFinish(IndexSongMetadata* metadata,
     out.close();
 
     Result<Song*> result;
+
+    if (auto s = std::holds_alternative<Song*>(source)) {
+        event::SongDownloadFinished(std::nullopt, std::get<Song*>(source))
+            .post();
+        return;
+    }
+
+    index::IndexSongMetadata* metadata =
+        std::get<index::IndexSongMetadata*>(source);
 
     if (metadata->url.has_value()) {
         result = destination->add(
