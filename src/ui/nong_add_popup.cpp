@@ -668,15 +668,24 @@ geode::Result<> NongAddPopup::addLocalSong(
         return Err("Artist name is empty");
     }
 
-    std::string id = jukebox::random_string(16);
+    std::string id = m_replacedNong.has_value()
+                         ? m_replacedNong.value()->metadata()->uniqueID
+                         : jukebox::random_string(16);
     std::string unique = fmt::format("{}.{}", id, extension);
     std::filesystem::path destination = Mod::get()->getSaveDir() / "nongs";
-    if (!std::filesystem::exists(destination)) {
-        std::filesystem::create_directory(destination);
+    std::error_code error_code;
+    if (!std::filesystem::exists(destination, error_code)) {
+        if (!std::filesystem::create_directory(destination, error_code)) {
+            return Err("Failed to create nongs directory.");
+        }
     }
     unique += songPath.extension().string();
     destination /= unique;
-    std::error_code error_code;
+
+    if (std::filesystem::exists(destination, error_code)) {
+        std::filesystem::remove(destination, error_code);
+    }
+
     bool result = std::filesystem::copy_file(songPath, destination, error_code);
     if (error_code) {
         return Err(fmt::format(
@@ -758,7 +767,9 @@ geode::Result<> NongAddPopup::addYTSong(
     YTSong song = YTSong{
         SongMetadata{
             m_songID,
-            jukebox::random_string(16),
+            m_replacedNong.has_value()
+                ? m_replacedNong.value()->metadata()->uniqueID
+                : jukebox::random_string(16),
             songName,
             artistName,
             levelName,
