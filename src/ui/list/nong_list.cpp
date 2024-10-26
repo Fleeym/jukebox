@@ -15,9 +15,11 @@
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/Event.hpp"
+#include "Geode/loader/Log.hpp"
 #include "Geode/platform/windows.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
+#include "Geode/utils/casts.hpp"
 #include "Geode/utils/cocos.hpp"
 #include "events/song_download_finished.hpp"
 #include "index.hpp"
@@ -96,18 +98,12 @@ bool NongList::init(
     return true;
 }
 
-void NongList::setDownloadProgress(std::string uniqueID, float progress) {
-    for (auto& cell : listedNongCells) {
-        if (cell->m_songInfo->metadata()->uniqueID == uniqueID) {
-            cell->setDownloadProgress(progress);
-            break;
-        }
-    }
-}
+void NongList::setDownloadProgress(std::string uniqueID, float progress) {}
 
 void NongList::build() {
+    log::info("rebuilding list");
     if (m_list->m_contentLayer->getChildrenCount() > 0) {
-        m_list->m_contentLayer->removeAllChildren();
+        m_list->m_contentLayer->removeAllChildrenWithCleanup(true);
     }
 
     if (m_songIds.size() == 0) {
@@ -159,6 +155,7 @@ void NongList::build() {
 
         CCLabelBMFont* localSongs =
             CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
+        localSongs->setID("local-section");
         localSongs->setLayoutOptions(
             AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
         m_list->m_contentLayer->addChild(localSongs);
@@ -168,12 +165,7 @@ void NongList::build() {
 
         if (nongs->locals().size() == 0 && nongs->youtube().size() == 0 &&
             nongs->hosted().size() == 0) {
-            CCLabelBMFont* label = CCLabelBMFont::create(
-                "You have no stored nongs :(", "bigFont.fnt");
-            label->setLayoutOptions(
-                AxisLayoutOptions::create()->setAutoScale(false));
-            label->limitLabelWidth(150.0f, 0.7f, 0.1f);
-            m_list->m_contentLayer->addChild(label);
+            this->addNoLocalSongsNotice();
         }
 
         for (std::unique_ptr<LocalSong>& nong : nongs->locals()) {
@@ -199,6 +191,7 @@ void NongList::build() {
         if (nongs->indexSongs().size() > 0) {
             CCLabelBMFont* indexLabel =
                 CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            indexLabel->setID("index-section");
             indexLabel->setLayoutOptions(
                 AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
             m_list->m_contentLayer->addChild(indexLabel);
@@ -223,7 +216,7 @@ void NongList::build() {
     this->scrollToTop();
 }
 
-void NongList::addSongToList(Song* nong, Nongs* parent) {
+void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     int id = m_currentSong.value();
     Song* defaultSong = parent->defaultSong();
     Song* active = parent->active();
@@ -243,13 +236,21 @@ void NongList::addSongToList(Song* nong, Nongs* parent) {
         [this, id, uniqueID]() { m_onDelete(id, uniqueID, false, true); },
         [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
         [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
+    cell->setID(uniqueID);
 
-    if (auto progress = IndexManager::get().getSongDownloadProgress(uniqueID);
-        progress.has_value()) {
-        cell->setDownloadProgress(progress.value());
-    };
+    if (!liveInsert) {
+        m_list->m_contentLayer->addChild(cell);
+        return;
+    }
 
-    m_list->m_contentLayer->addChild(cell);
+    CCNode* indexSection =
+        m_list->m_contentLayer->getChildByID("index-section");
+
+    if (indexSection) {
+        m_list->m_contentLayer->insertBefore(cell, indexSection);
+    } else {
+        m_list->m_contentLayer->addChild(cell);
+    }
 }
 
 void NongList::addIndexSongToList(index::IndexSongMetadata* song,
@@ -257,8 +258,28 @@ void NongList::addIndexSongToList(index::IndexSongMetadata* song,
     const CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
     IndexSongCell* cell =
         IndexSongCell::create(song, m_currentSong.value(), itemSize);
-
+    cell->setID(fmt::format("{}-{}", song->parentID->m_id, song->uniqueID));
     m_list->m_contentLayer->addChild(cell);
+}
+
+void NongList::addNoLocalSongsNotice(bool liveInsert) {
+    CCLabelBMFont* label =
+        CCLabelBMFont::create("You have no stored nongs :(", "bigFont.fnt");
+    label->setID("no-local-songs");
+    label->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
+    label->limitLabelWidth(150.0f, 0.7f, 0.1f);
+
+    if (!liveInsert) {
+        m_list->m_contentLayer->addChild(label);
+    } else {
+        CCNode* section = m_list->m_contentLayer->getChildByID("local-section");
+        if (!section) {
+            log::error(
+                "Couldn't insert no local songs notice. Section not found");
+        } else {
+            m_list->m_contentLayer->insertAfter(label, section);
+        }
+    }
 }
 
 void NongList::scrollToTop() {
@@ -299,9 +320,11 @@ void NongList::onSelectSong(int songId) {
 }
 
 ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
-    if (!m_currentSong.has_value()) {
+    if (!m_list || !m_currentSong.has_value() ||
+        !e->indexSource().has_value()) {
         return ListenerResult::Propagate;
     }
+
     std::optional<Nongs*> optNongs =
         NongManager::get().getNongs(m_currentSong.value());
 
@@ -311,29 +334,24 @@ ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
 
     Nongs* nongs = optNongs.value();
 
-    if (e->destination()->type() == NongType::HOSTED) {
-        HostedSong* destination = static_cast<HostedSong*>(e->destination());
-        for (const std::unique_ptr<HostedSong>& song : nongs->hosted()) {
-            if (destination != song.get()) {
-                continue;
-            }
-
-            this->build();
-            return ListenerResult::Propagate;
-        }
+    if (!nongs->findSong(e->destination()->metadata()->uniqueID)) {
+        return ListenerResult::Propagate;
     }
 
-    if (e->destination()->type() == NongType::YOUTUBE) {
-        YTSong* destination = static_cast<YTSong*>(e->destination());
-        for (const std::unique_ptr<YTSong>& song : nongs->youtube()) {
-            if (destination != song.get()) {
-                continue;
-            }
-
-            this->build();
-            break;
-        }
+    index::IndexSongMetadata* meta = e->indexSource().value();
+    if (CCNode* i = m_list->m_contentLayer->getChildByID(
+            fmt::format("{}-{}", meta->parentID->m_id, meta->uniqueID))) {
+        i->removeFromParentAndCleanup(true);
     }
+
+    this->addSongToList(e->destination(), nongs, true);
+
+    // Remove "you have no local songs label"
+    if (auto node = m_list->m_contentLayer->getChildByID("no-local-songs")) {
+        node->removeFromParentAndCleanup(true);
+    }
+
+    m_list->m_contentLayer->updateLayout();
 
     return ListenerResult::Propagate;
 }

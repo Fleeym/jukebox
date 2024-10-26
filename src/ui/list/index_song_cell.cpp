@@ -116,8 +116,8 @@ bool IndexSongCell::init(IndexSongMetadata* song, int gdId,
     m_progressContainer->setContentSize(
         m_downloadButton->getScaledContentSize());
     m_progressContainer->setContentSize(m_progressBar->getScaledContentSize());
-    m_progressContainer->addChildAtPosition(m_progressBarBack, Anchor::Center);
     m_progressContainer->addChildAtPosition(m_progressBar, Anchor::Center);
+    m_progressContainer->addChildAtPosition(m_progressBarBack, Anchor::Center);
     m_progressContainer->setZOrder(-1);
     m_progressContainer->setVisible(false);
 

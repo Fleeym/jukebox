@@ -12,6 +12,7 @@
 
 #include "events/song_download_finished.hpp"
 #include "nong.hpp"
+#include "ui/list/index_song_cell.hpp"
 #include "ui/list/nong_cell.hpp"
 
 namespace jukebox {
@@ -43,8 +44,9 @@ protected:
 
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
-
-    void addSongToList(Song* nong, Nongs* parent);
+    
+    void addNoLocalSongsNotice(bool liveInsert = false);
+    void addSongToList(Song* nong, Nongs* parent, bool liveInsert = false);
     void addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent);
     geode::ListenerResult onDownloadFinish(event::SongDownloadFinished* e);
 

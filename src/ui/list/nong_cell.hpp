@@ -5,6 +5,8 @@
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 
+#include "Geode/loader/Event.hpp"
+#include "events/song_download_progress.hpp"
 #include "nong.hpp"
 
 using namespace geode::prelude;
@@ -16,6 +18,7 @@ class NongDropdownLayer;
 class NongCell : public CCNode {
 protected:
     int m_songID;
+    std::string m_uniqueID;
     CCLabelBMFont* m_songNameLabel = nullptr;
     CCLabelBMFont* m_authorNameLabel = nullptr;
     CCLabelBMFont* m_metadataLabel = nullptr;
@@ -37,14 +40,19 @@ protected:
     CCMenu* m_downloadProgressContainer;
     CCProgressTimer* m_downloadProgress;
 
+    EventListener<EventFilter<event::SongDownloadProgress>> m_progressListener{
+        this, &NongCell::onDownloadProgress};
+
     bool init(int songID, Song*, bool isDefault, bool selected,
               CCSize const& size, std::function<void()> onSelect,
               std::function<void()> onFixDefault,
               std::function<void()> onDelete, std::function<void()> onDownload,
               std::function<void()> onEdit);
 
+    ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
+
 public:
-    Song* m_songInfo;
+    Song* m_songInfo = nullptr;
     static NongCell* create(int songID, Song* song, bool isDefault,
                             bool selected, CCSize const& size,
                             std::function<void()> onSelect,
@@ -58,7 +66,6 @@ public:
     void onFixDefault(CCObject*);
     void onDownload(CCObject*);
     void onEdit(CCObject*);
-    void setDownloadProgress(float progress);
 };
 
 }  // namespace jukebox

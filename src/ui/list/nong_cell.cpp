@@ -1,5 +1,6 @@
 #include "ui/list/nong_cell.hpp"
 
+#include <cstdint>
 #include <numeric>
 
 #include <fmt/core.h>
@@ -12,6 +13,8 @@
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
+#include "Geode/loader/Event.hpp"
+#include "Geode/loader/Log.hpp"
 #include "Geode/ui/Popup.hpp"
 
 #include "managers/index_manager.hpp"
@@ -30,6 +33,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     }
 
     m_songID = songID;
+    m_uniqueID = info->metadata()->uniqueID;
     m_songInfo = info;
     m_isDefault = isDefault;
     m_isActive = selected;
@@ -79,8 +83,10 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     menu->setID("buttons-menu");
     menu->setAnchorPoint({1.0f, 0.5f});
     menu->setContentSize({buttonsWidth, maxSize.height});
-    menu->setLayout(
-        RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::End));
+    AxisLayout* layout =
+        RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::End);
+    layout->ignoreInvisibleChildren(true);
+    menu->setLayout(layout);
 
     if (!m_isDefault && !m_songInfo->indexID().has_value()) {
         CCSprite* spr = CCSprite::create("JB_Edit.png"_spr);
@@ -103,13 +109,14 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
             sprite, this, menu_selector(NongCell::onFixDefault));
         fixButton->setID("fix-button");
         menu->addChild(fixButton);
-    } else if (m_isDownloadable && !m_isDownloaded) {
+    } else {
         CCSprite* sprite =
             CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
         sprite->setScale(0.7f);
         m_downloadButton = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(NongCell::onDownload));
         m_downloadButton->setID("download-button");
+        m_downloadButton->setVisible(!m_isDownloaded);
         menu->addChild(m_downloadButton);
 
         CCSprite* progressBarBack =
@@ -254,14 +261,18 @@ void NongCell::onFixDefault(CCObject* target) {
         });
 }
 
-void NongCell::setDownloadProgress(float progress) {
-    m_downloadProgressContainer->setVisible(true);
-    auto sprite =
-        CCSprite::createWithSpriteFrameName("GJ_cancelDownloadBtn_001.png");
-    sprite->setScale(0.7f);
-    m_downloadButton->setSprite(sprite);
-    m_downloadButton->setColor(ccc3(105, 105, 105));
-    m_downloadProgress->setPercentage(progress * 100.f);
+ListenerResult NongCell::onDownloadProgress(event::SongDownloadProgress* e) {
+    if (e->uniqueID() != m_uniqueID || e->gdSongID() != m_songID) {
+        return ListenerResult::Propagate;
+    }
+
+    if (!m_downloadProgressContainer->isVisible()) {
+        m_downloadProgressContainer->setVisible(true);
+        m_downloadButton->setColor(ccc3(105, 105, 105));
+    }
+
+    m_downloadProgress->setPercentage(e->progress());
+    return ListenerResult::Propagate;
 }
 
 void NongCell::onSet(CCObject* target) { m_onSelect(); }
