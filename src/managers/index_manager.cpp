@@ -579,10 +579,6 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
                 source = local;
             }
 
-            if (auto s = std::get<index::IndexSongMetadata*>(source)) {
-                log::info("{}", s->name);
-            }
-
             this->onDownloadFinish(std::move(source), nongs,
                                    std::move(vector->unwrap()));
         },
@@ -607,13 +603,23 @@ void IndexManager::onDownloadFinish(
 
     std::filesystem::path path;
 
-    if (auto s = std::get<index::IndexSongMetadata*>(source)) {
+    if (std::holds_alternative<index::IndexSongMetadata*>(source)) {
+        index::IndexSongMetadata* s =
+            std::get<index::IndexSongMetadata*>(source);
         path = NongManager::get().baseNongsPath() /
                fmt::format("{}-{}.mp3", s->parentID->m_id, s->uniqueID);
     } else {
-        path = NongManager::get().baseNongsPath() /
-               fmt::format("{}.mp3",
-                           std::get<Song*>(source)->metadata()->uniqueID);
+        std::string name;
+        Song* song = std::get<Song*>(source);
+
+        if (song->indexID().has_value()) {
+            name = fmt::format("{}-{}.mp3", song->indexID().value(),
+                               song->metadata()->uniqueID);
+        } else {
+            name = fmt::format("{}.mp3", song->metadata()->uniqueID);
+        }
+
+        path = NongManager::get().baseNongsPath() / name;
     }
 
     std::ofstream out(path, std::ios_base::out | std::ios_base::binary);

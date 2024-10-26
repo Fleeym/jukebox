@@ -28,7 +28,6 @@ protected:
     CCLabelBMFont* m_artistLabel = nullptr;
     CCLabelBMFont* m_indexNameLabel = nullptr;
 
-    CCNode* m_downloadNode = nullptr;
     CCMenu* m_downloadMenu = nullptr;
     CCMenuItemSpriteExtra* m_downloadButton = nullptr;
 

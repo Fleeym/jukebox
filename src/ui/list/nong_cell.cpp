@@ -3,16 +3,19 @@
 #include <numeric>
 
 #include <fmt/core.h>
+#include "GUI/CCControlExtension/CCScale9Sprite.h"
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/ui/Popup.hpp"
 
 #include "managers/index_manager.hpp"
+#include "nong.hpp"
 
 namespace jukebox {
 
@@ -40,64 +43,68 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     m_onEdit = onEdit;
 
     this->setContentSize(size);
-    this->setAnchorPoint(CCPoint{0.5f, 0.5f});
+    this->setAnchorPoint({0.5f, 0.5f});
 
-    CCMenuItemSpriteExtra* button;
+    constexpr float PADDING_X = 12.0f;
+    constexpr float PADDING_Y = 6.0f;
+    const CCSize maxSize = {size.width - 2 * PADDING_X,
+                            size.height - 2 * PADDING_Y};
+    const float songInfoWidth = maxSize.width * (2.0f / 3.0f);
+    const float buttonsWidth = maxSize.width - songInfoWidth;
 
-    auto bg = CCScale9Sprite::create("square02b_001.png");
+    CCScale9Sprite* bg = CCScale9Sprite::create("square02b_001.png");
     bg->setColor({0, 0, 0});
     bg->setOpacity(75);
     bg->setScale(0.3f);
     bg->setContentSize(size / bg->getScale());
     this->addChildAtPosition(bg, Anchor::Center);
 
-    if (selected) {
-        auto sprite = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
-        sprite->setScale(0.7f);
-        button = CCMenuItemSpriteExtra::create(sprite, this, nullptr);
-    } else {
-        auto sprite =
-            CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
-        sprite->setScale(0.7f);
-        button = CCMenuItemSpriteExtra::create(sprite, this,
-                                               menu_selector(NongCell::onSet));
-    }
-    button->setAnchorPoint(ccp(0.5f, 0.5f));
-    button->setID("set-button");
+    CCMenu* menu = CCMenu::create();
 
-    auto menu = CCMenu::create();
     if (m_isDownloaded) {
-        menu->addChild(button);
-    }
-    menu->setAnchorPoint(CCPoint{1.0f, 0.5f});
-    menu->setContentSize(CCSize{this->getContentSize().width, 200.f});
+        const char* selectSprName =
+            selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
 
+        CCSprite* selectSpr =
+            CCSprite::createWithSpriteFrameName(selectSprName);
+        selectSpr->setScale(0.7f);
+
+        CCMenuItemSpriteExtra* selectButton = CCMenuItemSpriteExtra::create(
+            selectSpr, this, menu_selector(NongCell::onSet));
+        selectButton->setAnchorPoint({0.5f, 0.5f});
+        selectButton->setID("set-button");
+        menu->addChild(selectButton);
+    }
+
+    menu->setID("buttons-menu");
+    menu->setAnchorPoint({1.0f, 0.5f});
+    menu->setContentSize({buttonsWidth, maxSize.height});
     menu->setLayout(
         RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::End));
 
     if (!m_isDefault && !m_songInfo->indexID().has_value()) {
-        auto spr = CCSprite::create("JB_Edit.png"_spr);
+        CCSprite* spr = CCSprite::create("JB_Edit.png"_spr);
         spr->setScale(0.7f);
-        auto editButton = CCMenuItemSpriteExtra::create(
+        CCMenuItemSpriteExtra* editButton = CCMenuItemSpriteExtra::create(
             spr, this, menu_selector(NongCell::onEdit));
         editButton->setID("edit-button");
-        editButton->setAnchorPoint(ccp(0.5f, 0.5f));
+        editButton->setAnchorPoint({0.5f, 0.5f});
         menu->addChild(editButton);
     }
 
     if (isDefault) {
-        auto sprite =
+        CCSprite* sprite =
             CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
         sprite->setScale(0.8f);
         if (!selected) {
             sprite->setColor({0x80, 0x80, 0x80});
         }
-        auto fixButton = CCMenuItemSpriteExtra::create(
+        CCMenuItemSpriteExtra* fixButton = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(NongCell::onFixDefault));
         fixButton->setID("fix-button");
         menu->addChild(fixButton);
     } else if (m_isDownloadable && !m_isDownloaded) {
-        auto sprite =
+        CCSprite* sprite =
             CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
         sprite->setScale(0.7f);
         m_downloadButton = CCMenuItemSpriteExtra::create(
@@ -105,13 +112,14 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
         m_downloadButton->setID("download-button");
         menu->addChild(m_downloadButton);
 
-        auto progressBarBack =
+        CCSprite* progressBarBack =
             CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
-        progressBarBack->setColor(ccc3(50, 50, 50));
+        progressBarBack->setColor({50, 50, 50});
         progressBarBack->setScale(0.62f);
 
-        auto spr = CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
-        spr->setColor(ccc3(0, 255, 0));
+        CCSprite* spr =
+            CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
+        spr->setColor({0, 255, 0});
 
         m_downloadProgress = CCProgressTimer::create(spr);
         m_downloadProgress->setType(
@@ -134,13 +142,11 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
                                              Anchor::Center);
     }
 
-    if (!m_isDefault &&
-        !(m_songInfo->indexID().has_value() && !m_isDownloaded)) {
-        bool trashSprite = m_isDownloadable && m_isDownloaded;
-        auto sprite = CCSprite::createWithSpriteFrameName(
-            trashSprite ? "GJ_trashBtn_001.png" : "GJ_deleteIcon_001.png");
-        sprite->setScale(trashSprite ? 0.6475 : 0.7f);
-        auto deleteButton = CCMenuItemSpriteExtra::create(
+    if (!m_isDefault) {
+        CCSprite* sprite =
+            CCSprite::createWithSpriteFrameName("GJ_trashBtn_001.png");
+        sprite->setScale(0.6475f);
+        CCMenuItemSpriteExtra* deleteButton = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(NongCell::onDelete));
         deleteButton->setID("delete-button");
         menu->addChild(deleteButton);
@@ -148,10 +154,9 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
 
     menu->updateLayout();
     menu->setID("button-menu");
-    this->addChildAtPosition(menu, Anchor::Right, CCPoint{-5.0f, 0.0f});
+    this->addChildAtPosition(menu, Anchor::Right, {-PADDING_X, 0.0f});
 
-    m_songInfoLayer = CCLayer::create();
-    auto songMetadata = m_songInfo->metadata();
+    SongMetadata* songMetadata = m_songInfo->metadata();
 
     std::vector<std::string> metadataList = {};
 
@@ -189,45 +194,45 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
                       .c_str()
                 : "",
             "bigFont.fnt");
-        m_metadataLabel->limitLabelWidth(220.f, 0.4f, 0.1f);
-        m_metadataLabel->setColor({0x00, 0xc9, 0xff});
+        m_metadataLabel->limitLabelWidth(songInfoWidth, 0.4f, 0.1f);
+        m_metadataLabel->setColor({.r = 162, .g = 191, .b = 255});
         m_metadataLabel->setID("metadata");
     }
 
     m_songNameLabel =
         CCLabelBMFont::create(songMetadata->name.c_str(), "bigFont.fnt");
-    m_songNameLabel->limitLabelWidth(220.f, 0.7f, 0.1f);
+    m_songNameLabel->limitLabelWidth(songInfoWidth, 0.7f, 0.1f);
 
     if (selected) {
-        m_songNameLabel->setColor(ccc3(188, 254, 206));
+        m_songNameLabel->setColor({188, 254, 206});
     }
 
     m_authorNameLabel =
         CCLabelBMFont::create(songMetadata->artist.c_str(), "goldFont.fnt");
-    m_authorNameLabel->limitLabelWidth(220.f, 0.7f, 0.1f);
+    m_authorNameLabel->limitLabelWidth(songInfoWidth, 0.5f, 0.1f);
     m_authorNameLabel->setID("author-name");
     m_songNameLabel->setID("song-name");
 
-    if (m_metadataLabel != nullptr) {
-        m_songInfoLayer->addChild(m_metadataLabel);
-    }
-    m_songInfoLayer->addChild(m_authorNameLabel);
-    m_songInfoLayer->addChild(m_songNameLabel);
-    m_songInfoLayer->setID("song-info");
-    auto layout = ColumnLayout::create();
-    layout->setAutoScale(false);
-    if (m_metadataLabel != nullptr) {
-        layout->setAxisAlignment(AxisAlignment::Even);
-    } else {
-        layout->setAxisAlignment(AxisAlignment::Center);
-    }
-    layout->setCrossAxisLineAlignment(AxisAlignment::Start);
-    m_songInfoLayer->setContentSize(ccp(240.f, this->getContentSize().height));
-    m_songInfoLayer->setAnchorPoint(ccp(0.f, 0.f));
-    m_songInfoLayer->setPosition(ccp(12.f, 0.f));
-    m_songInfoLayer->setLayout(layout);
+    m_songInfoNode = CCNode::create();
+    m_songInfoNode->setID("song-info-node");
+    m_songInfoNode->setAnchorPoint({0.0f, 0.5f});
+    m_songInfoNode->setContentSize({songInfoWidth, maxSize.height});
 
-    this->addChild(m_songInfoLayer);
+    m_songInfoNode->addChild(m_songNameLabel);
+    m_songInfoNode->addChild(m_authorNameLabel);
+    if (m_metadataLabel != nullptr) {
+        m_songInfoNode->addChild(m_metadataLabel);
+    }
+    m_songInfoNode->setLayout(
+        ColumnLayout::create()
+            ->setAutoScale(false)
+            ->setAxisReverse(true)
+            ->setCrossAxisOverflow(false)
+            ->setAxisAlignment(AxisAlignment::Even)
+            ->setCrossAxisAlignment(AxisAlignment::Start)
+            ->setCrossAxisLineAlignment(AxisAlignment::Start));
+
+    this->addChildAtPosition(m_songInfoNode, Anchor::Left, {PADDING_X, 0.0f});
     return true;
 }
 

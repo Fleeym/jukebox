@@ -10,7 +10,6 @@
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/loader/Event.hpp"
-#include "Geode/loader/Log.hpp"
 #include "ccTypes.h"
 
 #include "events/song_download_progress.hpp"
@@ -34,6 +33,12 @@ bool IndexSongCell::init(IndexSongMetadata* song, int gdId,
 
     this->setContentSize(size);
     this->setAnchorPoint({0.5f, 0.5f});
+    constexpr float PADDING_X = 12.0f;
+    constexpr float PADDING_Y = 6.0f;
+    const CCSize maxSize = {size.width - 2 * PADDING_X,
+                            size.height - 2 * PADDING_Y};
+    const float songInfoWidth = maxSize.width * (2.0f / 3.0f);
+    const float buttonsWidth = maxSize.width - songInfoWidth;
 
     CCScale9Sprite* bg = CCScale9Sprite::create("square02b_001.png");
     bg->setColor({0, 0, 0});
@@ -44,26 +49,26 @@ bool IndexSongCell::init(IndexSongMetadata* song, int gdId,
 
     m_songInfoNode = CCNode::create();
     m_songInfoNode->setAnchorPoint({0.0f, 0.5f});
-    m_songInfoNode->setContentSize({220.0f, size.height - 12.0f});
+    m_songInfoNode->setContentSize({songInfoWidth, maxSize.height});
     m_songInfoNode->setID("song-info-node");
 
     m_songNameLabel =
         CCLabelBMFont::create(m_song->name.c_str(), "bigFont.fnt");
     m_songNameLabel->setAnchorPoint({0.0f, 0.5f});
-    m_songNameLabel->limitLabelWidth(220.0f, 0.56f, 0.1f);
+    m_songNameLabel->limitLabelWidth(songInfoWidth, 0.56f, 0.1f);
     m_songNameLabel->setID("song-info-label");
 
     m_artistLabel =
         CCLabelBMFont::create(m_song->artist.c_str(), "goldFont.fnt");
     m_artistLabel->setAnchorPoint({0.0f, 0.5f});
-    m_artistLabel->limitLabelWidth(220.0f, 0.5f, 0.1f);
+    m_artistLabel->limitLabelWidth(songInfoWidth, 0.5f, 0.1f);
     m_songNameLabel->setID("artist-label");
 
     m_indexNameLabel =
         CCLabelBMFont::create(m_song->parentID->m_name.c_str(), "bigFont.fnt");
     m_indexNameLabel->setAnchorPoint({0.0f, 0.5f});
-    m_indexNameLabel->limitLabelWidth(220.0f, 0.4f, 0.1f);
-    m_indexNameLabel->setColor(ccColor3B{.r = 162, .g = 191, .b = 255});
+    m_indexNameLabel->limitLabelWidth(songInfoWidth, 0.4f, 0.1f);
+    m_indexNameLabel->setColor({.r = 162, .g = 191, .b = 255});
     m_songNameLabel->setID("index-name-label");
 
     m_songInfoNode->addChild(m_songNameLabel);
@@ -74,23 +79,16 @@ bool IndexSongCell::init(IndexSongMetadata* song, int gdId,
             ->setAutoScale(false)
             ->setAxisReverse(true)
             ->setCrossAxisOverflow(false)
-            ->setAxisAlignment(AxisAlignment::Center)
+            ->setAxisAlignment(AxisAlignment::Even)
             ->setCrossAxisAlignment(AxisAlignment::Start)
             ->setCrossAxisLineAlignment(AxisAlignment::Start));
-    this->addChildAtPosition(m_songInfoNode, Anchor::Left, {12.0f, 0.0f});
-
-    m_downloadNode = CCNode::create();
-    m_downloadNode->setAnchorPoint({1.0f, 0.5f});
-    m_downloadNode->setID("download-node");
-    m_downloadNode->setContentSize(
-        {size.width - 220.0f - 24.0f, size.height - 12.0f});
+    this->addChildAtPosition(m_songInfoNode, Anchor::Left, {PADDING_X, 0.0f});
 
     m_downloadMenu = CCMenu::create();
-    m_downloadMenu->setPosition({0.0f, 0.0f});
     m_downloadMenu->ignoreAnchorPointForPosition(false);
-    m_downloadMenu->setAnchorPoint({0.5f, 0.5f});
+    m_downloadMenu->setAnchorPoint({1.0f, 0.5f});
     m_downloadMenu->setID("download-menu");
-    m_downloadMenu->setContentSize(m_downloadNode->getContentSize());
+    m_downloadMenu->setContentSize({buttonsWidth, maxSize.height});
 
     CCSprite* downloadSpr =
         CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
@@ -124,11 +122,12 @@ bool IndexSongCell::init(IndexSongMetadata* song, int gdId,
     m_progressContainer->setVisible(false);
 
     m_downloadButton->addChildAtPosition(m_progressContainer, Anchor::Center);
+    m_downloadMenu->addChild(m_downloadButton);
+    m_downloadMenu->setLayout(
+        RowLayout::create()->setAxisReverse(true)->setAxisAlignment(
+            AxisAlignment::End));
 
-    m_downloadMenu->addChildAtPosition(m_downloadButton, Anchor::Center);
-    m_downloadNode->addChild(m_downloadMenu);
-    m_downloadNode->setLayout(RowLayout::create());
-    this->addChildAtPosition(m_downloadNode, Anchor::Right, {-12.0f, 0.0f});
+    this->addChildAtPosition(m_downloadMenu, Anchor::Right, {-PADDING_X, 0.0f});
     return true;
 }
 

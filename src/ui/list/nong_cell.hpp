@@ -19,7 +19,8 @@ protected:
     CCLabelBMFont* m_songNameLabel = nullptr;
     CCLabelBMFont* m_authorNameLabel = nullptr;
     CCLabelBMFont* m_metadataLabel = nullptr;
-    CCLayer* m_songInfoLayer;
+
+    CCNode* m_songInfoNode = nullptr;
 
     std::function<void()> m_onSelect;
     std::function<void()> m_onFixDefault;
