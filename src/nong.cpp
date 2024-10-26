@@ -13,6 +13,7 @@
 #include <matjson.hpp>
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
+#include "Geode/loader/Log.hpp"
 #include "Geode/utils/Result.hpp"
 
 #include "Geode/utils/Task.hpp"
@@ -313,6 +314,7 @@ public:
     geode::Result<> canSetActive(const std::string& uniqueID,
                                  std::filesystem::path path) {
         const bool IS_DEFAULT = uniqueID == m_default->metadata()->uniqueID;
+        log::info("{}-{}", uniqueID, path);
 
         std::error_code ec;
 
@@ -332,6 +334,7 @@ public:
             }
 
             m_active = song.value();
+            return Ok();
         }
 
         if (auto song = this->getYTFromID(uniqueID)) {
@@ -345,6 +348,7 @@ public:
             }
 
             m_active = song.value();
+            return Ok();
         }
 
         if (auto song = this->getHostedFromID(uniqueID)) {
@@ -358,6 +362,7 @@ public:
             }
 
             m_active = song.value();
+            return Ok();
         }
 
         return Err("No song found with given path for song ID");
