@@ -12,6 +12,6 @@ $execute {
 }
 
 $on_mod(Loaded) {
-    jukebox::NongManager::get();
-    jukebox::IndexManager::get();
+    jukebox::NongManager::get().init();
+    jukebox::IndexManager::get().init();
 };

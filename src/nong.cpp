@@ -291,6 +291,11 @@ public:
                std::make_unique<LocalSong>(LocalSong::createUnknown(songID))) {}
 
     geode::Result<> commit(Nongs* self) {
+        // Don't save manifest for songs with no nongs
+        if (m_locals.empty() && m_youtube.empty() && m_hosted.empty()) {
+            return Ok();
+        }
+
         Result<matjson::Value> json = matjson::Serialize<Nongs>::to_json(*self);
         if (json.isErr()) {
             return Err(json.error());

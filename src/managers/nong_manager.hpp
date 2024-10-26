@@ -22,7 +22,12 @@ protected:
     Manifest m_manifest;
     bool m_initialized = false;
 
-    NongManager() { this->init(); }
+    NongManager() = default;
+    NongManager(const NongManager&) = delete;
+    NongManager(NongManager&&) = delete;
+
+    NongManager& operator=(const NongManager&) = delete;
+    NongManager& operator=(NongManager&&) = delete;
 
     void setupManifestPath() {
         auto path = this->baseManifestPath();
@@ -31,7 +36,6 @@ protected:
         }
     }
 
-    bool init();
     Result<> saveNongs(std::optional<int> saveId = std::nullopt);
     EventListener<EventFilter<jukebox::event::SongError>> m_songErrorListener;
     EventListener<EventFilter<jukebox::event::GetSongInfo>> m_songInfoListener;
@@ -42,6 +46,8 @@ public:
     using MultiAssetSizeTask = Task<std::string>;
     std::optional<Nongs*> m_currentlyPreparingNong;
 
+    bool init();
+
     bool initialized() const { return m_initialized; }
 
     std::filesystem::path baseManifestPath() {
@@ -51,8 +57,7 @@ public:
     }
 
     std::filesystem::path baseNongsPath() {
-        static std::filesystem::path path =
-            Mod::get()->getSaveDir() / "nongs";
+        static std::filesystem::path path = Mod::get()->getSaveDir() / "nongs";
         return path;
     }
 

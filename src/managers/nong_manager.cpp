@@ -16,7 +16,6 @@
 #include "Geode/loader/Log.hpp"
 
 #include "events/song_state_changed.hpp"
-#include "managers/index_manager.hpp"
 #include "nong.hpp"
 #include "nong_serialize.hpp"
 #include "utils/random_string.hpp"
@@ -28,115 +27,7 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
         return std::nullopt;
     }
 
-    // Try to update saved songs from the index in case it changed
     return m_manifest.m_nongs[songID].get();
-
-    /*if (!IndexManager::get().m_indexNongs.contains(songID)) {*/
-    /*    return localNongs;*/
-    /*}*/
-    /**/
-    /*Nongs* indexNongs = &IndexManager::get().m_indexNongs.at(songID);*/
-    /**/
-    /*bool changed = false;*/
-    /**/
-    /*for (std::unique_ptr<YTSong>& song : localNongs->youtube()) {*/
-    /*    // Check if song is from an index*/
-    /*    if (!song->indexID().has_value()) {*/
-    /*        continue;*/
-    /*    }*/
-    /*    for (std::unique_ptr<YTSong>& indexSong : indexNongs->youtube()) {*/
-    /*        if (song->indexID() != indexSong->indexID()) {*/
-    /*            continue;*/
-    /*        }*/
-    /*        auto metadata = song->metadata();*/
-    /*        auto indexMetadata = indexSong->metadata();*/
-    /*        if (metadata->uniqueID != indexMetadata->uniqueID) {*/
-    /*            continue;*/
-    /*        }*/
-    /*        if (metadata->gdID == indexMetadata->gdID &&*/
-    /*            metadata->name == indexMetadata->name &&*/
-    /*            metadata->artist == indexMetadata->artist &&*/
-    /*            metadata->level == indexMetadata->level &&*/
-    /*            metadata->startOffset == indexMetadata->startOffset &&*/
-    /*            song->youtubeID() == indexSong->youtubeID()) {*/
-    /*            continue;*/
-    /*        }*/
-    /**/
-    /*        bool deleteAudio = song->youtubeID() != indexSong->youtubeID();*/
-    /**/
-    /*        if (auto res = localNongs->replaceSong(*/
-    /*                song->metadata()->uniqueID,*/
-    /*                YTSong{*/
-    /*                    SongMetadata(*indexSong->metadata()),*/
-    /*                    indexSong->youtubeID(),*/
-    /*                    indexSong->indexID(),*/
-    /*                    deleteAudio ? std::nullopt : song->path(),*/
-    /*                });*/
-    /*            res.isErr()) {*/
-    /*            SongErrorEvent(false,*/
-    /*                           "Failed to replace song while updating saved
-     * "*/
-    /*                           "songs from index: {}",*/
-    /*                           res.error())*/
-    /*                .post();*/
-    /*            continue;*/
-    /*        }*/
-    /*        changed = true;*/
-    /*    }*/
-    /*}*/
-    /**/
-    /*for (std::unique_ptr<HostedSong>& song : localNongs->hosted()) {*/
-    /*    // Check if song is from an index*/
-    /*    if (!song->indexID().has_value()) {*/
-    /*        continue;*/
-    /*    }*/
-    /*    for (std::unique_ptr<HostedSong>& indexSong : indexNongs->hosted())
-     * {*/
-    /*        if (song->indexID() != indexSong->indexID()) {*/
-    /*            continue;*/
-    /*        }*/
-    /*        auto metadata = song->metadata();*/
-    /*        auto indexMetadata = indexSong->metadata();*/
-    /*        if (metadata->uniqueID != indexMetadata->uniqueID) {*/
-    /*            continue;*/
-    /*        }*/
-    /*        if (metadata->gdID == indexMetadata->gdID &&*/
-    /*            metadata->name == indexMetadata->name &&*/
-    /*            metadata->artist == indexMetadata->artist &&*/
-    /*            metadata->level == indexMetadata->level &&*/
-    /*            metadata->startOffset == indexMetadata->startOffset &&*/
-    /*            song->url() == indexSong->url()) {*/
-    /*            continue;*/
-    /*        }*/
-    /**/
-    /*        bool deleteAudio = song->url() != indexSong->url();*/
-    /**/
-    /*        if (auto res = localNongs->replaceSong(*/
-    /*                song->metadata()->uniqueID,*/
-    /*                HostedSong{*/
-    /*                    SongMetadata(*indexSong->metadata()),*/
-    /*                    indexSong->url(),*/
-    /*                    indexSong->indexID(),*/
-    /*                    deleteAudio ? std::nullopt : song->path(),*/
-    /*                });*/
-    /*            res.isErr()) {*/
-    /*            SongErrorEvent(false,*/
-    /*                           "Failed to replace song while updating saved
-     * "*/
-    /*                           "songs from index: {}",*/
-    /*                           res.error())*/
-    /*                .post();*/
-    /*            continue;*/
-    /*        }*/
-    /*        changed = true;*/
-    /*    }*/
-    /*}*/
-    /**/
-    /*if (changed) {*/
-    /*    (void)this->saveNongs(songID);*/
-    /*}*/
-    /**/
-    /*return m_manifest.m_nongs[songID].get();*/
 }
 
 int NongManager::getCurrentManifestVersion() { return m_manifest.m_version; }
@@ -275,9 +166,6 @@ bool NongManager::init() {
     });
 
     m_songInfoListener.bind([this](event::GetSongInfo* event) {
-        log::info("Song info event for {}", event->gdSongID());
-        log::info("info: {} - {}", event->songName(), event->artistName());
-
         auto nongs = getNongs(event->gdSongID());
         if (!nongs.has_value()) {
             return ListenerResult::Stop;
@@ -291,8 +179,6 @@ bool NongManager::init() {
 
         defaultSongMetadata->name = event->songName();
         defaultSongMetadata->artist = event->artistName();
-
-        log::info("got here?");
 
         (void)this->saveNongs(event->gdSongID());
 
@@ -345,20 +231,11 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
             continue;
         }
 
-        auto& nong = entry.second;
+        Result<> res = entry.second->commit();
 
-        auto json = matjson::Serialize<Nongs>::to_json(*nong);
-        if (json.isErr()) {
-            return Err(json.error());
+        if (res.isErr()) {
+            return Err(res.error());
         }
-
-        auto filepath = fmt::format("{}/{}.json", path.string(), id);
-        std::ofstream output(filepath);
-        if (!output.is_open()) {
-            return Err(fmt::format("Couldn't open file: {}", filepath));
-        }
-        output << json.unwrap().dump(matjson::NO_INDENTATION);
-        output.close();
     }
 
     if (saveID.has_value()) {

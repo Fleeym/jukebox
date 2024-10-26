@@ -1,6 +1,5 @@
 #include "managers/index_manager.hpp"
 
-#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <ios>
@@ -48,8 +47,6 @@ bool IndexManager::init() {
         std::filesystem::create_directory(path);
         return true;
     }
-
-    m_downloadSignalListener.bind(this, &IndexManager::onDownloadStart);
 
     if (std::string err = this->fetchIndexes().error(); !err.empty()) {
         event::SongError(false, fmt::format("Failed to fetch indexes: {}", err))
@@ -203,15 +200,11 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
 
     m_loadedIndexes.emplace(ref->m_id, std::move(index));
 
-    log::info("Index \"{}\" ({}) loaded. Total index objects: {}.", ref->m_name,
-              ref->m_id, m_indexNongs.size());
-
     return Ok();
 }
 
 Result<> IndexManager::fetchIndexes() {
     m_indexListeners.clear();
-    m_indexNongs.clear();
     m_downloadSongListeners.clear();
 
     const Result<std::vector<IndexSource>> indexesRes = this->getIndexes();
@@ -338,133 +331,6 @@ void IndexManager::cacheIndexName(const std::string& indexId,
         Mod::get()->getSavedValue<matjson::Value>("cached-index-names", {});
     jsonObj.set(indexId, indexName);
     Mod::get()->setSavedValue("cached-index-names", jsonObj);
-}
-
-Result<std::vector<Song*>> IndexManager::getNongs(int gdSongID) {
-    std::vector<Song*> nongs;
-    std::optional<Nongs*> opt = NongManager::get().getNongs(gdSongID);
-    if (!opt.has_value()) {
-        return Err("Failed to get nongs");
-    }
-
-    Nongs* localNongs = opt.value();
-
-    std::optional<Nongs*> indexNongs =
-        m_indexNongs.contains(gdSongID)
-            ? std::optional(&m_indexNongs.at(gdSongID))
-            : std::nullopt;
-
-    nongs.push_back(localNongs->defaultSong());
-
-    for (std::unique_ptr<LocalSong>& song : localNongs->locals()) {
-        nongs.push_back(song.get());
-    }
-
-    std::vector<std::string> addedIndexSongs;
-    for (std::unique_ptr<YTSong>& song : localNongs->youtube()) {
-        // Check if song is from an index
-        if (indexNongs.has_value() && song->indexID().has_value()) {
-            for (std::unique_ptr<YTSong>& indexSong :
-                 indexNongs.value()->youtube()) {
-                if (song->metadata()->uniqueID ==
-                    indexSong->metadata()->uniqueID) {
-                    addedIndexSongs.push_back(song->metadata()->uniqueID);
-                }
-            }
-        }
-        nongs.push_back(song.get());
-    }
-
-    for (std::unique_ptr<HostedSong>& song : localNongs->hosted()) {
-        // Check if song is from an index
-        if (indexNongs.has_value() && song->indexID().has_value()) {
-            for (std::unique_ptr<HostedSong>& indexSong :
-                 indexNongs.value()->hosted()) {
-                if (song->metadata()->uniqueID ==
-                    indexSong->metadata()->uniqueID) {
-                    addedIndexSongs.push_back(song->metadata()->uniqueID);
-                }
-            }
-        }
-        nongs.push_back(song.get());
-    }
-
-    if (indexNongs.has_value()) {
-        for (std::unique_ptr<YTSong>& song : indexNongs.value()->youtube()) {
-            // Check if song is not already added
-            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(),
-                          song->metadata()->uniqueID) ==
-                addedIndexSongs.end()) {
-                nongs.push_back(song.get());
-            }
-        }
-
-        for (std::unique_ptr<HostedSong>& song : indexNongs.value()->hosted()) {
-            // Check if song is not already added
-            if (std::find(addedIndexSongs.begin(), addedIndexSongs.end(),
-                          song->metadata()->uniqueID) ==
-                addedIndexSongs.end()) {
-                nongs.push_back(song.get());
-            }
-        }
-    }
-
-    std::unordered_map<NongType, int> sortedNongType = {
-        {NongType::LOCAL, 1}, {NongType::HOSTED, 2}, {NongType::YOUTUBE, 3}};
-
-    std::sort(
-        nongs.begin(), nongs.end(),
-        [&sortedNongType,
-         defaultUniqueID = localNongs->defaultSong()->metadata()->uniqueID](
-            const Song* a, const Song* b) {
-            std::optional<std::string> aIndexID = std::nullopt;
-            std::optional<std::string> bIndexID = std::nullopt;
-
-            // Place the object with isDefault == true at the front
-            if (a->metadata()->uniqueID == defaultUniqueID) {
-                return true;
-            }
-            if (b->metadata()->uniqueID == defaultUniqueID) {
-                return false;
-            }
-
-            // Next, those without an index
-            if (!a->indexID().has_value() && b->indexID().has_value()) {
-                return true;
-            }
-            if (a->indexID().has_value() && !b->indexID().has_value()) {
-                return false;
-            }
-
-            // Next, compare whether path exists or not
-            if (a->path().has_value() &&
-                std::filesystem::exists(a->path().value())) {
-                if (!b->path().has_value() ||
-                    !std::filesystem::exists(b->path().value())) {
-                    return true;
-                }
-            } else if (b->path().has_value() &&
-                       std::filesystem::exists(b->path().value())) {
-                return false;
-            }
-
-            // Next, compare by type
-            if (a->type() != b->type()) {
-                return sortedNongType.at(a->type()) <
-                       sortedNongType.at(b->type());
-            }
-
-            // Next, compare whether indexID exists or not (std::nullopt
-            // should be first)
-            if (a->indexID().has_value() != b->indexID().has_value()) {
-                return !a->indexID().has_value() && b->indexID().has_value();
-            }
-
-            // Finally, compare by name
-            return a->metadata()->name < b->metadata()->name;
-        });
-
-    return Ok(std::move(nongs));
 }
 
 Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {

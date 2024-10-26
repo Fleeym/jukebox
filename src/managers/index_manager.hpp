@@ -26,14 +26,18 @@ protected:
     using FetchIndexTask = Task<Result<>, float>;
     using DownloadSongTask = Task<Result<ByteVector>, float>;
 
-    IndexManager() { this->init(); }
+    IndexManager() = default;
 
-    bool init();
+    IndexManager(const IndexManager&) = delete;
+    IndexManager(IndexManager&&) = delete;
+
+    IndexManager& operator=(const IndexManager&) = delete;
+    IndexManager& operator=(IndexManager&&) = delete;
+
     // index url -> task listener
     std::unordered_map<std::string, EventListener<FetchIndexTask>>
         m_indexListeners;
 
-    std::unordered_map<int, Nongs> m_indexNongs;
     std::unordered_map<int, std::vector<index::IndexSongMetadata*>>
         m_nongsForId;
     // song id -> download song task
@@ -43,7 +47,8 @@ protected:
     // while a song is being downloaded)
     std::unordered_map<std::string, float> m_downloadProgress;
 
-    EventListener<EventFilter<event::StartDownload>> m_downloadSignalListener;
+    EventListener<EventFilter<event::StartDownload>> m_downloadSignalListener{
+        this, &IndexManager::onDownloadStart};
 
     geode::ListenerResult onDownloadStart(event::StartDownload* e);
     void onDownloadProgress(int gdSongID, const std::string& uniqueId,
@@ -53,6 +58,7 @@ protected:
         Nongs* destination, ByteVector&& data);
 
 public:
+    bool init();
     // index id -> index metadata
     std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>>
         m_loadedIndexes;
@@ -72,10 +78,6 @@ public:
 
     std::filesystem::path baseIndexesPath();
 
-    Result<std::vector<Song*>> getNongs(int gdSongID);
-
-    std::function<void(IndexManager::DownloadSongTask::Event*)>
-    createDownloadSongBind(int gdSongID, Song* nong);
     Result<> downloadSong(int gdSongID, const std::string& uniqueID);
 
     static IndexManager& get() {
