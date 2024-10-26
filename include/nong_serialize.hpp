@@ -69,7 +69,10 @@ struct matjson::Serialize<jukebox::LocalSong> {
         ret["path"] =
             geode::utils::string::wideToUtf8(value.path().value().c_str());
 #else
-        ret["path"] = value.path().string();
+        auto path = value.path();
+        if (path.has_value()) {
+            ret["path"] = path.value().string();
+        }
 #endif
         ret["offset"] = value.metadata()->startOffset;
         if (value.metadata()->level.has_value()) {
@@ -130,7 +133,10 @@ struct matjson::Serialize<jukebox::YTSong> {
             ret["path"] =
                 geode::utils::string::wideToUtf8(value.path().value().c_str());
 #else
-            ret["path"] = value.path().value().string();
+            auto path = value.path();
+            if (path.has_value()) {
+                ret["path"] = path.value().string();
+            }
 #endif
         }
 
@@ -192,7 +198,10 @@ struct matjson::Serialize<jukebox::HostedSong> {
             ret["path"] =
                 geode::utils::string::wideToUtf8(value.path().value().c_str());
 #else
-            ret["path"] = value.path().value().string();
+            auto path = value.path();
+            if (path.has_value()) {
+                ret["path"] = path.value().string();
+            }
 #endif
         }
 
