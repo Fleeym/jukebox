@@ -80,6 +80,8 @@ public:
 
     Result<> downloadSong(int gdSongID, const std::string& uniqueID);
 
+    void registerIndexNongs(Nongs* destination);
+
     static IndexManager& get() {
         static IndexManager instance;
         return instance;

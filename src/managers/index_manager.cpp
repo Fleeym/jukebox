@@ -543,4 +543,15 @@ ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
     return ListenerResult::Propagate;
 }
 
+void IndexManager::registerIndexNongs(Nongs* destination) {
+    if (m_nongsForId.contains(!destination->songID())) {
+        return;
+    }
+
+    destination->indexSongs().clear();
+    for (index::IndexSongMetadata* s : m_nongsForId[destination->songID()]) {
+        destination->indexSongs().push_back(s);
+    }
+}
+
 };  // namespace jukebox

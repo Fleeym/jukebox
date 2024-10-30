@@ -65,7 +65,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
 
     CCMenu* menu = CCMenu::create();
 
-    if (m_isDownloaded) {
+    if (m_isDownloaded || m_isDefault) {
         const char* selectSprName =
             selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
 
@@ -276,12 +276,12 @@ ListenerResult NongCell::onDownloadProgress(event::SongDownloadProgress* e) {
 }
 
 ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
-    bool switchedToActive =
-        !m_isActive && e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
-    bool switchedToInactive =
-        m_isActive && e->nongs()->active()->metadata()->uniqueID != m_uniqueID;
+    bool sameIDAsActive =
+        e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
+    bool switchedToActive = !m_isActive && sameIDAsActive;
+    bool switchedToInactive = m_isActive && !sameIDAsActive;
 
-    if (e->nongs()->songID() != m_songID || !m_isDownloaded) {
+    if (e->nongs()->songID() != m_songID || (!m_isDownloaded && !m_isDefault)) {
         return ListenerResult::Propagate;
     }
 
@@ -297,6 +297,12 @@ ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
 
     CCSprite* selectSpr = CCSprite::createWithSpriteFrameName(selectSprName);
     selectSpr->setScale(0.7f);
+
+    if (selected) {
+        m_songNameLabel->setColor({188, 254, 206});
+    } else {
+        m_songNameLabel->setColor({255, 255, 255});
+    }
 
     m_selectButton->setSprite(selectSpr);
 

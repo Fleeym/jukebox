@@ -353,10 +353,12 @@ ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
 }
 
 ListenerResult NongList::onNongDeleted(event::NongDeleted* e) {
-    if (!m_list || m_currentSong.has_value() ||
+    if (!m_list || !m_currentSong.has_value() ||
         m_currentSong.value() != e->gdId()) {
         return ListenerResult::Propagate;
     }
+
+    log::info("{}", e->uniqueId());
 
     CCNode* found = m_list->m_contentLayer->getChildByID(e->uniqueId());
     if (found) {

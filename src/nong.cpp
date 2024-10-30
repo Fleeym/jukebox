@@ -293,8 +293,17 @@ public:
                std::make_unique<LocalSong>(LocalSong::createUnknown(songID))) {}
 
     geode::Result<> commit(Nongs* self) {
+        const std::filesystem::path path =
+            NongManager::get().baseManifestPath() /
+            fmt::format("{}.json", m_songID);
+
         // Don't save manifest for songs with no nongs
         if (m_locals.empty() && m_youtube.empty() && m_hosted.empty()) {
+            std::error_code ec;
+            if (std::filesystem::exists(path, ec)) {
+                std::filesystem::remove(path, ec);
+            }
+
             return Ok();
         }
 
@@ -302,10 +311,6 @@ public:
         if (json.isErr()) {
             return Err(json.error());
         }
-
-        const std::filesystem::path path =
-            NongManager::get().baseManifestPath() /
-            fmt::format("{}.json", m_songID);
 
         std::ofstream output(path);
         if (!output.is_open()) {
@@ -322,6 +327,10 @@ public:
                                  std::filesystem::path path) {
         const bool IS_DEFAULT = uniqueID == m_default->metadata()->uniqueID;
 
+        if (IS_DEFAULT) {
+            return Ok();
+        }
+
         std::error_code ec;
 
         if (!IS_DEFAULT && !std::filesystem::exists(path, ec)) {
@@ -331,7 +340,7 @@ public:
         return Ok();
     }
 
-    geode::Result<> setActive(const std::string& uniqueID) {
+    geode::Result<> setActive(const std::string& uniqueID, Nongs* self) {
         if (auto song = this->getLocalFromID(uniqueID)) {
             geode::Result<> res =
                 this->canSetActive(uniqueID, song.value()->path().value());
@@ -340,6 +349,7 @@ public:
             }
 
             m_active = song.value();
+            event::SongStateChanged(self).post();
             return Ok();
         }
 
@@ -354,6 +364,7 @@ public:
             }
 
             m_active = song.value();
+            event::SongStateChanged(self).post();
             return Ok();
         }
 
@@ -368,6 +379,7 @@ public:
             }
 
             m_active = song.value();
+            event::SongStateChanged(self).post();
             return Ok();
         }
 
@@ -418,13 +430,14 @@ public:
         return Ok();
     }
 
-    geode::Result<> deleteSong(const std::string& uniqueID, bool audio) {
+    geode::Result<> deleteSong(const std::string& uniqueID, bool audio,
+                               Nongs* self) {
         if (m_default->metadata()->uniqueID == uniqueID) {
             return Err("Cannot delete default song");
         }
 
         if (m_active->metadata()->uniqueID == uniqueID) {
-            m_active = m_default.get();
+            (void)this->setActive(m_default.get()->metadata()->uniqueID, self);
         }
 
         for (auto i = m_locals.begin(); i != m_locals.end(); ++i) {
@@ -557,7 +570,8 @@ public:
         return std::nullopt;
     }
 
-    geode::Result<> replaceSong(const std::string& id, LocalSong&& song) {
+    geode::Result<> replaceSong(const std::string& id, LocalSong&& song,
+                                Nongs* self) {
         bool isActive = m_active->metadata()->uniqueID == id;
         std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
@@ -567,19 +581,20 @@ public:
         std::optional<std::filesystem::path> prevPath = prevNong->path();
 
         bool deleteAudio = prevPath != song.path();
-        auto _ = this->deleteSong(id, deleteAudio);
+        auto _ = this->deleteSong(id, deleteAudio, self);
         Result<LocalSong*> res = this->add(std::move(song));
         if (res.isErr()) {
             return Err(res.error());
         }
 
         if (isActive) {
-            auto _ = this->setActive(id);
+            auto _ = this->setActive(id, self);
         }
         return Ok();
     }
 
-    geode::Result<> replaceSong(const std::string& id, YTSong&& song) {
+    geode::Result<> replaceSong(const std::string& id, YTSong&& song,
+                                Nongs* self) {
         bool isActive = m_active->metadata()->uniqueID == id;
         std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
@@ -589,19 +604,20 @@ public:
         std::optional<std::filesystem::path> prevPath = prevNong->path();
 
         bool deleteAudio = prevPath != song.path();
-        auto _ = this->deleteSong(id, deleteAudio);
+        auto _ = this->deleteSong(id, deleteAudio, self);
         Result<YTSong*> res = this->add(std::move(song));
         if (res.isErr()) {
             return Err(res.error());
         }
 
         if (isActive && res.unwrap()->path().has_value()) {
-            auto _ = this->setActive(id);
+            auto _ = this->setActive(id, self);
         }
         return Ok();
     }
 
-    geode::Result<> replaceSong(const std::string& id, HostedSong&& song) {
+    geode::Result<> replaceSong(const std::string& id, HostedSong&& song,
+                                Nongs* self) {
         bool isActive = m_active->metadata()->uniqueID == id;
         std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
@@ -611,14 +627,14 @@ public:
         std::optional<std::filesystem::path> prevPath = prevNong->path();
 
         bool deleteAudio = prevPath != song.path();
-        auto _ = this->deleteSong(id, deleteAudio);
+        auto _ = this->deleteSong(id, deleteAudio, self);
         Result<HostedSong*> res = this->add(std::move(song));
         if (res.isErr()) {
             return Err(res.error());
         }
 
         if (isActive && res.unwrap()->path().has_value()) {
-            auto _ = this->setActive(id);
+            auto _ = this->setActive(id, self);
         }
         return Ok();
     }
@@ -702,13 +718,13 @@ std::optional<Song*> Nongs::findSong(const std::string& uniqueID) {
 }
 Result<> Nongs::commit() { return m_impl->commit(this); }
 geode::Result<> Nongs::replaceSong(const std::string& id, LocalSong&& song) {
-    return m_impl->replaceSong(id, std::move(song));
+    return m_impl->replaceSong(id, std::move(song), this);
 }
 geode::Result<> Nongs::replaceSong(const std::string& id, YTSong&& song) {
-    return m_impl->replaceSong(id, std::move(song));
+    return m_impl->replaceSong(id, std::move(song), this);
 }
 geode::Result<> Nongs::replaceSong(const std::string& id, HostedSong&& song) {
-    return m_impl->replaceSong(id, std::move(song));
+    return m_impl->replaceSong(id, std::move(song), this);
 }
 geode::Result<> Nongs::registerIndexSong(index::IndexSongMetadata* song) {
     return m_impl->registerIndexSong(song);
@@ -718,14 +734,12 @@ int Nongs::songID() const { return m_impl->songID(); }
 LocalSong* Nongs::defaultSong() const { return m_impl->defaultSong(); }
 Song* Nongs::active() const { return m_impl->active(); }
 Result<> Nongs::setActive(const std::string& uniqueID) {
-    auto res = m_impl->setActive(uniqueID);
-    event::SongStateChanged(this).post();
-    return res;
+    return m_impl->setActive(uniqueID, this);
 }
 Result<> Nongs::merge(Nongs&& other) { return m_impl->merge(std::move(other)); }
 Result<> Nongs::deleteAllSongs() { return m_impl->deleteAllSongs(); }
 Result<> Nongs::deleteSong(const std::string& uniqueID, bool audio) {
-    return m_impl->deleteSong(uniqueID, audio);
+    return m_impl->deleteSong(uniqueID, audio, this);
 }
 Result<> Nongs::deleteSongAudio(const std::string& uniqueID) {
     return m_impl->deleteSongAudio(uniqueID);

@@ -16,6 +16,7 @@
 #include "Geode/loader/Log.hpp"
 
 #include "events/song_state_changed.hpp"
+#include "managers/index_manager.hpp"
 #include "nong.hpp"
 #include "nong_serialize.hpp"
 #include "utils/random_string.hpp"
@@ -43,6 +44,8 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
         return;
     }
 
+    bool initialized = false;
+
     if (!obj && robtop) {
         log::error("Critical. No song object for RobTop song");
         return;
@@ -60,34 +63,36 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
                  LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
                                         obj->m_songName, obj->m_artistName},
                            gdDir / "Resources" / filename}})});
-        (void)this->saveNongs(adjusted);
-
-        return;
+        initialized = true;
     }
 
-    if (!obj) {
+    if (!obj && !initialized) {
         // Try and maybe fetch it
         obj = MusicDownloadManager::sharedState()->getSongInfoObject(id);
     }
 
-    if (!obj) {
+    if (!obj && !initialized) {
         // Try fetch song info from servers
         MusicDownloadManager::sharedState()->getSongInfo(id, true);
         m_manifest.m_nongs.insert({id, std::make_unique<Nongs>(Nongs{
                                            id, LocalSong::createUnknown(id)})});
-        (void)this->saveNongs(id);
         return;
     }
 
-    m_manifest.m_nongs.insert(
-        {id, std::make_unique<Nongs>(Nongs{
+    if (!initialized) {
+        m_manifest.m_nongs.insert(
+            {id,
+             std::make_unique<Nongs>(Nongs{
                  id, LocalSong{SongMetadata{id, jukebox::random_string(16),
                                             obj->m_songName, obj->m_artistName},
                                std::filesystem::path(
                                    MusicDownloadManager::sharedState()
                                        ->pathForSong(id)
                                        .c_str())}})});
-    (void)this->saveNongs(id);
+    }
+
+    Nongs* nongs = m_manifest.m_nongs[id].get();
+    IndexManager::get().registerIndexNongs(nongs);
 }
 
 std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
