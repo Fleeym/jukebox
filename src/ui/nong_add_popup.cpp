@@ -671,7 +671,7 @@ geode::Result<> NongAddPopup::addLocalSong(
     std::string id = m_replacedNong.has_value()
                          ? m_replacedNong.value()->metadata()->uniqueID
                          : jukebox::random_string(16);
-    std::string unique = fmt::format("{}.{}", id, extension);
+    std::string unique = fmt::format("{}{}", id, extension);
     std::filesystem::path destination = Mod::get()->getSaveDir() / "nongs";
     std::error_code error_code;
     if (!std::filesystem::exists(destination, error_code)) {
@@ -679,7 +679,6 @@ geode::Result<> NongAddPopup::addLocalSong(
             return Err("Failed to create nongs directory.");
         }
     }
-    unique += songPath.extension().string();
     destination /= unique;
 
     if (std::filesystem::exists(destination, error_code)) {
