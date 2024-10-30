@@ -50,7 +50,7 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
 
     if (obj && robtop) {
         int adjusted = adjustSongID(id, robtop);
-        std::string filename = LevelTools::getAudioFileName(adjusted);
+        std::string filename = LevelTools::getAudioFileName(id);
         std::filesystem::path gdDir = std::filesystem::path(
             CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
         m_manifest.m_nongs.insert(
