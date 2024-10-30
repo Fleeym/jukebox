@@ -24,7 +24,6 @@
 #include "ccTypes.h"
 
 #include "events/song_download_progress.hpp"
-#include "events/song_state_changed.hpp"
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
@@ -177,7 +176,7 @@ void NongDropdownLayer::openAddPopup(CCObject* target) {
     if (!m_currentSongID.has_value()) {
         return;
     }
-    NongAddPopup::create(this, m_currentSongID.value())->show();
+    NongAddPopup::create(m_currentSongID.value())->show();
 }
 
 void NongDropdownLayer::createList() {
@@ -209,7 +208,7 @@ void NongDropdownLayer::createList() {
                     return;
                 }
                 std::optional<Song*> nong = nongs.value()->findSong(uniqueID);
-                NongAddPopup::create(this, gdSongID, nong)->show();
+                NongAddPopup::create(gdSongID, nong)->show();
             },
             [this](std::optional<int> currentSongID) {
                 m_currentSongID = currentSongID;

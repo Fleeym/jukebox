@@ -25,8 +25,7 @@ namespace jukebox {
 
 class NongDropdownLayer;
 
-class NongAddPopup
-    : public Popup<NongDropdownLayer*, int, std::optional<Song*>> {
+class NongAddPopup : public Popup<int, std::optional<Song*>> {
 protected:
     enum class SongType {
         LOCAL,
@@ -38,8 +37,6 @@ protected:
         std::optional<std::string> name;
         std::optional<std::string> artist;
     };
-
-    NongDropdownLayer* m_parentPopup;
 
     int m_songID;
 
@@ -53,7 +50,7 @@ protected:
     TextInput* m_artistNameInput = nullptr;
     TextInput* m_levelNameInput = nullptr;
     TextInput* m_startOffsetInput = nullptr;
-    
+
     CCMenu* m_switchMenu = nullptr;
     ButtonSprite* m_switchLocalSpr = nullptr;
     CCMenuItemSpriteExtra* m_switchLocalButton = nullptr;
@@ -77,8 +74,7 @@ protected:
 
     std::optional<Song*> m_replacedNong;
 
-    bool setup(NongDropdownLayer* parent, int songID,
-               std::optional<Song*> replacedNong) override;
+    bool setup(int songID, std::optional<Song*> replacedNong) override;
     void addPathLabel(std::string const& path);
     void onFileOpen(Task<Result<std::filesystem::path>>::Event* event);
     void setSongType(SongType type);
@@ -103,10 +99,9 @@ protected:
                                   int offset);
     void onPublish(CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
-    void onClose(CCObject*) override;
 
 public:
-    static NongAddPopup* create(NongDropdownLayer* parent, int songID,
+    static NongAddPopup* create(int songID,
                                 std::optional<Song*> nong = std::nullopt);
 };
 

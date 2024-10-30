@@ -32,13 +32,13 @@
 #include "Geode/utils/Task.hpp"
 #include "Geode/utils/file.hpp"
 #include "Geode/utils/string.hpp"
+#include "events/manual_song_added.hpp"
 #include "fmod.hpp"
 #include "fmod_common.h"
 
 #include "managers/index_manager.hpp"
 #include "nong.hpp"
 #include "ui/index_choose_popup.hpp"
-#include "ui/nong_dropdown_layer.hpp"
 #include "utils/random_string.hpp"
 
 using namespace jukebox::index;
@@ -92,10 +92,8 @@ public:
 
 namespace jukebox {
 
-bool NongAddPopup::setup(NongDropdownLayer* parent, int songID,
-                         std::optional<Song*> replacedNong) {
+bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
     this->setTitle("Add Song");
-    m_parentPopup = parent;
     m_songID = songID;
     m_replacedNong = replacedNong;
 
@@ -707,17 +705,19 @@ geode::Result<> NongAddPopup::addLocalSong(
     Nongs* nongs = NongManager::get().getNongs(m_songID).value();
 
     if (m_replacedNong.has_value()) {
-        auto res = nongs->replaceSong(
+        Result<> res = nongs->replaceSong(
             m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
         if (res.isErr()) {
             return Err(fmt::format("Failed to add song: {}", res.error()));
         }
     } else {
-        auto res = nongs->add(std::move(song));
+        Result<LocalSong*> res = nongs->add(std::move(song));
         if (res.isErr()) {
             return Err(fmt::format("Failed to add song: {}", res.error()));
         }
+
+        event::ManualSongAdded(nongs, res.unwrap()).post();
     }
 
     (void)nongs->commit();
@@ -791,6 +791,8 @@ geode::Result<> NongAddPopup::addYTSong(
         if (res.isErr()) {
             return Err(fmt::format("Failed to add song: {}", res.error()));
         }
+
+        event::ManualSongAdded(nongs, res.unwrap()).post();
     }
 
     return Ok();
@@ -846,11 +848,11 @@ geode::Result<> NongAddPopup::addHostedSong(
         if (res.isErr()) {
             return Err(fmt::format("Failed to createsong: {}", res.error()));
         }
+
+        event::ManualSongAdded(nongs, res.unwrap()).post();
     }
     return Ok();
 }
-
-void NongAddPopup::onClose(CCObject* target) { Popup::onClose(target); }
 
 std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(
     std::filesystem::path path) {
@@ -904,11 +906,11 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(
     return ret;
 }
 
-NongAddPopup* NongAddPopup::create(NongDropdownLayer* parent, int songID,
+NongAddPopup* NongAddPopup::create(int songID,
                                    std::optional<Song*> replacedNong) {
     auto ret = new NongAddPopup();
     auto size = ret->getPopupSize();
-    if (ret && ret->initAnchored(size.width, size.height, parent, songID,
+    if (ret && ret->initAnchored(size.width, size.height, songID,
                                  std::move(replacedNong))) {
         ret->autorelease();
         return ret;

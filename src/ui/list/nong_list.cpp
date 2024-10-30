@@ -14,6 +14,7 @@
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/Event.hpp"
+#include "Geode/loader/Loader.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
@@ -358,14 +359,29 @@ ListenerResult NongList::onNongDeleted(event::NongDeleted* e) {
         return ListenerResult::Propagate;
     }
 
-    log::info("{}", e->uniqueId());
-
     CCNode* found = m_list->m_contentLayer->getChildByID(e->uniqueId());
     if (found) {
         found->removeFromParentAndCleanup(true);
         m_list->m_contentLayer->updateLayout();
     }
 
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongList::onSongAdded(event::ManualSongAdded* e) {
+    if (!m_list || !m_currentSong.has_value() ||
+        m_currentSong.value() != e->nongs()->songID()) {
+        return ListenerResult::Propagate;
+    }
+
+    this->addSongToList(e->song(), e->nongs(), true);
+
+    // Remove "you have no local songs label"
+    if (auto node = m_list->m_contentLayer->getChildByID("no-local-songs")) {
+        node->removeFromParentAndCleanup(true);
+    }
+
+    m_list->m_contentLayer->updateLayout();
     return ListenerResult::Propagate;
 }
 

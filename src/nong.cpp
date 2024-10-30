@@ -654,6 +654,7 @@ public:
             std::make_unique<LocalSong>(std::move(song));
         LocalSong* ret = ptr.get();
         m_locals.push_back(std::move(ptr));
+
         return Ok(ret);
     }
 
@@ -661,13 +662,16 @@ public:
         auto s = std::make_unique<YTSong>(std::move(song));
         auto ret = s.get();
         m_youtube.push_back(std::move(s));
+
         return Ok(ret);
     }
 
     Result<HostedSong*> add(HostedSong&& song) {
         auto s = std::make_unique<HostedSong>(std::move(song));
         auto ret = s.get();
+
         m_hosted.push_back(std::move(s));
+
         return Ok(ret);
     }
 
