@@ -4,9 +4,9 @@ namespace jukebox {
 
 namespace event {
 
-SongStateChanged::SongStateChanged(int gdSongID) : m_gdSongID(gdSongID) {};
+SongStateChanged::SongStateChanged(Nongs* nongs) : m_nongs(nongs) {};
 
-int SongStateChanged::gdSongID() const { return m_gdSongID; };
+Nongs* SongStateChanged::nongs() const { return m_nongs; };
 
 }  // namespace event
 

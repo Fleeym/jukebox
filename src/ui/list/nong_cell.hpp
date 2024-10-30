@@ -7,6 +7,7 @@
 
 #include "Geode/loader/Event.hpp"
 #include "events/song_download_progress.hpp"
+#include "events/song_state_changed.hpp"
 #include "nong.hpp"
 
 using namespace geode::prelude;
@@ -37,11 +38,14 @@ protected:
     bool m_isDownloadable;
 
     CCMenuItemSpriteExtra* m_downloadButton;
+    CCMenuItemSpriteExtra* m_selectButton = nullptr;
     CCMenu* m_downloadProgressContainer;
     CCProgressTimer* m_downloadProgress;
 
     EventListener<EventFilter<event::SongDownloadProgress>> m_progressListener{
         this, &NongCell::onDownloadProgress};
+    EventListener<EventFilter<event::SongStateChanged>> m_stateListener{
+        this, &NongCell::onStateChange};
 
     bool init(int songID, Song*, bool isDefault, bool selected,
               CCSize const& size, std::function<void()> onSelect,
@@ -50,6 +54,7 @@ protected:
               std::function<void()> onEdit);
 
     ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
+    ListenerResult onStateChange(event::SongStateChanged* e);
 
 public:
     Song* m_songInfo = nullptr;

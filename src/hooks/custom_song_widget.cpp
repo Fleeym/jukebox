@@ -61,22 +61,16 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 if (!m_songInfoObject) {
                     return ListenerResult::Propagate;
                 }
-                if (event->gdSongID() != m_songInfoObject->m_songID) {
+                if (event->nongs()->songID() != m_songInfoObject->m_songID) {
                     return ListenerResult::Propagate;
                 }
 
-                auto nongs = NongManager::get().getNongs(event->gdSongID());
-
-                if (!nongs.has_value()) {
-                    return ListenerResult::Propagate;
-                }
-
-                Song* active = nongs.value()->active();
+                Song* active = event->nongs()->active();
 
                 m_songInfoObject->m_songName = active->metadata()->name;
                 m_songInfoObject->m_artistName = active->metadata()->artist;
                 m_songInfoObject->m_songUrl = "local";
-                updateSongInfo();
+                this->updateSongInfo();
 
                 return ListenerResult::Propagate;
             }));

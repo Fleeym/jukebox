@@ -11,7 +11,6 @@
 
 #include "events/song_download_progress.hpp"
 #include "events/song_error.hpp"
-#include "events/song_state_changed.hpp"
 #include "nong.hpp"
 #include "ui/list/nong_cell.hpp"
 #include "ui/list/nong_list.hpp"
@@ -36,7 +35,6 @@ protected:
 
     EventListener<EventFilter<event::SongError>> m_songErrorListener;
     EventListener<EventFilter<event::SongDownloadProgress>> m_downloadListener;
-    EventListener<EventFilter<event::SongStateChanged>> m_songStateListener;
 
     bool m_fetching = false;
 

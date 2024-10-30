@@ -21,6 +21,7 @@
 #include "download/hosted.hpp"
 #include "download/youtube.hpp"
 #include "events/nong_deleted.hpp"
+#include "events/song_state_changed.hpp"
 #include "index.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong_serialize.hpp"
@@ -717,7 +718,9 @@ int Nongs::songID() const { return m_impl->songID(); }
 LocalSong* Nongs::defaultSong() const { return m_impl->defaultSong(); }
 Song* Nongs::active() const { return m_impl->active(); }
 Result<> Nongs::setActive(const std::string& uniqueID) {
-    return m_impl->setActive(uniqueID);
+    auto res = m_impl->setActive(uniqueID);
+    event::SongStateChanged(this).post();
+    return res;
 }
 Result<> Nongs::merge(Nongs&& other) { return m_impl->merge(std::move(other)); }
 Result<> Nongs::deleteAllSongs() { return m_impl->deleteAllSongs(); }

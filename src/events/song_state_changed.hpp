@@ -2,17 +2,19 @@
 
 #include "Geode/loader/Event.hpp"
 
+#include "nong.hpp"
+
 namespace jukebox {
 
 namespace event {
 
 class SongStateChanged final : public geode::Event {
 private:
-    int m_gdSongID;
+    Nongs* m_nongs;
 
 public:
-    SongStateChanged(int gdSongID);
-    int gdSongID() const;
+    SongStateChanged(Nongs* nongs);
+    Nongs* nongs() const;
 };
 
 }  // namespace event

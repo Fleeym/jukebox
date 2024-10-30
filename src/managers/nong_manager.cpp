@@ -237,10 +237,6 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
         }
     }
 
-    if (saveID.has_value()) {
-        event::SongStateChanged(saveID.value()).post();
-    }
-
     return Ok();
 }
 

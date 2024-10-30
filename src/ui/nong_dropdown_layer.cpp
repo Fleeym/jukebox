@@ -154,16 +154,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         return ListenerResult::Propagate;
     });
 
-    m_songStateListener.bind([this](event::SongStateChanged* event) {
-        if (!m_list || m_currentSongID != event->gdSongID()) {
-            return ListenerResult::Propagate;
-        }
-
-        this->createList();
-
-        return ListenerResult::Propagate;
-    });
-
     m_downloadListener.bind([this](event::SongDownloadProgress* event) {
         if (!m_list || m_currentSongID != event->gdSongID()) {
             return ListenerResult::Propagate;

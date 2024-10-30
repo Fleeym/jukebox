@@ -1,6 +1,5 @@
 #include "ui/list/nong_cell.hpp"
 
-#include <cstdint>
 #include <numeric>
 
 #include <fmt/core.h>
@@ -17,6 +16,7 @@
 #include "Geode/loader/Log.hpp"
 #include "Geode/ui/Popup.hpp"
 
+#include "events/song_state_changed.hpp"
 #include "managers/index_manager.hpp"
 #include "nong.hpp"
 
@@ -73,11 +73,11 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
             CCSprite::createWithSpriteFrameName(selectSprName);
         selectSpr->setScale(0.7f);
 
-        CCMenuItemSpriteExtra* selectButton = CCMenuItemSpriteExtra::create(
+        m_selectButton = CCMenuItemSpriteExtra::create(
             selectSpr, this, menu_selector(NongCell::onSet));
-        selectButton->setAnchorPoint({0.5f, 0.5f});
-        selectButton->setID("set-button");
-        menu->addChild(selectButton);
+        m_selectButton->setAnchorPoint({0.5f, 0.5f});
+        m_selectButton->setID("set-button");
+        menu->addChild(m_selectButton);
     }
 
     menu->setID("buttons-menu");
@@ -272,6 +272,34 @@ ListenerResult NongCell::onDownloadProgress(event::SongDownloadProgress* e) {
     }
 
     m_downloadProgress->setPercentage(e->progress());
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
+    bool switchedToActive =
+        !m_isActive && e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
+    bool switchedToInactive =
+        m_isActive && e->nongs()->active()->metadata()->uniqueID != m_uniqueID;
+
+    if (e->nongs()->songID() != m_songID || !m_isDownloaded) {
+        return ListenerResult::Propagate;
+    }
+
+    if (!switchedToActive && !switchedToInactive) {
+        return ListenerResult::Propagate;
+    }
+
+    bool selected = e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
+    m_isActive = selected;
+
+    const char* selectSprName =
+        selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
+
+    CCSprite* selectSpr = CCSprite::createWithSpriteFrameName(selectSprName);
+    selectSpr->setScale(0.7f);
+
+    m_selectButton->setSprite(selectSpr);
+
     return ListenerResult::Propagate;
 }
 
