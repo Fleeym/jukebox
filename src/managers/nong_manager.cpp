@@ -351,7 +351,7 @@ Result<> NongManager::deleteSong(int gdSongID, std::string uniqueID) {
         return Err("Couldn't delete Nong: {}", err.error());
     }
 
-    return saveNongs(gdSongID);
+    return nongs.value()->commit();
 }
 
 std::filesystem::path NongManager::generateSongFilePath(

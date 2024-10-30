@@ -199,22 +199,6 @@ void NongDropdownLayer::createList() {
                 this->setActiveSong(gdSongID, uniqueID);
             },
             [this](int gdSongID) {
-                // TODO
-                // if (!NongManager::get().isFixingDefault(id)) {
-                //     this->template addEventListener<GetSongInfoEventFilter>(
-                //         [this](auto song) {
-                //             this->refreshList();
-                //             FLAlertLayer::create(
-                //                 "Success",
-                //                 "Default song data was refetched
-                //                 successfully!", "Ok"
-                //             )->show();
-                //             return ListenerResult::Propagate;
-                //         }, id
-                //     );
-                //     NongManager::get().markAsInvalidDefault(id);
-                //     NongManager::get().prepareCorrectDefault(id);
-                // }
                 MusicDownloadManager::sharedState()->clearSong(gdSongID);
                 MusicDownloadManager::sharedState()->getSongInfo(gdSongID,
                                                                  true);

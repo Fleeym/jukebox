@@ -20,6 +20,7 @@
 #include "Geode/utils/general.hpp"
 #include "download/hosted.hpp"
 #include "download/youtube.hpp"
+#include "events/nong_deleted.hpp"
 #include "index.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong_serialize.hpp"
@@ -432,6 +433,7 @@ public:
                     this->deletePath((*i)->path());
                 }
                 m_locals.erase(i);
+                event::NongDeleted(uniqueID, m_songID).post();
                 return Ok();
             }
         }
@@ -442,6 +444,7 @@ public:
                     this->deletePath((*i)->path());
                 }
                 m_youtube.erase(i);
+                event::NongDeleted(uniqueID, m_songID).post();
                 return Ok();
             }
         }
@@ -452,6 +455,7 @@ public:
                     this->deletePath((*i)->path());
                 }
                 m_hosted.erase(i);
+                event::NongDeleted(uniqueID, m_songID).post();
                 return Ok();
             }
         }

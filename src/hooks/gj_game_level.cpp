@@ -14,6 +14,7 @@ using namespace jukebox;
 class $modify(GJGameLevel) {
     gd::string getAudioFileName() {
         NongManager::get().m_currentlyPreparingNong = std::nullopt;
+        // If we have a custom song, return
         if (m_songID != 0) {
             return GJGameLevel::getAudioFileName();
         }

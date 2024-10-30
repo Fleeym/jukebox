@@ -10,6 +10,7 @@
 #include "Geode/loader/Event.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
+#include "events/nong_deleted.hpp"
 #include "events/song_download_finished.hpp"
 #include "nong.hpp"
 #include "ui/list/index_song_cell.hpp"
@@ -41,14 +42,17 @@ protected:
 
     geode::EventListener<EventFilter<event::SongDownloadFinished>>
         m_downloadFinishedListener = {this, &NongList::onDownloadFinish};
+    geode::EventListener<EventFilter<event::NongDeleted>>
+        m_nongDeletedListener = {this, &NongList::onNongDeleted};
 
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
-    
+
     void addNoLocalSongsNotice(bool liveInsert = false);
     void addSongToList(Song* nong, Nongs* parent, bool liveInsert = false);
     void addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent);
     geode::ListenerResult onDownloadFinish(event::SongDownloadFinished* e);
+    geode::ListenerResult onNongDeleted(event::NongDeleted* e);
 
 public:
     void scrollToTop();

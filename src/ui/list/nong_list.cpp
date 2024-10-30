@@ -18,6 +18,7 @@
 #include "Geode/ui/ScrollLayer.hpp"
 
 #include "Geode/utils/cocos.hpp"
+#include "events/nong_deleted.hpp"
 #include "events/song_download_finished.hpp"
 #include "index.hpp"
 #include "managers/nong_manager.hpp"
@@ -348,6 +349,21 @@ ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
     }
 
     m_list->m_contentLayer->updateLayout();
+
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongList::onNongDeleted(event::NongDeleted* e) {
+    if (!m_list || m_currentSong.has_value() ||
+        m_currentSong.value() != e->gdId()) {
+        return ListenerResult::Propagate;
+    }
+
+    CCNode* found = m_list->m_contentLayer->getChildByID(e->uniqueId());
+    if (found) {
+        found->removeFromParentAndCleanup(true);
+        m_list->m_contentLayer->updateLayout();
+    }
 
     return ListenerResult::Propagate;
 }
