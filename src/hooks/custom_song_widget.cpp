@@ -22,10 +22,10 @@ using namespace jukebox;
 
 class $modify(JBSongWidget, CustomSongWidget) {
     struct Fields {
-        Nongs* nongs;
-        CCMenu* menu;
-        CCMenuItemSpriteExtra* songNameLabel;
-        CCLabelBMFont* sizeIdLabel;
+        Nongs* nongs = nullptr;
+        CCMenu* menu = nullptr;
+        CCMenuItemSpriteExtra* songNameLabel = nullptr;
+        CCLabelBMFont* sizeIdLabel = nullptr;
         std::string songIds = "";
         std::string sfxIds = "";
         bool firstRun = true;
