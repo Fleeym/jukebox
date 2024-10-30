@@ -196,7 +196,6 @@ bool NongManager::init() {
         if (entry.path().extension() != ".json") {
             continue;
         }
-        log::info("Loading nongs from {}", entry.path().string());
 
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {

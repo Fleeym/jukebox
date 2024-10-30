@@ -40,10 +40,6 @@ bool IndexesPopup::setup(
 }
 
 void IndexesPopup::onClose(CCObject* sender) {
-    log::info("IndexesPopup::onClose");
-    for (auto& index : m_indexes) {
-        log::info("Index: {}, enabled: {}", index.m_url, index.m_enabled);
-    }
     m_setIndexesCallback(m_indexes);
     Popup::onClose(sender);
 }

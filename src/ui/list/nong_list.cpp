@@ -98,7 +98,6 @@ bool NongList::init(
 void NongList::setDownloadProgress(std::string uniqueID, float progress) {}
 
 void NongList::build() {
-    log::info("rebuilding list");
     if (m_list->m_contentLayer->getChildrenCount() > 0) {
         m_list->m_contentLayer->removeAllChildrenWithCleanup(true);
     }

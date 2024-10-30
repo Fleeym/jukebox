@@ -25,9 +25,6 @@ DownloadTask startHostedDownload(const std::string& url) {
                 return Ok(std::move(response->data()));
             },
             [](web::WebProgress* progress) {
-                log::info("Progress: {}", progress->downloadProgress().value_or(0));
-                log::info("total: {}", progress->downloadTotal());
-                log::info("downloaded: {}", progress->downloaded());
                 return progress->downloadProgress().value_or(0);
             });
 }

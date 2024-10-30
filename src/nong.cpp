@@ -320,7 +320,6 @@ public:
     geode::Result<> canSetActive(const std::string& uniqueID,
                                  std::filesystem::path path) {
         const bool IS_DEFAULT = uniqueID == m_default->metadata()->uniqueID;
-        log::info("{}-{}", uniqueID, path);
 
         std::error_code ec;
 

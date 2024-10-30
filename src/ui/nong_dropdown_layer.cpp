@@ -159,7 +159,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
             return ListenerResult::Propagate;
         }
 
-        log::info("song state changed");
         this->createList();
 
         return ListenerResult::Propagate;

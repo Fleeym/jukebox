@@ -60,10 +60,6 @@ bool IndexManager::init() {
 
 Result<std::vector<IndexSource>> IndexManager::getIndexes() {
     auto setting = Mod::get()->getSettingValue<Indexes>("indexes");
-    log::info("Indexes: {}", setting.indexes.size());
-    for (const auto index : setting.indexes) {
-        log::info("Index({}): {}", index.m_enabled, index.m_url);
-    }
     return Ok(setting.indexes);
 }
 
@@ -214,7 +210,6 @@ Result<> IndexManager::fetchIndexes() {
     const std::vector<IndexSource> indexes = std::move(indexesRes.unwrap());
 
     for (const IndexSource& index : indexes) {
-        log::info("Fetching index {}", index.m_url);
         if (!index.m_enabled || index.m_url.size() < 3) {
             continue;
         }
@@ -791,7 +786,6 @@ void IndexManager::onDownloadFinish(
 /*}*/
 
 ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
-    log::info("starting download");
     (void)this->downloadSong(e->gdId(), e->song()->uniqueID);
     return ListenerResult::Propagate;
 }

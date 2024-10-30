@@ -82,8 +82,6 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
     inputNode->setString(m_index->m_url, false);
     inputNode->setTextAlign(TextInputAlign::Left);
     inputNode->setCallback([this](std::string const& str) {
-        log::info("Index new URL: {}", str);
-        log::info("Index URL: {}", m_index->m_url);
         m_index->m_url = str;
     });
 
@@ -108,7 +106,6 @@ void IndexCell::updateUI() { m_toggleButton->toggle(m_index->m_enabled); }
 
 void IndexCell::onToggle(CCObject*) {
     m_index->m_enabled = !m_index->m_enabled;
-    log::info("Index enabled: {}", m_index->m_enabled);
     this->updateUI();
     // Cancel the toggling of the button by cocos that happens after the
     // callback.
