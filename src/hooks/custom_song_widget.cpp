@@ -69,7 +69,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
                 m_songInfoObject->m_songName = active->metadata()->name;
                 m_songInfoObject->m_artistName = active->metadata()->artist;
-                m_songInfoObject->m_songUrl = "local";
                 this->updateSongInfo();
 
                 return ListenerResult::Propagate;
@@ -86,7 +85,17 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (m_isRobtopSong) {
             return;
         }
-        this->createSongLabels();
+
+        if (!m_fields->nongs) {
+            auto res = NongManager::get().getNongs(m_songInfoObject->m_songID);
+            if (res) {
+                m_fields->nongs = res.value();
+                this->createSongLabels(m_fields->nongs);
+            }
+        } else {
+            this->createSongLabels(m_fields->nongs);
+        }
+
     }
 
     void updateMultiAssetInfo(bool p) {
@@ -162,7 +171,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         auto nongs = result.value();
 
         m_fields->nongs = nongs;
-        this->createSongLabels();
+        this->createSongLabels(nongs);
         if (nongs->isDefaultActive()) {
             m_deleteBtn->setVisible(false);
         }
@@ -188,20 +197,16 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
     }
 
-    void createSongLabels() {
+    void createSongLabels(Nongs* nongs) {
         int songID = m_songInfoObject->m_songID;
         if (m_isRobtopSong) {
             songID++;
             songID = -songID;
         }
-        auto res = NongManager::get().getNongs(songID);
-        if (!res) {
-            return;
-        }
-        auto nongs = res.value();
         Song* active = nongs->active();
         if (m_fields->menu != nullptr) {
             m_fields->menu->removeFromParent();
+            m_fields->menu = nullptr;
         }
         auto menu = CCMenu::create();
         menu->setID("song-name-menu");
@@ -209,7 +214,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
                                            "bigFont.fnt");
         auto songNameMenuLabel = CCMenuItemSpriteExtra::create(
             label, this, menu_selector(JBSongWidget::addNongLayer));
-        songNameMenuLabel->setTag(songID);
         auto labelScale = label->getScale();
         songNameMenuLabel->setID("song-name-label");
         m_fields->songNameLabel = songNameMenuLabel;
