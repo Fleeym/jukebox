@@ -10,6 +10,7 @@
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/loader/Event.hpp"
 
+#include "events/song_download_failed.hpp"
 #include "events/song_download_progress.hpp"
 #include "index.hpp"
 
@@ -38,11 +39,14 @@ protected:
     bool m_downloading = false;
 
     EventListener<EventFilter<event::SongDownloadProgress>> m_downloadListener;
+    EventListener<EventFilter<event::SongDownloadFailed>>
+        m_downloadFailedListener{this, &IndexSongCell::onDownloadFailed};
 
     bool init(IndexSongMetadata* song, int gdId, const CCSize& size);
 
     void onDownload(CCObject*);
     geode::ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
+    geode::ListenerResult onDownloadFailed(event::SongDownloadFailed* e);
 
 public:
     IndexSongMetadata* song() const { return m_song; }

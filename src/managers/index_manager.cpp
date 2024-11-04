@@ -23,6 +23,7 @@
 
 #include "download/hosted.hpp"
 #include "download/youtube.hpp"
+#include "events/song_download_failed.hpp"
 #include "events/song_download_finished.hpp"
 #include "events/song_download_progress.hpp"
 #include "events/song_error.hpp"
@@ -427,8 +428,11 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
     }
 
     task.listen(
-        [this, indexMeta, local, nongs](Result<ByteVector>* vector) {
+        [this, indexMeta, local, nongs, gdSongID,
+         uniqueID](Result<ByteVector>* vector) {
             if (vector->isErr()) {
+                event::SongDownloadFailed(gdSongID, uniqueID, vector->error())
+                    .post();
                 return;
             }
 
@@ -457,8 +461,18 @@ void IndexManager::onDownloadProgress(int gdSongID, const std::string& uniqueId,
 void IndexManager::onDownloadFinish(
     std::variant<index::IndexSongMetadata*, Song*>&& source, Nongs* destination,
     ByteVector&& data) {
+    std::string uniqueId;
+    if (std::holds_alternative<index::IndexSongMetadata*>(source)) {
+        uniqueId = std::get<index::IndexSongMetadata*>(source)->uniqueID;
+    } else {
+        uniqueId = std::get<Song*>(source)->metadata()->uniqueID;
+    }
+
     if (data.size() == 0) {
-        log::error("Failed to store downloaded file. ByteVector empty.");
+        const std::string err =
+            "Failed to store downloaded file. ByteVector empty.";
+        log::error("{}", err);
+        event::SongDownloadFailed(destination->songID(), uniqueId, err).post();
         return;
     }
 
@@ -486,8 +500,10 @@ void IndexManager::onDownloadFinish(
     std::ofstream out(path, std::ios_base::out | std::ios_base::binary);
 
     if (!out.is_open()) {
-        log::error(
-            "Failed to store downloaded file. Couldn't open file for write");
+        const std::string err =
+            "Failed to store downloaded file. Couldn't open file for write";
+        log::error("{}", err);
+        event::SongDownloadFailed(destination->songID(), uniqueId, err).post();
         return;
     }
 
@@ -518,7 +534,10 @@ void IndexManager::onDownloadFinish(
                                 metadata->startOffset),
                    metadata->ytId.value(), metadata->parentID->m_id, path));
     } else {
-        log::error("Couldn't store index song. No URL or YouTube ID.");
+        const std::string err =
+            "Couldn't store index song. No URL or YouTube ID.";
+        log::error("{}", err);
+        event::SongDownloadFailed(destination->songID(), uniqueId, err).post();
         // Don't really care about this, just don't throw an exception
         std::error_code ec;
         std::filesystem::remove(path, ec);
@@ -539,7 +558,11 @@ void IndexManager::onDownloadFinish(
 }
 
 ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
-    (void)this->downloadSong(e->gdId(), e->song()->uniqueID);
+    Result<> res = this->downloadSong(e->gdId(), e->song()->uniqueID);
+    if (res.isErr()) {
+        event::SongDownloadFailed(e->gdId(), e->song()->uniqueID, res.error())
+            .post();
+    }
     return ListenerResult::Propagate;
 }
 

@@ -23,7 +23,6 @@
 #include "Geode/utils/web.hpp"
 #include "ccTypes.h"
 
-#include "events/song_download_progress.hpp"
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
@@ -153,12 +152,16 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         return ListenerResult::Propagate;
     });
 
-    m_downloadListener.bind([this](event::SongDownloadProgress* event) {
-        if (!m_list || m_currentSongID != event->gdSongID()) {
+    m_downloadFailedListener.bind([this](event::SongDownloadFailed* event) {
+        if (!m_list || m_currentSongID != event->gdSongId()) {
             return ListenerResult::Propagate;
         }
 
-        m_list->setDownloadProgress(event->uniqueID(), event->progress());
+        FLAlertLayer::create(
+            "Download failed",
+            fmt::format("Song download failed. Reason: {}", event->error()),
+            "Ok")
+            ->show();
 
         return ListenerResult::Propagate;
     });

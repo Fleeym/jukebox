@@ -16,6 +16,7 @@
 #include "Geode/loader/Log.hpp"
 #include "Geode/ui/Popup.hpp"
 
+#include "events/song_download_failed.hpp"
 #include "events/song_state_changed.hpp"
 #include "managers/index_manager.hpp"
 #include "nong.hpp"
@@ -272,6 +273,22 @@ ListenerResult NongCell::onDownloadProgress(event::SongDownloadProgress* e) {
     }
 
     m_downloadProgress->setPercentage(e->progress());
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongCell::onDownloadFailed(event::SongDownloadFailed* e) {
+    if (e->gdSongId() != m_songID || e->uniqueId() != m_uniqueID) {
+        return ListenerResult::Propagate;
+    }
+
+    m_downloadProgressContainer->setVisible(false);
+    m_downloadProgress->setPercentage(0.0f);
+    CCSprite* downloadSpr =
+        CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
+    downloadSpr->setScale(0.7f);
+    m_downloadButton->setSprite(downloadSpr);
+    m_downloadButton->setColor({255, 255, 255});
+
     return ListenerResult::Propagate;
 }
 

@@ -6,6 +6,7 @@
 #include "Geode/cocos/cocoa/CCObject.h"
 
 #include "Geode/loader/Event.hpp"
+#include "events/song_download_failed.hpp"
 #include "events/song_download_progress.hpp"
 #include "events/song_state_changed.hpp"
 #include "nong.hpp"
@@ -44,6 +45,8 @@ protected:
 
     EventListener<EventFilter<event::SongDownloadProgress>> m_progressListener{
         this, &NongCell::onDownloadProgress};
+    EventListener<EventFilter<event::SongDownloadFailed>>
+        m_downloadFailedListener{this, &NongCell::onDownloadFailed};
     EventListener<EventFilter<event::SongStateChanged>> m_stateListener{
         this, &NongCell::onStateChange};
 
@@ -54,6 +57,7 @@ protected:
               std::function<void()> onEdit);
 
     ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
+    ListenerResult onDownloadFailed(event::SongDownloadFailed* e);
     ListenerResult onStateChange(event::SongStateChanged* e);
 
 public:

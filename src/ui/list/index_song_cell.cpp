@@ -12,6 +12,7 @@
 #include "Geode/loader/Event.hpp"
 #include "ccTypes.h"
 
+#include "events/song_download_failed.hpp"
 #include "events/song_download_progress.hpp"
 #include "events/start_download.hpp"
 #include "index.hpp"
@@ -165,6 +166,23 @@ ListenerResult IndexSongCell::onDownloadProgress(
     }
 
     m_progressBar->setPercentage(e->progress());
+    return ListenerResult::Propagate;
+}
+
+ListenerResult IndexSongCell::onDownloadFailed(event::SongDownloadFailed* e) {
+    if (e->gdSongId() != m_gdId || e->uniqueId() != m_song->uniqueID) {
+        return ListenerResult::Propagate;
+    }
+
+    m_progressContainer->setVisible(false);
+    m_progressBar->setPercentage(0.0f);
+    CCSprite* downloadSpr =
+        CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
+    downloadSpr->setScale(0.7f);
+    m_downloadButton->setSprite(downloadSpr);
+    m_downloadButton->setColor({255, 255, 255});
+    m_downloading = false;
+
     return ListenerResult::Propagate;
 }
 
