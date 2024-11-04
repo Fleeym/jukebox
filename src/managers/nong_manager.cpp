@@ -200,6 +200,10 @@ bool NongManager::init() {
         log::info("No manifest directory found. Creating...");
         std::filesystem::create_directory(path);
     }
+    auto nongsPath = this->baseNongsPath();
+    if (!std::filesystem::exists(nongsPath)) {
+        std::filesystem::create_directory(nongsPath);
+    }
 
     for (const std::filesystem::directory_entry& entry :
          std::filesystem::directory_iterator(path)) {
