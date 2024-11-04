@@ -43,7 +43,7 @@ bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size,
         CCLabelBMFont::create(fmt::format("#{}", id).c_str(), "chatFont.fnt");
     idLabel->setPosition({size.width - 5.f, 0 + 3.f});
     idLabel->setAnchorPoint({1.0f, 0.0f});
-    idLabel->setColor(ccColor3B(230, 230, 230));
+    idLabel->setColor(ccColor3B{230, 230, 230});
     idLabel->setScale(0.6f);
     m_songIDLabel = idLabel;
     this->addChild(idLabel);
