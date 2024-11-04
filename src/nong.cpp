@@ -350,7 +350,7 @@ public:
 
             m_active = song.value();
 
-            if (!NongManager::get().initialized()) {
+            if (NongManager::get().initialized()) {
                 event::SongStateChanged(self).post();
             }
 
@@ -368,7 +368,7 @@ public:
             }
 
             m_active = song.value();
-            if (!NongManager::get().initialized()) {
+            if (NongManager::get().initialized()) {
                 event::SongStateChanged(self).post();
             }
             return Ok();
@@ -385,7 +385,7 @@ public:
             }
 
             m_active = song.value();
-            if (!NongManager::get().initialized()) {
+            if (NongManager::get().initialized()) {
                 event::SongStateChanged(self).post();
             }
             return Ok();
