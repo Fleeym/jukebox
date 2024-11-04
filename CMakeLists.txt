@@ -13,6 +13,7 @@ file(GLOB SOURCES
     src/api/*.cpp
     src/download/*.cpp
     src/utils/*.cpp
+    src/compat/*.cpp
 	src/*.cpp
 )
 

@@ -26,17 +26,6 @@ struct JUKEBOX_DLL SongMetadata final {
     std::optional<std::string> level;
     int startOffset;
 
-    SongMetadata(int gdID, std::string uniqueID, std::string name,
-                 std::string artist,
-                 std::optional<std::string> level = std::nullopt,
-                 int offset = 0)
-        : gdID(gdID),
-          uniqueID(uniqueID),
-          name(name),
-          artist(artist),
-          level(level),
-          startOffset(offset) {}
-
     bool operator==(const SongMetadata& other) const {
         return gdID == other.gdID && uniqueID == other.uniqueID &&
                name == other.name && artist == other.artist &&

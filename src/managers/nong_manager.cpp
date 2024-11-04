@@ -10,12 +10,15 @@
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <matjson.hpp>
+#include <unordered_map>
 #include "Geode/binding/LevelTools.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Log.hpp"
+#include "Geode/utils/Result.hpp"
 
-#include "events/song_state_changed.hpp"
+#include "compat/compat.hpp"
+#include "compat/v2.hpp"
 #include "managers/index_manager.hpp"
 #include "nong.hpp"
 #include "nong_serialize.hpp"
@@ -190,10 +193,12 @@ bool NongManager::init() {
         return ListenerResult::Propagate;
     });
 
+    log::info("Starting NONG read");
+
     auto path = this->baseManifestPath();
     if (!std::filesystem::exists(path)) {
+        log::info("No manifest directory found. Creating...");
         std::filesystem::create_directory(path);
-        return true;
     }
 
     for (const std::filesystem::directory_entry& entry :
@@ -204,7 +209,8 @@ bool NongManager::init() {
 
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
-            log::error("{}", res.unwrapErr());
+            log::error("Failed to read file {}: {}", entry.path().filename(),
+                       res.unwrapErr());
             std::filesystem::rename(
                 entry.path(),
                 path / fmt::format("{}.bak", entry.path().filename().string()));
@@ -217,8 +223,81 @@ bool NongManager::init() {
         m_manifest.m_nongs.insert({id, std::move(ptr)});
     }
 
+    log::info("Read {} files successfuly!", m_manifest.m_nongs.size());
+
+    auto res = this->migrateV2();
+    if (res.isErr()) {
+        log::error("{}", res.error());
+    }
+
     m_initialized = true;
     return true;
+}
+
+Result<> NongManager::migrateV2() {
+    bool migrate = compat::v2::manifestExists();
+
+    if (!migrate) {
+        log::info("Nothing to migrate from V2!");
+        return Ok();
+    }
+
+    Result<std::unordered_map<int, compat::CompatManifest>> parsed =
+        compat::v2::parseManifest();
+
+    if (parsed.isErr()) {
+        return Err(parsed.error());
+    }
+
+    std::unordered_map<int, compat::CompatManifest> manifest = parsed.unwrap();
+    size_t i = 0;
+
+    for (const auto& kv : manifest) {
+        if (!m_manifest.m_nongs.contains(kv.first)) {
+            LocalSong defaultSong = kv.second.defaultSong;
+            int id = kv.first;
+            Nongs nongs = Nongs(kv.first, std::move(defaultSong));
+            m_manifest.m_nongs.insert(
+                {id, std::make_unique<Nongs>(std::move(nongs))});
+        }
+
+        Nongs* nongs = m_manifest.m_nongs[kv.first].get();
+
+        for (const LocalSong& i : kv.second.songs) {
+            if (i.path().value() == kv.second.defaultSong.path().value()) {
+                continue;
+            }
+            bool found = false;
+            for (std::unique_ptr<LocalSong>& stored : nongs->locals()) {
+                if (stored->metadata()->startOffset ==
+                        stored->metadata()->startOffset &&
+                    stored->metadata()->name == i.metadata()->name &&
+                    stored->metadata()->artist == i.metadata()->artist) {
+                    found = true;
+                }
+            }
+
+            if (found) {
+                continue;
+            }
+
+            LocalSong cp = i;
+            auto res = nongs->add(std::move(cp));
+            if (res.isErr()) {
+                log::error("Failed to add migrated song to manifest: {}",
+                           res.error());
+            }
+        }
+
+        (void)nongs->setActive(kv.second.active.metadata()->uniqueID);
+        (void)nongs->commit();
+        i++;
+    }
+
+    log::info("Migrated {} ids from v2", i);
+    (void)compat::v2::backupManifest(true);
+
+    return Ok();
 }
 
 Result<> NongManager::saveNongs(std::optional<int> saveID) {

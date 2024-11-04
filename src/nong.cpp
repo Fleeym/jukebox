@@ -349,7 +349,11 @@ public:
             }
 
             m_active = song.value();
-            event::SongStateChanged(self).post();
+
+            if (!NongManager::get().initialized()) {
+                event::SongStateChanged(self).post();
+            }
+
             return Ok();
         }
 
@@ -364,7 +368,9 @@ public:
             }
 
             m_active = song.value();
-            event::SongStateChanged(self).post();
+            if (!NongManager::get().initialized()) {
+                event::SongStateChanged(self).post();
+            }
             return Ok();
         }
 
@@ -379,7 +385,9 @@ public:
             }
 
             m_active = song.value();
-            event::SongStateChanged(self).post();
+            if (!NongManager::get().initialized()) {
+                event::SongStateChanged(self).post();
+            }
             return Ok();
         }
 
@@ -446,7 +454,9 @@ public:
                     this->deletePath((*i)->path());
                 }
                 m_locals.erase(i);
-                event::NongDeleted(uniqueID, m_songID).post();
+                if (NongManager::get().initialized()) {
+                    event::NongDeleted(uniqueID, m_songID).post();
+                }
                 return Ok();
             }
         }
@@ -457,7 +467,9 @@ public:
                     this->deletePath((*i)->path());
                 }
                 m_youtube.erase(i);
-                event::NongDeleted(uniqueID, m_songID).post();
+                if (NongManager::get().initialized()) {
+                    event::NongDeleted(uniqueID, m_songID).post();
+                }
                 return Ok();
             }
         }
@@ -468,7 +480,9 @@ public:
                     this->deletePath((*i)->path());
                 }
                 m_hosted.erase(i);
-                event::NongDeleted(uniqueID, m_songID).post();
+                if (NongManager::get().initialized()) {
+                    event::NongDeleted(uniqueID, m_songID).post();
+                }
                 return Ok();
             }
         }
@@ -641,11 +655,10 @@ public:
 
     Result<LocalSong*> add(LocalSong&& song) {
         for (const std::unique_ptr<LocalSong>& i : m_locals) {
-            if (i->path() == song.path()) {
+            if (i->metadata() == song.metadata() && i->path() == song.path()) {
                 std::string err =
                     fmt::format("Attempted to add a duplicate song for id {}",
                                 song.metadata()->gdID);
-                // log::error(err);
                 return Err(err);
             }
         }

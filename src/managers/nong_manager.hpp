@@ -42,6 +42,8 @@ protected:
     Result<std::unique_ptr<Nongs>> loadNongsFromPath(
         const std::filesystem::path& path);
 
+    Result<> migrateV2();
+
 public:
     using MultiAssetSizeTask = Task<std::string>;
     std::optional<Nongs*> m_currentlyPreparingNong;
