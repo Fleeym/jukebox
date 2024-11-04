@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - "main"
+      - "patch-1"
       - "v3-nong-data"
 
 jobs:
@@ -16,8 +17,9 @@ jobs:
           - name: Windows
             os: windows-latest
           
-          # - name: macOS
-          #   os: macos-latest
+          - name: macOS
+            os: macos-latest
+          
           - name: Android32
             os: ubuntu-latest
             target: Android32
