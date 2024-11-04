@@ -365,6 +365,33 @@ ListenerResult NongList::onNongDeleted(event::NongDeleted* e) {
         m_list->m_contentLayer->updateLayout();
     }
 
+    std::optional<Nongs*> optNongs =
+        NongManager::get().getNongs(m_currentSong.value());
+
+    if (!optNongs.has_value()) {
+        return ListenerResult::Propagate;
+    }
+
+    Nongs* nongs = optNongs.value();
+
+    for (index::IndexSongMetadata* i : nongs->indexSongs()) {
+        if (i->uniqueID != e->uniqueId()) {
+            continue;
+        }
+
+        if (!m_list->m_contentLayer->getChildByID("index-section")) {
+            CCLabelBMFont* indexLabel =
+                CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            indexLabel->setID("index-section");
+            indexLabel->setLayoutOptions(
+                AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+            m_list->m_contentLayer->addChild(indexLabel);
+        }
+
+        this->addIndexSongToList(i, nongs);
+        m_list->m_contentLayer->updateLayout();
+    }
+
     return ListenerResult::Propagate;
 }
 
