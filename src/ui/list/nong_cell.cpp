@@ -238,6 +238,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
             ->setCrossAxisOverflow(false)
             ->setAxisAlignment(AxisAlignment::Even)
             ->setCrossAxisAlignment(AxisAlignment::Start)
+            ->setCrossAxisOverflow(true)
             ->setCrossAxisLineAlignment(AxisAlignment::Start));
 
     this->addChildAtPosition(m_songInfoNode, Anchor::Left, {PADDING_X, 0.0f});
