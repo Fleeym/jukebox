@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 #include <sstream>
 
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
@@ -7,8 +8,13 @@
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+#include "Geode/cocos/menu_nodes/CCMenu.h"
+#include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Log.hpp"
+#include "Geode/loader/Mod.hpp"
 #include "Geode/modify/CustomSongWidget.hpp"  // IWYU pragma: keep
 #include "Geode/modify/LevelInfoLayer.hpp"    // IWYU pragma: keep
 #include "Geode/ui/GeodeUI.hpp"
@@ -23,8 +29,8 @@ using namespace jukebox;
 class $modify(JBSongWidget, CustomSongWidget) {
     struct Fields {
         Nongs* nongs = nullptr;
-        CCMenu* menu = nullptr;
-        CCMenuItemSpriteExtra* songNameLabel = nullptr;
+        CCMenu* labelMenu = nullptr;
+        CCMenu* pinMenu = nullptr;
         CCLabelBMFont* sizeIdLabel = nullptr;
         std::string songIds = "";
         std::string sfxIds = "";
@@ -39,19 +45,22 @@ class $modify(JBSongWidget, CustomSongWidget) {
     bool init(SongInfoObject* songInfo, CustomSongDelegate* songDelegate,
               bool showSongSelect, bool showPlayMusic, bool showDownload,
               bool isRobtopSong, bool unk, bool isMusicLibrary, int unkInt) {
+        this->adjustSongInfoObject(songInfo);
         if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect,
                                     showPlayMusic, showDownload, isRobtopSong,
                                     unk, isMusicLibrary, unkInt)) {
             return false;
         }
-        // log::info("CSW INIT");
-        // log::info("{}, {}, {}, {}, {}", songInfo->m_songName,
-        // songInfo->m_artistName, songInfo->m_songUrl,
-        // songInfo->m_isUnkownSong, songInfo->m_songID); log::info("songselect
-        // {}, playmusic {}, download {}, robtop {}, unk {}, musiclib {}, int:
-        // {}", m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn,
-        // m_isRobtopSong, unk, m_isMusicLibrary, unkInt);
-        m_songLabel->setVisible(false);
+        /*log::info("CSW INIT");*/
+        /*log::info("name: {}, artist: {}, url: {}, unknown: {}, id: {}",*/
+        /*          songInfo->m_songName, songInfo->m_artistName,*/
+        /*          songInfo->m_songUrl, songInfo->m_isUnknownSong,*/
+        /*          songInfo->m_songID);*/
+        /*log::info(*/
+        /*    "songselect {}, playmusic {}, download {}, robtop {}, unk {}, "*/
+        /*    "musiclib {}, int: {}",*/
+        /*    m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn,*/
+        /*    m_isRobtopSong, unk, m_isMusicLibrary, unkInt);*/
         this->setupJBSW();
         m_fields->firstRun = false;
 
@@ -77,6 +86,25 @@ class $modify(JBSongWidget, CustomSongWidget) {
         return true;
     }
 
+    void adjustSongInfoObject(SongInfoObject* object) {
+        if (!object || !object->m_isUnknownSong) {
+            return;
+        }
+
+        std::optional<Nongs*> opt =
+            NongManager::get().getNongs(object->m_songID);
+
+        if (!opt.has_value()) {
+            return;
+        }
+
+        Nongs* nongs = opt.value();
+
+        object->m_isUnknownSong = false;
+        object->m_songName = nongs->active()->metadata()->name;
+        object->m_artistName = nongs->active()->metadata()->artist;
+    }
+
     void updateWithMultiAssets(gd::string p1, gd::string p2, int p3) {
         CustomSongWidget::updateWithMultiAssets(p1, p2, p3);
         m_fields->songIds = std::string(p1);
@@ -95,7 +123,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
         } else {
             this->createSongLabels(m_fields->nongs);
         }
-
     }
 
     void updateMultiAssetInfo(bool p) {
@@ -127,12 +154,14 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void restoreUI() {
-        m_songLabel->setVisible(true);
-        if (m_fields->menu != nullptr) {
-            m_fields->songNameLabel->removeFromParent();
-            m_fields->songNameLabel = nullptr;
-            m_fields->menu->removeFromParent();
-            m_fields->menu = nullptr;
+        if (m_fields->pinMenu != nullptr) {
+            m_fields->pinMenu->removeFromParent();
+            m_fields->pinMenu = nullptr;
+        }
+        if (m_fields->labelMenu != nullptr) {
+            m_songLabel->setVisible(true);
+            m_fields->labelMenu->removeFromParent();
+            m_fields->labelMenu = nullptr;
         }
         if (m_fields->sizeIdLabel != nullptr) {
             m_songIDLabel->setVisible(true);
@@ -163,7 +192,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
             this->restoreUI();
             return;
         }
-        m_songLabel->setVisible(false);
         NongManager::get().initSongID(obj, obj->m_songID, m_isRobtopSong);
         std::optional<Nongs*> result = NongManager::get().getNongs(
             NongManager::get().adjustSongID(id, m_isRobtopSong));
@@ -204,29 +232,75 @@ class $modify(JBSongWidget, CustomSongWidget) {
             songID = -songID;
         }
         Song* active = nongs->active();
-        if (m_fields->menu != nullptr) {
-            m_fields->menu->removeFromParent();
-            m_fields->menu = nullptr;
+        if (m_fields->pinMenu != nullptr) {
+            m_fields->pinMenu->removeFromParent();
+            m_fields->pinMenu = nullptr;
         }
-        auto menu = CCMenu::create();
-        menu->setID("song-name-menu");
-        auto label = CCLabelBMFont::create(active->metadata()->name.c_str(),
-                                           "bigFont.fnt");
-        auto songNameMenuLabel = CCMenuItemSpriteExtra::create(
-            label, this, menu_selector(JBSongWidget::addNongLayer));
-        auto labelScale = label->getScale();
-        songNameMenuLabel->setID("song-name-label");
-        m_fields->songNameLabel = songNameMenuLabel;
-        menu->addChild(songNameMenuLabel);
-        menu->setLayout(RowLayout::create()
-                            ->setDefaultScaleLimits(0.1f, 1.0f)
-                            ->setAxisAlignment(AxisAlignment::Start));
-        menu->setAnchorPoint(m_songLabel->getAnchorPoint());
-        menu->setContentSize(m_songLabel->getScaledContentSize());
-        menu->setPosition(m_songLabel->getPosition());
-        menu->updateLayout();
-        m_fields->menu = menu;
-        this->addChild(menu);
+
+        if (m_fields->labelMenu != nullptr) {
+            m_fields->labelMenu->removeFromParent();
+            m_fields->labelMenu = nullptr;
+        }
+
+        if (Mod::get()->getSettingValue<bool>("old-label-display")) {
+            m_fields->labelMenu = CCMenu::create();
+            m_fields->labelMenu->setID("nong-menu"_spr);
+            m_fields->labelMenu->ignoreAnchorPointForPosition(false);
+            CCLabelBMFont* label = CCLabelBMFont::create(
+                active->metadata()->name.c_str(), "bigFont.fnt");
+            label->setID("song-name-label"_spr);
+            CCMenuItemSpriteExtra* btn = CCMenuItemSpriteExtra::create(
+                label, this, menu_selector(JBSongWidget::addNongLayer));
+            btn->setID("nong-button"_spr);
+            float labelScale = label->getScale();
+            m_fields->labelMenu->addChild(btn);
+            m_fields->labelMenu->setAnchorPoint(m_songLabel->getAnchorPoint());
+            m_fields->labelMenu->setContentSize(
+                m_songLabel->getScaledContentSize());
+            m_fields->labelMenu->setPosition(m_songLabel->getPosition());
+            m_fields->labelMenu->setLayout(
+                RowLayout::create()
+                    ->setDefaultScaleLimits(0.1f, 1.0f)
+                    ->setAxisAlignment(AxisAlignment::Start));
+            m_fields->labelMenu->updateLayout();
+            m_songLabel->setVisible(false);
+            this->addChild(m_fields->labelMenu);
+        } else {
+            CCSize pos;
+
+            if (!m_isMusicLibrary) {
+                if (m_ncsLogo && m_ncsLogo->isVisible()) {
+                    pos = m_ncsLogo->getPosition();
+                } else {
+                    pos = m_songLabel->getPosition();
+                }
+
+                pos = pos + CCSize{-9.0f, 13.0f};
+            } else {
+                pos = m_songIDLabel->getPosition() + CCSize{-7.0f, -11.0f};
+            }
+
+            m_fields->pinMenu = CCMenu::create();
+            m_fields->pinMenu->setID("nong-menu"_spr);
+
+            CCSprite* spr = CCSprite::create("JB_PinDisc.png"_spr);
+            spr->setScale(0.4f);
+            spr->setID("nong-pin"_spr);
+
+            CCMenuItemSpriteExtra* btn = CCMenuItemSpriteExtra::create(
+                spr, this, menu_selector(JBSongWidget::addNongLayer));
+            btn->setID("nong-button"_spr);
+
+            m_fields->pinMenu->setAnchorPoint({0.5f, 0.5f});
+            m_fields->pinMenu->ignoreAnchorPointForPosition(false);
+            m_fields->pinMenu->addChild(btn);
+            m_fields->pinMenu->setContentSize(btn->getScaledContentSize());
+            m_fields->pinMenu->setLayout(RowLayout::create());
+
+            m_fields->pinMenu->setPosition(pos);
+            this->addChild(m_fields->pinMenu);
+        }
+
         if (m_songs.size() == 0 && m_sfx.size() == 0 && !m_isMusicLibrary) {
             if (m_fields->sizeIdLabel != nullptr) {
                 m_fields->sizeIdLabel->removeFromParent();
@@ -270,7 +344,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             auto label =
                 CCLabelBMFont::create(labelText.c_str(), "bigFont.fnt");
-            label->setID("nongd-id-and-size-label");
+            label->setID("id-and-size-label"_spr);
             label->setPosition(ccp(-139.f, -31.f));
             label->setAnchorPoint({0, 0.5f});
             label->setScale(0.4f);

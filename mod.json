@@ -43,6 +43,16 @@
         }
 			]
 		},
+    "visual-title": {
+      "name": "Visual",
+      "type": "title"
+    },
+    "old-label-display": {
+      "name": "Old popup flow",
+      "type": "bool",
+      "description": "Enables the old way to open the nong popup, by clicking on the song label",
+      "default": false
+    },
     "experimental-title": {
       "name": "Experimental",
       "type": "title",
