@@ -15,6 +15,7 @@ jobs:
         config:
           - name: Windows
             os: windows-latest
+            build-type: RelWithDebInfo
           
           - name: macOS
             os: macos-latest
@@ -26,6 +27,7 @@ jobs:
           - name: Android64
             os: ubuntu-latest
             target: Android64
+
     name: ${{matrix.config.name}}
     runs-on: ${{matrix.config.os}}
 
@@ -38,6 +40,7 @@ jobs:
           export-pdb: true
           combine: true
           target: ${{matrix.config.target}}
+          build-config: ${{matrix.config.build-type || 'Release'}}
   package:
     name: Package builds
     runs-on: ubuntu-latest
