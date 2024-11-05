@@ -53,9 +53,9 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
         log::error("Critical. No song object for RobTop song");
         return;
     }
+    int adjusted = adjustSongID(id, robtop);
 
     if (obj && robtop) {
-        int adjusted = adjustSongID(id, robtop);
         std::string filename = LevelTools::getAudioFileName(id);
         std::filesystem::path gdDir = std::filesystem::path(
             CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
@@ -77,24 +77,26 @@ void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
     if (!obj && !initialized) {
         // Try fetch song info from servers
         MusicDownloadManager::sharedState()->getSongInfo(id, true);
-        m_manifest.m_nongs.insert({id, std::make_unique<Nongs>(Nongs{
-                                           id, LocalSong::createUnknown(id)})});
+        m_manifest.m_nongs.insert(
+            {adjusted,
+             std::make_unique<Nongs>(Nongs{id, LocalSong::createUnknown(id)})});
         return;
     }
 
     if (!initialized) {
         m_manifest.m_nongs.insert(
-            {id,
+            {adjusted,
              std::make_unique<Nongs>(Nongs{
-                 id, LocalSong{SongMetadata{id, jukebox::random_string(16),
-                                            obj->m_songName, obj->m_artistName},
-                               std::filesystem::path(
-                                   MusicDownloadManager::sharedState()
-                                       ->pathForSong(id)
-                                       .c_str())}})});
+                 adjusted,
+                 LocalSong{
+                     SongMetadata{adjusted, jukebox::random_string(16),
+                                  obj->m_songName, obj->m_artistName},
+                     std::filesystem::path(MusicDownloadManager::sharedState()
+                                               ->pathForSong(id)
+                                               .c_str())}})});
     }
 
-    Nongs* nongs = m_manifest.m_nongs[id].get();
+    Nongs* nongs = m_manifest.m_nongs[adjusted].get();
     IndexManager::get().registerIndexNongs(nongs);
 }
 
