@@ -147,7 +147,9 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
 
     m_songErrorListener.bind([](event::SongError* event) {
         if (event->notifyUser()) {
-            FLAlertLayer::create("Error", event->error(), "OK")->show();
+            FLAlertLayer* popup = FLAlertLayer::create("Error", event->error(), "OK");
+            popup->setZOrder(107);
+            popup->show();
         }
         return ListenerResult::Propagate;
     });
