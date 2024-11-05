@@ -16,7 +16,7 @@ Jukebox makes the process of managing your songs a breeze. You can download your
 
 > Note that Jukebox copies imported MP3 files in the storage location designated by Geode. You can open this folder from ingame.
 
-Alternatively, you can download songs **ingame** from configurable sources, known as index. Jukebox provides the **Song File Hub** index as a base, which is a database of NONGs made specifically for Geometry Dash. Ideally, you should be able to get most of the songs you need from here :) 
+Alternatively, you can download songs **ingame** from configurable sources, known as indexes. Jukebox provides the **Song File Hub** index as a base, which is a database of NONGs made specifically for Geometry Dash. Ideally, you should be able to get most of the songs you need from here :) 
 
 > You can add your own indexes if you want, more documentation on this will be provided soon!
 
