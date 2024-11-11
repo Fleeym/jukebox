@@ -10,7 +10,7 @@
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/SettingV3.hpp"
 #include "Geode/utils/JsonValidation.hpp"
-#include "Geode/utils/Result.hpp"
+#include "Geode/Result.hpp"
 
 #include "indexes_popup.hpp"
 

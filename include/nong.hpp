@@ -9,7 +9,7 @@
 #include <fmt/core.h>
 #include <matjson.hpp>
 #include "Geode/binding/SongInfoObject.hpp"
-#include "Geode/utils/Result.hpp"
+#include "Geode/Result.hpp"
 
 #include "Geode/utils/Task.hpp"
 #include "Geode/utils/general.hpp"

@@ -1,8 +1,9 @@
 #include "download/youtube.hpp"
 
+#include <matjson.hpp>
 #include <string>
 
-#include "Geode/utils/Result.hpp"
+#include "Geode/Result.hpp"
 #include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 
@@ -46,25 +47,25 @@ Result<std::string> getUrlFromMetadataPayload(web::WebResponse* r) {
     }
 
     matjson::Value payload = jsonRes.unwrap();
-    if (!payload.contains("status") || !payload["status"].is_string() ||
-        payload["status"].as_string() != "stream") {
+    if (!payload.contains("status") || !payload["status"].isString() ||
+        payload["status"].asString().unwrap() != "stream") {
         return Err("Invalid metadata status");
     }
 
-    if (!payload.contains("url") || !payload["url"].is_string()) {
+    if (!payload.contains("url") || !payload["url"].isString()) {
         return Err("No download URL returned");
     }
 
-    return Ok(payload["url"].as_string());
+    return Ok(payload["url"].asString().unwrap());
 }
 
 web::WebTask getMetadata(const std::string& id) {
     return web::WebRequest()
         .timeout(std::chrono::seconds(30))
-        .bodyJSON(matjson::Object{
-            {"url", fmt::format("https://www.youtube.com/watch?v={}", id)},
-            {"aFormat", "mp3"},
-            {"isAudioOnly", "true"}})
+        .bodyJSON(matjson::makeObject(
+            {{"url", fmt::format("https://www.youtube.com/watch?v={}", id)},
+             {"aFormat", "mp3"},
+             {"isAudioOnly", "true"}}))
         .header("Accept", "application/json")
         .header("Content-Type", "application/json")
         .post("https://api.cobalt.tools/api/json");
@@ -73,7 +74,7 @@ web::WebTask getMetadata(const std::string& id) {
 jukebox::download::DownloadTask onMetadata(web::WebResponse* result) {
     Result<std::string> res = getUrlFromMetadataPayload(result);
     if (res.isErr()) {
-        return jukebox::download::DownloadTask::immediate(Err(res.error()));
+        return jukebox::download::DownloadTask::immediate(Err(res.unwrapErr()));
     }
 
     return jukebox::download::startHostedDownload(res.unwrap());

@@ -11,11 +11,11 @@
 #include <fmt/core.h>
 #include <matjson.hpp>
 #include <unordered_map>
+#include "Geode/Result.hpp"
 #include "Geode/binding/LevelTools.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Log.hpp"
-#include "Geode/utils/Result.hpp"
 
 #include "compat/compat.hpp"
 #include "compat/v2.hpp"
@@ -231,9 +231,9 @@ bool NongManager::init() {
 
     log::info("Read {} files successfuly!", m_manifest.m_nongs.size());
 
-    auto res = this->migrateV2();
+    Result<> res = this->migrateV2();
     if (res.isErr()) {
-        log::error("{}", res.error());
+        log::error("{}", res.unwrapErr());
     }
 
     m_initialized = true;
@@ -248,14 +248,9 @@ Result<> NongManager::migrateV2() {
         return Ok();
     }
 
-    Result<std::unordered_map<int, compat::CompatManifest>> parsed =
-        compat::v2::parseManifest();
+    using CompatMap = std::unordered_map<int, compat::CompatManifest>;
+    GEODE_UNWRAP_INTO(CompatMap manifest, compat::v2::parseManifest());
 
-    if (parsed.isErr()) {
-        return Err(parsed.error());
-    }
-
-    std::unordered_map<int, compat::CompatManifest> manifest = parsed.unwrap();
     size_t i = 0;
 
     for (const auto& kv : manifest) {
@@ -291,7 +286,7 @@ Result<> NongManager::migrateV2() {
             auto res = nongs->add(std::move(cp));
             if (res.isErr()) {
                 log::error("Failed to add migrated song to manifest: {}",
-                           res.error());
+                           res.unwrapErr());
             }
         }
 
@@ -320,11 +315,7 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
             continue;
         }
 
-        Result<> res = entry.second->commit();
-
-        if (res.isErr()) {
-            return Err(res.error());
-        }
+        GEODE_UNWRAP(entry.second->commit());
     }
 
     return Ok();
@@ -356,21 +347,22 @@ Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
     input.read(&contents[0], contents.size());
     input.close();
 
-    std::string err;
-    auto res = matjson::parse(std::string_view(contents), err);
-    if (!res.has_value()) {
-        return Err(
-            fmt::format("{}: Couldn't parse JSON from file: {}", id, err));
-    }
+    GEODE_UNWRAP_INTO(matjson::Value json,
+                      matjson::parse(std::string_view(contents))
+                          .mapErr([id](std::string err) {
+                              return fmt::format(
+                                  "{}: Couldn't parse JSON from file: {}", id,
+                                  err);
+                          }));
 
-    auto json = res.value();
-    auto nongs = matjson::Serialize<Nongs>::from_json(json, id);
-    if (nongs.isErr()) {
-        return Err(
-            fmt::format("{}: Failed to parse JSON: {}", id, nongs.unwrapErr()));
-    }
+    GEODE_UNWRAP_INTO(Nongs nongs,
+                      matjson::Serialize<Nongs>::fromJson(json, id).mapErr(
+                          [id](std::string err) {
+                              return fmt::format("{}: Failed to parse JSON: {}",
+                                                 id, err);
+                          }));
 
-    return Ok(std::make_unique<Nongs>(std::move(nongs.unwrap())));
+    return Ok(std::make_unique<Nongs>(std::move(nongs)));
 }
 
 void NongManager::refetchDefault(int songID) {
@@ -419,9 +411,10 @@ Result<> NongManager::deleteSongAudio(int gdSongID, std::string uniqueID) {
         return Err("Song not initialized in manifest");
     }
 
-    if (auto err = nongs.value()->deleteSongAudio(uniqueID); err.isErr()) {
-        return Err("Couldn't delete Nong: {}", err.error());
-    }
+    GEODE_UNWRAP(
+        nongs.value()->deleteSongAudio(uniqueID).mapErr([](std::string err) {
+            return fmt::format("Couldn't delete Nong: {}", err);
+        }));
 
     return saveNongs(gdSongID);
 }
@@ -432,9 +425,10 @@ Result<> NongManager::deleteSong(int gdSongID, std::string uniqueID) {
         return Err("Song not initialized in manifest");
     }
 
-    if (auto err = nongs.value()->deleteSong(uniqueID); err.isErr()) {
-        return Err("Couldn't delete Nong: {}", err.error());
-    }
+    GEODE_UNWRAP(
+        nongs.value()->deleteSong(uniqueID).mapErr([](std::string err) {
+            return fmt::format("Couldn't delete Nong: {}", err);
+        }));
 
     return nongs.value()->commit();
 }

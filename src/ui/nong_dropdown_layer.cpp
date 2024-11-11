@@ -9,7 +9,7 @@
 #include "Geode/binding/CustomSongWidget.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
-#include "Geode/cocos/base_nodes/Layout.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
@@ -245,7 +245,7 @@ void NongDropdownLayer::setActiveSong(int gdSongID,
     if (auto err = NongManager::get().setActiveSong(gdSongID, uniqueID);
         err.isErr()) {
         FLAlertLayer::create(
-            "Failed", fmt::format("Failed to set song: {}", err.error()), "Ok")
+            "Failed", fmt::format("Failed to set song: {}", err.unwrapErr()), "Ok")
             ->show();
         return;
     }
@@ -272,14 +272,14 @@ void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
                     NongManager::get().deleteSongAudio(gdSongID, uniqueID);
                 err.isErr()) {
                 log::error("Failed to delete audio for {}: {}", uniqueID,
-                           err.error());
+                           err.unwrapErr());
             }
         } else {
             if (auto err = NongManager::get().deleteSong(gdSongID, uniqueID);
                 err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
-                    fmt::format("Failed to delete song: {}", err.error()), "Ok")
+                    fmt::format("Failed to delete song: {}", err.unwrapErr()), "Ok")
                     ->show();
                 return;
             }
@@ -315,7 +315,7 @@ void NongDropdownLayer::downloadSong(int gdSongID,
         FLAlertLayer::create(
             "Failed",
             fmt::format("Failed to start/stop downloading song: {}",
-                        err.error()),
+                        err.unwrapErr()),
             "Ok")
             ->show();
         return;
@@ -329,7 +329,7 @@ void NongDropdownLayer::addSong(Nongs&& song, bool popup) {
     int id = m_currentSongID.value();
     if (auto err = NongManager::get().addNongs(std::move(song)); err.isErr()) {
         FLAlertLayer::create(
-            "Failed", fmt::format("Failed to add song: {}", err.error()), "Ok")
+            "Failed", fmt::format("Failed to add song: {}", err.unwrapErr()), "Ok")
             ->show();
         return;
     }
@@ -358,7 +358,7 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
             if (auto err = NongManager::get().deleteAllSongs(id); err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
-                    fmt::format("Failed to delete nongs: {}", err.error()),
+                    fmt::format("Failed to delete nongs: {}", err.unwrapErr()),
                     "Ok")
                     ->show();
                 return;

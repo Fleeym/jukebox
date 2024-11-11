@@ -7,7 +7,7 @@
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/cocos/base_nodes/Layout.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"

@@ -6,7 +6,7 @@
 #include "Geode/binding/CustomSongWidget.hpp"
 #include "Geode/binding/GameManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
-#include "Geode/cocos/base_nodes/Layout.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"

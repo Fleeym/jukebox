@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include <Geode/Result.hpp>
 #include <matjson.hpp>
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
@@ -53,32 +54,30 @@ struct geode::SettingTypeForValueType<jukebox::Indexes> {
 
 template <>
 struct matjson::Serialize<jukebox::Indexes> {
-    static bool is_json(const matjson::Value& value) {
-        return value.is_array();
-    }
-
-    static matjson::Value to_json(const jukebox::Indexes& value) {
-        matjson::Array arr;
+    static matjson::Value toJson(const jukebox::Indexes& value) {
+        matjson::Value arr;
         for (const jukebox::IndexSource& elem : value.indexes) {
-            arr.push_back(
-                matjson::Serialize<jukebox::IndexSource>::to_json(elem));
+            arr.push(matjson::Serialize<jukebox::IndexSource>::toJson(elem));
         }
         return arr;
     }
 
-    static jukebox::Indexes from_json(const matjson::Value& value) {
+    static geode::Result<jukebox::Indexes> fromJson(
+        const matjson::Value& value) {
         jukebox::Indexes ret;
 
-        if (!value.is_array()) {
-            return ret;
+        if (!value.isArray()) {
+            return Err("json is not array");
         }
 
-        matjson::Array array = value.as_array();
+        matjson::Value array = value.asArray().unwrap();
 
         for (const matjson::Value& elem : array) {
-            ret.indexes.push_back(
-                matjson::Serialize<jukebox::IndexSource>::from_json(elem));
+            GEODE_UNWRAP_INTO(
+                jukebox::IndexSource source,
+                matjson::Serialize<jukebox::IndexSource>::fromJson(elem));
+            ret.indexes.push_back(source);
         }
-        return ret;
+        return Ok(ret);
     }
 };

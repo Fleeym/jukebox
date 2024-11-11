@@ -8,7 +8,6 @@
 
 #include "GUI/CCControlExtension/CCScale9Sprite.h"
 #include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"
@@ -16,6 +15,7 @@
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Loader.hpp"
 #include "Geode/loader/Log.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
 #include "Geode/utils/cocos.hpp"
