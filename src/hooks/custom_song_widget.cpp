@@ -285,7 +285,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             CCSprite* spr =
                 CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
-            spr->setScale(0.4f);
+            if (m_isMusicLibrary) {
+                spr->setScale(0.5f);
+            } else {
+                spr->setScale(0.7f);
+            }
             spr->setID("nong-pin"_spr);
 
             CCMenuItemSpriteExtra* btn = CCMenuItemSpriteExtra::create(
