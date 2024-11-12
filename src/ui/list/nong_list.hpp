@@ -32,7 +32,6 @@ protected:
     CCMenuItemSpriteExtra* m_backBtn = nullptr;
 
     std::function<void(int, const std::string&)> m_onSetActive;
-    std::function<void(int)> m_onFixDefault;
     std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
         m_onDelete;
     std::function<void(int, const std::string&)> m_onDownload;
@@ -69,7 +68,6 @@ public:
     static NongList* create(
         std::vector<int>& songIds, const cocos2d::CCSize& size,
         std::function<void(int, const std::string&)> onSetActive,
-        std::function<void(int)> onFixDefault,
         std::function<void(int, const std::string&, bool onlyAudio,
                            bool confirm)>
             onDelete,
@@ -80,7 +78,6 @@ public:
 protected:
     bool init(std::vector<int>& songIds, const cocos2d::CCSize& size,
               std::function<void(int, const std::string&)> onSetActive,
-              std::function<void(int)> onFixDefault,
               std::function<void(int, const std::string&, bool onlyAudio,
                                  bool confirm)>
                   onDelete,

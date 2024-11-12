@@ -9,6 +9,7 @@
 #include "Geode/ui/Popup.hpp"
 #include "Geode/utils/cocos.hpp"
 
+#include "events/get_song_info.hpp"
 #include "events/song_download_failed.hpp"
 #include "events/song_error.hpp"
 #include "nong.hpp"
@@ -34,6 +35,7 @@ protected:
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 
     EventListener<EventFilter<event::SongError>> m_songErrorListener;
+    EventListener<EventFilter<event::GetSongInfo>> m_songInfoListener;
     EventListener<EventFilter<event::SongDownloadFailed>>
         m_downloadFailedListener;
 

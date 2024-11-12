@@ -13,7 +13,6 @@
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/Event.hpp"
-#include "Geode/loader/Loader.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/ui/Layout.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
@@ -35,7 +34,6 @@ namespace jukebox {
 bool NongList::init(
     std::vector<int>& songIds, const cocos2d::CCSize& size,
     std::function<void(int, const std::string&)> onSetActive,
-    std::function<void(int)> onFixDefault,
     std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
         onDelete,
     std::function<void(int, const std::string&)> onDownload,
@@ -47,7 +45,6 @@ bool NongList::init(
 
     m_songIds = songIds;
     m_onSetActive = onSetActive;
-    m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
     m_onDownload = onDownload;
     m_onEdit = onEdit;
@@ -145,7 +142,6 @@ void NongList::build() {
             id, defaultSong, true,
             defaultSong->metadata()->uniqueID == active->metadata()->uniqueID,
             itemSize, [this, id, defaultID]() { m_onSetActive(id, defaultID); },
-            [this, id]() { m_onFixDefault(id); },
             [this, id, defaultID]() { m_onDelete(id, defaultID, true, true); },
             [this, id, defaultID]() { m_onDownload(id, defaultID); },
             [this, id, defaultID]() { m_onEdit(id, defaultID); }));
@@ -229,7 +225,6 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
         id, nong, uniqueID == defaultSong->metadata()->uniqueID,
         uniqueID == active->metadata()->uniqueID, itemSize,
         [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
-        [this, id]() { m_onFixDefault(id); },
         [this, id, uniqueID]() { m_onDelete(id, uniqueID, false, true); },
         [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
         [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
@@ -415,15 +410,14 @@ ListenerResult NongList::onSongAdded(event::ManualSongAdded* e) {
 NongList* NongList::create(
     std::vector<int>& songIds, const cocos2d::CCSize& size,
     std::function<void(int, const std::string&)> onSetActive,
-    std::function<void(int)> onFixDefault,
     std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
         onDelete,
     std::function<void(int, const std::string&)> onDownload,
     std::function<void(int, const std::string&)> onEdit,
     std::function<void(std::optional<int>)> onListTypeChange) {
     auto ret = new NongList();
-    if (!ret->init(songIds, size, onSetActive, onFixDefault, onDelete,
-                   onDownload, onEdit, onListTypeChange)) {
+    if (!ret->init(songIds, size, onSetActive, onDelete, onDownload, onEdit,
+                   onListTypeChange)) {
         CC_SAFE_DELETE(ret);
         return nullptr;
     }

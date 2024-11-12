@@ -176,7 +176,7 @@ bool NongManager::init() {
     });
 
     m_songInfoListener.bind([this](event::GetSongInfo* event) {
-        auto nongs = getNongs(event->gdSongID());
+        std::optional<Nongs*> nongs = this->getNongs(event->gdSongID());
         if (!nongs.has_value()) {
             return ListenerResult::Stop;
         }
