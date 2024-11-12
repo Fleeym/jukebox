@@ -25,7 +25,7 @@ struct Indexes {
 
 class IndexSetting : public SettingBaseValueV3<Indexes> {
 public:
-    static Result<std::shared_ptr<IndexSetting>> parse(
+    static Result<std::shared_ptr<SettingV3>> parse(
         const std::string& key, const std::string& modID,
         const matjson::Value& json);
 
