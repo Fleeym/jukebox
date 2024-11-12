@@ -62,15 +62,25 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     CCMenuItemSpriteExtra* addBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::openAddPopup));
     m_addBtn = addBtn;
+
+    spr = CCSprite::create("JB_SFHButton.png"_spr);
+    CCMenuItemSpriteExtra* sfhButton = CCMenuItemSpriteExtra::create(
+        spr, this, menu_selector(NongDropdownLayer::onSfh));
+    m_sfhBtn = sfhButton;
+    m_sfhBtn->setID("sfh-button");
+
     spr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
     CCMenuItemSpriteExtra* discordBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::onDiscord));
     discordBtn->setID("discord-button");
+    m_discordBtn = discordBtn;
+
     spr = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
     spr->setScale(0.7f);
     CCMenuItemSpriteExtra* removeBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::deleteAllNongs));
     m_deleteBtn = removeBtn;
+
     if (isMultiple) {
         m_addBtn->setVisible(false);
         m_deleteBtn->setVisible(false);
@@ -79,6 +89,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         m_deleteBtn->setVisible(true);
     }
     menu->addChild(addBtn);
+    menu->addChild(sfhButton);
     menu->addChild(discordBtn);
     menu->addChild(removeBtn);
     ColumnLayout* layout = ColumnLayout::create();
@@ -267,6 +278,19 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
             if (btn2) {
                 geode::utils::web::openLinkInBrowser(
                     "https://discord.gg/SFE7qxYFyU");
+            }
+        });
+}
+
+void NongDropdownLayer::onSfh(CCObject* target) {
+    geode::createQuickPopup(
+        "Song File Hub",
+        "Do you want to <cb>join the Song File Hub discord server</c> to find "
+        "and submit songs?",
+        "No", "Yes", [](FLAlertLayer* alert, bool btn2) {
+            if (btn2) {
+                geode::utils::web::openLinkInBrowser(
+                    "https://discord.gg/maSgd4zpEF");
             }
         });
 }
