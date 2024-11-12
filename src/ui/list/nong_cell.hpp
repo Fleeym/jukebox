@@ -38,10 +38,11 @@ protected:
     bool m_isDownloaded;
     bool m_isDownloadable;
 
-    CCMenuItemSpriteExtra* m_downloadButton;
+    CCMenuItemSpriteExtra* m_fixButton = nullptr;
+    CCMenuItemSpriteExtra* m_downloadButton = nullptr;
     CCMenuItemSpriteExtra* m_selectButton = nullptr;
-    CCMenu* m_downloadProgressContainer;
-    CCProgressTimer* m_downloadProgress;
+    CCMenu* m_downloadProgressContainer = nullptr;
+    CCProgressTimer* m_downloadProgress = nullptr;
 
     EventListener<EventFilter<event::SongDownloadProgress>> m_progressListener{
         this, &NongCell::onDownloadProgress};

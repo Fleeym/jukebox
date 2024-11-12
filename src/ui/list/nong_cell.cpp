@@ -105,10 +105,10 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
         if (!selected) {
             sprite->setColor({0x80, 0x80, 0x80});
         }
-        CCMenuItemSpriteExtra* fixButton = CCMenuItemSpriteExtra::create(
+        m_fixButton = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(NongCell::onFixDefault));
-        fixButton->setID("fix-button");
-        menu->addChild(fixButton);
+        m_fixButton->setID("fix-button");
+        menu->addChild(m_fixButton);
     } else {
         CCSprite* sprite =
             CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
@@ -309,6 +309,17 @@ ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
 
     bool selected = e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
     m_isActive = selected;
+
+    if (m_isDefault && m_fixButton) {
+        CCSprite* sprite =
+            CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
+        sprite->setScale(0.8f);
+        if (!selected) {
+            sprite->setColor({0x80, 0x80, 0x80});
+        }
+
+        m_fixButton->setSprite(sprite);
+    }
 
     const char* selectSprName =
         selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
