@@ -89,7 +89,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     menu->setLayout(layout);
 
     if (!m_isDefault && !m_songInfo->indexID().has_value()) {
-        CCSprite* spr = CCSprite::create("JB_Edit.png"_spr);
+        CCSprite* spr = CCSprite::createWithSpriteFrameName("JB_Edit.png"_spr);
         spr->setScale(0.7f);
         CCMenuItemSpriteExtra* editButton = CCMenuItemSpriteExtra::create(
             spr, this, menu_selector(NongCell::onEdit));

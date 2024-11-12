@@ -6,7 +6,6 @@
 #include "Geode/binding/CustomSongWidget.hpp"
 #include "Geode/binding/GameManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
-#include "Geode/ui/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
@@ -18,6 +17,7 @@
 #include "Geode/modify/CustomSongWidget.hpp"  // IWYU pragma: keep
 #include "Geode/modify/LevelInfoLayer.hpp"    // IWYU pragma: keep
 #include "Geode/ui/GeodeUI.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/utils/cocos.hpp"
 
 #include "managers/nong_manager.hpp"
@@ -283,7 +283,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->pinMenu = CCMenu::create();
             m_fields->pinMenu->setID("nong-menu"_spr);
 
-            CCSprite* spr = CCSprite::create("JB_PinDisc.png"_spr);
+            CCSprite* spr =
+                CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
             spr->setScale(0.4f);
             spr->setID("nong-pin"_spr);
 

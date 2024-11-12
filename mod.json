@@ -77,8 +77,10 @@
 		]
 	},
 	"resources": {
-		"sprites": [
-			"resources/*.png"
-		]
+    "spritesheets": {
+      "JukeboxSheet": [
+        "resources/*.png"
+      ]
+    }
 	}
 }

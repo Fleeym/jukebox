@@ -63,7 +63,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         spr, this, menu_selector(NongDropdownLayer::openAddPopup));
     m_addBtn = addBtn;
 
-    spr = CCSprite::create("JB_SFHButton.png"_spr);
+    spr = CCSprite::createWithSpriteFrameName("JB_SFHButton.png"_spr);
     CCMenuItemSpriteExtra* sfhButton = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::onSfh));
     m_sfhBtn = sfhButton;
@@ -145,7 +145,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     m_mainLayer->addChildAtPosition(topRightArt, Anchor::TopRight);
 
     this->createList();
-    CCSprite* title = CCSprite::create("JB_ListLogo.png"_spr);
+    CCSprite* title = CCSprite::createWithSpriteFrameName("JB_ListLogo.png"_spr);
     title->setPosition(ccp(contentSize.width / 2, contentSize.height - 10.f));
     title->setScale(0.75f);
     m_mainLayer->addChild(title);
