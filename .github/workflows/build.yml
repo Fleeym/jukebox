@@ -36,6 +36,7 @@ jobs:
       - name: Build
         uses: geode-sdk/build-geode-mod@main
         with:
+          sdk: nightly
           export-pdb: true
           combine: true
           target: ${{ matrix.config.target }}

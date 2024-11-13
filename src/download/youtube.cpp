@@ -24,7 +24,8 @@ DownloadTask startYoutubeDownload(const std::string& id) {
         return DownloadTask::immediate(Err("Invalid YouTube ID"));
     }
 
-    return getMetadata(id).chain([](web::WebResponse* r) { return onMetadata(r); });
+    return getMetadata(id).chain(
+        [](web::WebResponse* r) { return onMetadata(r); });
 }
 
 }  // namespace download
