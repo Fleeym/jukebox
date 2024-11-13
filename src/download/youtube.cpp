@@ -4,12 +4,10 @@
 #include <string>
 
 #include "Geode/Result.hpp"
-#include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 
 #include "download/download.hpp"
 #include "download/hosted.hpp"
-#include "utils/task.hpp"
 
 using namespace geode::prelude;
 
@@ -26,9 +24,7 @@ DownloadTask startYoutubeDownload(const std::string& id) {
         return DownloadTask::immediate(Err("Invalid YouTube ID"));
     }
 
-    return jukebox::switchMap<web::WebResponse, web::WebProgress,
-                              Result<ByteVector>, float>(
-        getMetadata(id), [](web::WebResponse* r) { return onMetadata(r); });
+    return getMetadata(id).chain([](web::WebResponse* r) { return onMetadata(r); });
 }
 
 }  // namespace download
