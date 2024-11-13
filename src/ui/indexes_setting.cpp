@@ -83,7 +83,7 @@ Result<std::shared_ptr<SettingV3>> IndexSetting::parse(
     const matjson::Value& json) {
     auto ret = std::make_shared<IndexSetting>();
     auto root = checkJson(json, "IndexSetting");
-    (void)ret->parseBaseProperties(key, modID, json);
+    ret->parseBaseProperties(key, modID, root);
 
     root.checkUnknownKeys();
 

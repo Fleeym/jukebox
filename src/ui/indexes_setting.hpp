@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <Geode/Result.hpp>
 #include <matjson.hpp>
@@ -25,9 +26,9 @@ struct Indexes {
 
 class IndexSetting : public SettingBaseValueV3<Indexes> {
 public:
-    static Result<std::shared_ptr<SettingV3>> parse(
-        const std::string& key, const std::string& modID,
-        const matjson::Value& json);
+    static Result<std::shared_ptr<SettingV3>> parse(const std::string& key,
+                                                    const std::string& modID,
+                                                    const matjson::Value& json);
 
     SettingNodeV3* createNode(float width) override;
 };
@@ -55,7 +56,7 @@ struct geode::SettingTypeForValueType<jukebox::Indexes> {
 template <>
 struct matjson::Serialize<jukebox::Indexes> {
     static matjson::Value toJson(const jukebox::Indexes& value) {
-        matjson::Value arr;
+        matjson::Value arr{std::vector<matjson::Value>()};
         for (const jukebox::IndexSource& elem : value.indexes) {
             arr.push(matjson::Serialize<jukebox::IndexSource>::toJson(elem));
         }
@@ -66,13 +67,7 @@ struct matjson::Serialize<jukebox::Indexes> {
         const matjson::Value& value) {
         jukebox::Indexes ret;
 
-        if (!value.isArray()) {
-            return Err("json is not array");
-        }
-
-        matjson::Value array = value.asArray().unwrap();
-
-        for (const matjson::Value& elem : array) {
+        for (const matjson::Value& elem : value) {
             GEODE_UNWRAP_INTO(
                 jukebox::IndexSource source,
                 matjson::Serialize<jukebox::IndexSource>::fromJson(elem));

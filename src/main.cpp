@@ -8,11 +8,8 @@
 #include "ui/indexes_setting.hpp"
 
 $execute {
-    (void)Mod::get()->registerCustomSettingType(
-        "indexes", [](const std::string& key, const std::string& modID,
-                      const matjson::Value& json) {
-            return jukebox::IndexSetting::parse(key, modID, json);
-        });
+    (void)Mod::get()->registerCustomSettingType("indexes",
+                                                &jukebox::IndexSetting::parse);
 }
 
 $on_mod(Loaded) {

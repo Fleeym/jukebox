@@ -5,6 +5,7 @@
 #include <matjson.hpp>
 #include "Geode/Result.hpp"
 
+#include "Geode/loader/Log.hpp"
 #include "index.hpp"
 
 template <>
