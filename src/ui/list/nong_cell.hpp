@@ -6,6 +6,7 @@
 #include "Geode/cocos/cocoa/CCObject.h"
 
 #include "Geode/loader/Event.hpp"
+#include "events/get_song_info.hpp"
 #include "events/song_download_failed.hpp"
 #include "events/song_download_progress.hpp"
 #include "events/song_state_changed.hpp"
@@ -28,7 +29,6 @@ protected:
     CCNode* m_songInfoNode = nullptr;
 
     std::function<void()> m_onSelect;
-    std::function<void()> m_onFixDefault;
     std::function<void()> m_onDelete;
     std::function<void()> m_onDownload;
     std::function<void()> m_onEdit;
@@ -38,13 +38,16 @@ protected:
     bool m_isDownloaded;
     bool m_isDownloadable;
 
-    CCMenuItemSpriteExtra* m_downloadButton;
+    CCMenuItemSpriteExtra* m_fixButton = nullptr;
+    CCMenuItemSpriteExtra* m_downloadButton = nullptr;
     CCMenuItemSpriteExtra* m_selectButton = nullptr;
-    CCMenu* m_downloadProgressContainer;
-    CCProgressTimer* m_downloadProgress;
+    CCMenu* m_downloadProgressContainer = nullptr;
+    CCProgressTimer* m_downloadProgress = nullptr;
 
     EventListener<EventFilter<event::SongDownloadProgress>> m_progressListener{
         this, &NongCell::onDownloadProgress};
+    EventListener<EventFilter<event::GetSongInfo>> m_songInfoListener{
+        this, &NongCell::onGetSongInfo};
     EventListener<EventFilter<event::SongDownloadFailed>>
         m_downloadFailedListener{this, &NongCell::onDownloadFailed};
     EventListener<EventFilter<event::SongStateChanged>> m_stateListener{
@@ -52,11 +55,11 @@ protected:
 
     bool init(int songID, Song*, bool isDefault, bool selected,
               CCSize const& size, std::function<void()> onSelect,
-              std::function<void()> onFixDefault,
               std::function<void()> onDelete, std::function<void()> onDownload,
               std::function<void()> onEdit);
 
     ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
+    ListenerResult onGetSongInfo(event::GetSongInfo* e);
     ListenerResult onDownloadFailed(event::SongDownloadFailed* e);
     ListenerResult onStateChange(event::SongStateChanged* e);
 
@@ -65,7 +68,6 @@ public:
     static NongCell* create(int songID, Song* song, bool isDefault,
                             bool selected, CCSize const& size,
                             std::function<void()> onSelect,
-                            std::function<void()> onFixDefault,
                             std::function<void()> onDelete,
                             std::function<void()> onDownload,
                             std::function<void()> onEdit);

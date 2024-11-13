@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include "Geode/utils/Result.hpp"
+#include "Geode/Result.hpp"
 
 #include "compat/compat.hpp"
 

@@ -9,6 +9,7 @@
 #include "Geode/ui/Popup.hpp"
 #include "Geode/utils/cocos.hpp"
 
+#include "events/get_song_info.hpp"
 #include "events/song_download_failed.hpp"
 #include "events/song_error.hpp"
 #include "nong.hpp"
@@ -31,9 +32,12 @@ protected:
     NongList* m_list = nullptr;
 
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
+    CCMenuItemSpriteExtra* m_sfhBtn = nullptr;
+    CCMenuItemSpriteExtra* m_discordBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 
     EventListener<EventFilter<event::SongError>> m_songErrorListener;
+    EventListener<EventFilter<event::GetSongInfo>> m_songInfoListener;
     EventListener<EventFilter<event::SongDownloadFailed>>
         m_downloadFailedListener;
 
@@ -51,6 +55,7 @@ protected:
 public:
     void onSelectSong(int songID);
     void onDiscord(CCObject*);
+    void onSfh(CCObject*);
     void setActiveSong(int gdSongID, const std::string& uniqueID);
     void deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio,
                     bool confirm);

@@ -5,12 +5,12 @@
 #include <vector>
 
 #include <matjson.hpp>
+#include "Geode/Result.hpp"
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"
 #include "Geode/loader/SettingV3.hpp"
 #include "Geode/utils/JsonValidation.hpp"
-#include "Geode/utils/Result.hpp"
 
 #include "indexes_popup.hpp"
 
@@ -78,7 +78,7 @@ IndexSettingNode* IndexSettingNode::create(
     return nullptr;
 }
 
-Result<std::shared_ptr<IndexSetting>> IndexSetting::parse(
+Result<std::shared_ptr<SettingV3>> IndexSetting::parse(
     const std::string& key, const std::string& modID,
     const matjson::Value& json) {
     auto ret = std::make_shared<IndexSetting>();
@@ -87,7 +87,9 @@ Result<std::shared_ptr<IndexSetting>> IndexSetting::parse(
 
     root.checkUnknownKeys();
 
-    return root.ok(ret);
+    return root.ok(ret).map([](std::shared_ptr<IndexSetting> value) {
+        return std::static_pointer_cast<SettingV3>(value);
+    });
 }
 
 }  // namespace jukebox

@@ -7,7 +7,7 @@
 #include <variant>
 
 #include "Geode/loader/Event.hpp"
-#include "Geode/utils/Result.hpp"
+#include "Geode/Result.hpp"
 #include "Geode/utils/Task.hpp"
 #include "Geode/utils/general.hpp"
 

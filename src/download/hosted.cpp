@@ -1,7 +1,7 @@
 #include "download/hosted.hpp"
 
 #include <fmt/core.h>
-#include "Geode/utils/Result.hpp"
+#include "Geode/Result.hpp"
 #include "Geode/utils/web.hpp"
 
 #include "download/download.hpp"

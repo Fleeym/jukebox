@@ -2,8 +2,8 @@
 
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <ios>
-#include <matjson.hpp>
 #include <memory>
 #include <optional>
 #include <variant>
@@ -11,13 +11,13 @@
 
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <Geode/Result.hpp>
 #include <matjson.hpp>
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/loader/Mod.hpp"
-#include "Geode/utils/Result.hpp"
 #include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 
@@ -49,8 +49,9 @@ bool IndexManager::init() {
         return true;
     }
 
-    if (std::string err = this->fetchIndexes().error(); !err.empty()) {
-        event::SongError(false, fmt::format("Failed to fetch indexes: {}", err))
+    if (Result<> res = this->fetchIndexes(); res.isErr()) {
+        event::SongError(
+            false, fmt::format("Failed to fetch indexes: {}", res.unwrapErr()))
             .post();
         return false;
     }
@@ -88,24 +89,12 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
     input.read(&contents[0], contents.size());
     input.close();
 
-    std::string error;
-    std::optional<matjson::Value> jsonRes = matjson::parse(contents, error);
-
-    if (!jsonRes.has_value()) {
-        return Err(error);
-    }
-
-    matjson::Value jsonObj = jsonRes.value();
-
-    Result<IndexMetadata> indexRes =
-        matjson::Serialize<IndexMetadata>::from_json(jsonObj);
-
-    if (indexRes.isErr()) {
-        return Err(indexRes.error());
-    }
+    GEODE_UNWRAP_INTO(matjson::Value jsonObj, matjson::parse(contents));
+    GEODE_UNWRAP_INTO(IndexMetadata indexMeta,
+                      matjson::Serialize<IndexMetadata>::fromJson(jsonObj));
 
     std::unique_ptr<IndexMetadata> index =
-        std::make_unique<IndexMetadata>(std::move(indexRes.unwrap()));
+        std::make_unique<IndexMetadata>(std::move(indexMeta));
 
     this->cacheIndexName(index->m_id, index->m_name);
 
@@ -152,16 +141,17 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
     /*    index->m_songs.m_youtube.push_back(std::move(song));*/
     /*}*/
 
-    for (const auto& [key, hostedNong] :
-         jsonObj["nongs"]["hosted"].as_object()) {
+    for (const auto& [key, hostedNong] : jsonObj["nongs"]["hosted"]) {
         Result<IndexSongMetadata> r =
-            matjson::Serialize<IndexSongMetadata>::from_json(hostedNong);
+            matjson::Serialize<IndexSongMetadata>::fromJson(hostedNong);
         if (r.isErr()) {
             event::SongError(
-                false, fmt::format("Failed to parse index song: {}", r.error()))
+                false,
+                fmt::format("Failed to parse index song: {}", r.unwrapErr()))
                 .post();
             continue;
         }
+
         std::unique_ptr<IndexSongMetadata> song =
             std::make_unique<IndexSongMetadata>(r.unwrap());
 
@@ -184,8 +174,8 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
             if (geode::Result<> r = nongs->registerIndexSong(song.get());
                 r.isErr()) {
                 event::SongError(
-                    false,
-                    fmt::format("Failed to register index song: {}", r.error()))
+                    false, fmt::format("Failed to register index song: {}",
+                                       r.unwrapErr()))
                     .post();
             }
         }
@@ -194,7 +184,6 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
     }
 
     IndexMetadata* ref = index.get();
-
     m_loadedIndexes.emplace(ref->m_id, std::move(index));
 
     return Ok();
@@ -204,11 +193,8 @@ Result<> IndexManager::fetchIndexes() {
     m_indexListeners.clear();
     m_downloadSongListeners.clear();
 
-    const Result<std::vector<IndexSource>> indexesRes = this->getIndexes();
-    if (indexesRes.isErr()) {
-        return Err(indexesRes.error());
-    }
-    const std::vector<IndexSource> indexes = std::move(indexesRes.unwrap());
+    GEODE_UNWRAP_INTO(const std::vector<IndexSource> indexes,
+                      this->getIndexes());
 
     for (const IndexSource& index : indexes) {
         if (!index.m_enabled || index.m_url.size() < 3) {
@@ -232,34 +218,22 @@ Result<> IndexManager::fetchIndexes() {
                     [this, filepath, index](
                         web::WebResponse* response) -> FetchIndexTask::Value {
                         if (response->ok() && response->string().isOk()) {
-                            std::string error;
-                            std::optional<matjson::Value> jsonObj =
-                                matjson::parse(response->string().value(),
-                                               error);
+                            GEODE_UNWRAP_INTO(
+                                matjson::Value jsonObj,
+                                matjson::parse(response->string().unwrap()));
 
-                            if (!jsonObj.has_value()) {
-                                return Err(error);
-                            }
+                            jsonObj.set("url", index.m_url);
 
-                            if (!jsonObj.value().is_object()) {
-                                return Err("Index supposed to be an object");
-                            }
-                            jsonObj.value().set("url", index.m_url);
-                            const auto indexRes =
-                                matjson::Serialize<IndexMetadata>::from_json(
-                                    jsonObj.value());
-
-                            if (indexRes.isErr()) {
-                                return Err(indexRes.error());
-                            }
+                            GEODE_UNWRAP(
+                                matjson::Serialize<IndexMetadata>::fromJson(
+                                    jsonObj));
 
                             std::ofstream output(filepath);
                             if (!output.is_open()) {
                                 return Err(fmt::format("Couldn't open file: {}",
                                                        filepath));
                             }
-                            output << jsonObj.value().dump(
-                                matjson::NO_INDENTATION);
+                            output << jsonObj.dump(matjson::NO_INDENTATION);
                             output.close();
 
                             return Ok();
@@ -282,7 +256,7 @@ Result<> IndexManager::fetchIndexes() {
                 if (result->isErr()) {
                     event::SongError(false,
                                      fmt::format("Failed to fetch index: {}",
-                                                 result->error()))
+                                                 result->unwrapErr()))
                         .post();
                 } else {
                     log::info("Index fetched and cached: {}", index.m_url);
@@ -290,9 +264,9 @@ Result<> IndexManager::fetchIndexes() {
             } else if (event->isCancelled()) {
             }
 
-            if (auto err = this->loadIndex(filepath).error(); !err.empty()) {
-                event::SongError(false,
-                                 fmt::format("Failed to load index: {}", err))
+            if (Result<> res = this->loadIndex(filepath); res.isErr()) {
+                event::SongError(false, fmt::format("Failed to load index: {}",
+                                                    res.unwrapErr()))
                     .post();
             }
         });
@@ -318,7 +292,8 @@ std::optional<std::string> IndexManager::getIndexName(
     if (!jsonObj.contains(indexID)) {
         return std::nullopt;
     }
-    return jsonObj[indexID].as_string();
+    return jsonObj[indexID].asString().mapOr<std::optional<std::string>>(
+        std::nullopt, [](auto i) { return std::optional(i); });
 }
 
 void IndexManager::cacheIndexName(const std::string& indexId,
@@ -384,12 +359,11 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
                 continue;
             }
 
-            Result<DownloadSongTask> t = song->startDownload();
-            if (t.isErr()) {
-                return Err("Failed to start download: {}", t.error());
-            }
+            GEODE_UNWRAP_INTO(
+                task, song->startDownload().mapErr([](std::string err) {
+                    return fmt::format("Failed to start download: {}", err);
+                }));
 
-            task = t.unwrap();
             found = true;
             local = song.get();
             break;
@@ -431,7 +405,8 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
         [this, indexMeta, local, nongs, gdSongID,
          uniqueID](Result<ByteVector>* vector) {
             if (vector->isErr()) {
-                event::SongDownloadFailed(gdSongID, uniqueID, vector->error())
+                event::SongDownloadFailed(gdSongID, uniqueID,
+                                          vector->unwrapErr())
                     .post();
                 return;
             }
@@ -510,7 +485,7 @@ void IndexManager::onDownloadFinish(
     out.write(reinterpret_cast<const char*>(data.data()), data.size());
     out.close();
 
-    Result<Song*> result;
+    Song* insertedSong = nullptr;
 
     if (auto s = std::holds_alternative<Song*>(source)) {
         event::SongDownloadFinished(std::nullopt, std::get<Song*>(source))
@@ -521,46 +496,58 @@ void IndexManager::onDownloadFinish(
     index::IndexSongMetadata* metadata =
         std::get<index::IndexSongMetadata*>(source);
 
+    const std::function<void(std::string)> orElse = [destination, uniqueId,
+                                                     path](std::string err) {
+        const std::string print =
+            fmt::format("Couldn't store index song. {}", err);
+        log::error("{}", print);
+        event::SongDownloadFailed(destination->songID(), uniqueId, print)
+            .post();
+        std::error_code ec;
+        std::filesystem::remove(path, ec);
+    };
+
     if (metadata->url.has_value()) {
-        result = destination->add(
+        Result<HostedSong*> r = destination->add(
             HostedSong(SongMetadata(destination->songID(), metadata->uniqueID,
                                     metadata->name, metadata->artist,
                                     std::nullopt, metadata->startOffset),
                        metadata->url.value(), metadata->parentID->m_id, path));
+
+        if (r.isErr()) {
+            orElse(r.unwrapErr());
+            return;
+        }
+
+        insertedSong = r.unwrap();
     } else if (metadata->ytId.has_value()) {
-        result = destination->add(
+        Result<YTSong*> r = destination->add(
             YTSong(SongMetadata(destination->songID(), metadata->uniqueID,
                                 metadata->name, metadata->artist, std::nullopt,
                                 metadata->startOffset),
                    metadata->ytId.value(), metadata->parentID->m_id, path));
-    } else {
-        const std::string err =
-            "Couldn't store index song. No URL or YouTube ID.";
-        log::error("{}", err);
-        event::SongDownloadFailed(destination->songID(), uniqueId, err).post();
-        // Don't really care about this, just don't throw an exception
-        std::error_code ec;
-        std::filesystem::remove(path, ec);
-        return;
-    }
+        if (r.isErr()) {
+            orElse(r.unwrapErr());
+            return;
+        }
 
-    if (result.isErr()) {
-        log::error("Failed to add song to manifest: {}", result.error());
-        // Don't really care about this, just don't throw an exception
-        std::error_code ec;
-        std::filesystem::remove(path, ec);
+        insertedSong = r.unwrap();
+    } else {
+        const std::string err = "No url or YouTube ID on song";
+        orElse(err);
         return;
     }
 
     (void)destination->commit();
 
-    event::SongDownloadFinished(metadata, result.unwrap()).post();
+    event::SongDownloadFinished(metadata, insertedSong).post();
 }
 
 ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
     Result<> res = this->downloadSong(e->gdId(), e->song()->uniqueID);
     if (res.isErr()) {
-        event::SongDownloadFailed(e->gdId(), e->song()->uniqueID, res.error())
+        event::SongDownloadFailed(e->gdId(), e->song()->uniqueID,
+                                  res.unwrapErr())
             .post();
     }
     return ListenerResult::Propagate;

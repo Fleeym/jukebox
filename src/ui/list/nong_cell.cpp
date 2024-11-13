@@ -7,25 +7,27 @@
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/loader/Event.hpp"
-#include "Geode/loader/Log.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/ui/Popup.hpp"
 
 #include "events/song_download_failed.hpp"
 #include "events/song_state_changed.hpp"
 #include "managers/index_manager.hpp"
+#include "managers/nong_manager.hpp"
 #include "nong.hpp"
 
 namespace jukebox {
 
+constexpr float PADDING_X = 12.0f;
+constexpr float PADDING_Y = 6.0f;
+
 bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
                     CCSize const& size, std::function<void()> onSelect,
-                    std::function<void()> onFixDefault,
                     std::function<void()> onDelete,
                     std::function<void()> onDownload,
                     std::function<void()> onEdit) {
@@ -42,7 +44,6 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
                      std::filesystem::exists(m_songInfo->path().value());
     m_isDownloadable = m_songInfo->type() != NongType::LOCAL;
     m_onSelect = onSelect;
-    m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
     m_onDownload = onDownload;
     m_onEdit = onEdit;
@@ -50,8 +51,6 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     this->setContentSize(size);
     this->setAnchorPoint({0.5f, 0.5f});
 
-    constexpr float PADDING_X = 12.0f;
-    constexpr float PADDING_Y = 6.0f;
     const CCSize maxSize = {size.width - 2 * PADDING_X,
                             size.height - 2 * PADDING_Y};
     const float songInfoWidth = maxSize.width * (2.0f / 3.0f);
@@ -90,7 +89,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     menu->setLayout(layout);
 
     if (!m_isDefault && !m_songInfo->indexID().has_value()) {
-        CCSprite* spr = CCSprite::create("JB_Edit.png"_spr);
+        CCSprite* spr = CCSprite::createWithSpriteFrameName("JB_Edit.png"_spr);
         spr->setScale(0.7f);
         CCMenuItemSpriteExtra* editButton = CCMenuItemSpriteExtra::create(
             spr, this, menu_selector(NongCell::onEdit));
@@ -106,10 +105,10 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
         if (!selected) {
             sprite->setColor({0x80, 0x80, 0x80});
         }
-        CCMenuItemSpriteExtra* fixButton = CCMenuItemSpriteExtra::create(
+        m_fixButton = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(NongCell::onFixDefault));
-        fixButton->setID("fix-button");
-        menu->addChild(fixButton);
+        m_fixButton->setID("fix-button");
+        menu->addChild(m_fixButton);
     } else {
         CCSprite* sprite =
             CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
@@ -252,13 +251,14 @@ void NongCell::onFixDefault(CCObject* target) {
             ->show();
         return;
     }
+
     createQuickPopup(
         "Fix default",
         "Do you want to refetch song info <cb>for the default NONG</c>? Use "
         "this <cr>ONLY</c> if it gets renamed by accident!",
         "No", "Yes", [this](FLAlertLayer* alert, bool btn2) {
             if (btn2) {
-                m_onFixDefault();
+                NongManager::get().refetchDefault(m_songID);
             }
         });
 }
@@ -310,6 +310,17 @@ ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
     bool selected = e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
     m_isActive = selected;
 
+    if (m_isDefault && m_fixButton) {
+        CCSprite* sprite =
+            CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
+        sprite->setScale(0.8f);
+        if (!selected) {
+            sprite->setColor({0x80, 0x80, 0x80});
+        }
+
+        m_fixButton->setSprite(sprite);
+    }
+
     const char* selectSprName =
         selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
 
@@ -327,6 +338,25 @@ ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
     return ListenerResult::Propagate;
 }
 
+ListenerResult NongCell::onGetSongInfo(event::GetSongInfo* e) {
+    if (e->gdSongID() != m_songID) {
+        return ListenerResult::Propagate;
+    }
+
+    const CCSize maxSize = {this->getContentSize().width - 2 * PADDING_X,
+                            this->getContentSize().height - 2 * PADDING_Y};
+    const float songInfoWidth = maxSize.width * (2.0f / 3.0f);
+    m_songNameLabel->setString(e->songName().c_str());
+    m_songNameLabel->limitLabelWidth(songInfoWidth, 0.7f, 0.1f);
+
+    m_authorNameLabel->setString(e->artistName().c_str());
+    m_authorNameLabel->limitLabelWidth(songInfoWidth, 0.5f, 0.1f);
+
+    m_songInfoNode->updateLayout();
+
+    return ListenerResult::Propagate;
+}
+
 void NongCell::onSet(CCObject* target) { m_onSelect(); }
 
 void NongCell::onDownload(CCObject* target) { m_onDownload(); }
@@ -338,13 +368,12 @@ void NongCell::onDelete(CCObject* target) { m_onDelete(); }
 NongCell* NongCell::create(int songID, Song* song, bool isDefault,
                            bool selected, CCSize const& size,
                            std::function<void()> onSelect,
-                           std::function<void()> onFixDefault,
                            std::function<void()> onDelete,
                            std::function<void()> onDownload,
                            std::function<void()> onEdit) {
     auto ret = new NongCell();
     if (ret && ret->init(songID, song, isDefault, selected, size, onSelect,
-                         onFixDefault, onDelete, onDownload, onEdit)) {
+                         onDelete, onDownload, onEdit)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);

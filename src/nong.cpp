@@ -11,10 +11,10 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <matjson.hpp>
+#include "Geode/Result.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Log.hpp"
-#include "Geode/utils/Result.hpp"
 
 #include "Geode/utils/Task.hpp"
 #include "Geode/utils/general.hpp"
@@ -307,17 +307,14 @@ public:
             return Ok();
         }
 
-        Result<matjson::Value> json = matjson::Serialize<Nongs>::to_json(*self);
-        if (json.isErr()) {
-            return Err(json.error());
-        }
+        matjson::Value json = matjson::Serialize<Nongs>::toJson(*self);
 
         std::ofstream output(path);
         if (!output.is_open()) {
             return Err(fmt::format("Couldn't open file: {}", path));
         }
 
-        output << json.unwrap().dump(matjson::NO_INDENTATION);
+        output << json.dump(matjson::NO_INDENTATION);
         output.close();
 
         return Ok();
@@ -596,13 +593,11 @@ public:
 
         bool deleteAudio = prevPath != song.path();
         auto _ = this->deleteSong(id, deleteAudio, self);
-        Result<LocalSong*> res = this->add(std::move(song));
-        if (res.isErr()) {
-            return Err(res.error());
-        }
+
+        GEODE_UNWRAP(this->add(std::move(song)));
 
         if (isActive) {
-            auto _ = this->setActive(id, self);
+            (void)this->setActive(id, self);
         }
         return Ok();
     }
@@ -619,12 +614,12 @@ public:
 
         bool deleteAudio = prevPath != song.path();
         auto _ = this->deleteSong(id, deleteAudio, self);
-        Result<YTSong*> res = this->add(std::move(song));
-        if (res.isErr()) {
-            return Err(res.error());
-        }
 
-        if (isActive && res.unwrap()->path().has_value()) {
+        YTSong* added = nullptr;
+
+        GEODE_UNWRAP_INTO(added, this->add(std::move(song)));
+
+        if (isActive && added->path().has_value()) {
             auto _ = this->setActive(id, self);
         }
         return Ok();
@@ -642,12 +637,12 @@ public:
 
         bool deleteAudio = prevPath != song.path();
         auto _ = this->deleteSong(id, deleteAudio, self);
-        Result<HostedSong*> res = this->add(std::move(song));
-        if (res.isErr()) {
-            return Err(res.error());
-        }
 
-        if (isActive && res.unwrap()->path().has_value()) {
+        HostedSong* added = nullptr;
+
+        GEODE_UNWRAP_INTO(added, this->add(std::move(song)));
+
+        if (isActive && added->path().has_value()) {
             auto _ = this->setActive(id, self);
         }
         return Ok();

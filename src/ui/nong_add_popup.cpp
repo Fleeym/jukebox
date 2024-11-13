@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cstddef>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <regex>
@@ -12,6 +13,7 @@
 #include <utility>
 
 #include <fmt/core.h>
+#include "Geode/Result.hpp"
 #include "Geode/binding/ButtonSprite.hpp"
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
@@ -19,16 +21,14 @@
 #include "Geode/binding/FMODAudioEngine.hpp"
 #include "Geode/cocos/CCDirector.h"
 #include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/loader/Log.hpp"
 #include "Geode/loader/Mod.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/ui/Popup.hpp"
 #include "Geode/ui/TextInput.hpp"
-#include "Geode/utils/MiniFunction.hpp"
-#include "Geode/utils/Result.hpp"
 #include "Geode/utils/Task.hpp"
 #include "Geode/utils/file.hpp"
 #include "Geode/utils/string.hpp"
@@ -66,7 +66,7 @@ std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
 
 class IndexDisclaimerPopup : public FLAlertLayer, public FLAlertLayerProtocol {
 protected:
-    MiniFunction<void(FLAlertLayer*, bool)> m_selected;
+    std::function<void(FLAlertLayer*, bool)> m_selected;
 
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override {
         m_selected(layer, btn2);
@@ -76,7 +76,7 @@ public:
     static IndexDisclaimerPopup* create(
         char const* title, std::string const& content, char const* btn1,
         char const* btn2, float width,
-        MiniFunction<void(FLAlertLayer*, bool)> selected) {
+        std::function<void(FLAlertLayer*, bool)> selected) {
         auto inst = new IndexDisclaimerPopup();
         inst->m_selected = selected;
         if (inst->init(inst, title, content, btn1, btn2, width, true, .0f,
@@ -600,21 +600,21 @@ void NongAddPopup::addSong(CCObject* target) {
         auto res =
             this->addLocalSong(songName, artistName, levelName, startOffset);
         if (res.isErr()) {
-            FLAlertLayer::create("Error", res.error(), "Ok")->show();
+            FLAlertLayer::create("Error", res.unwrapErr(), "Ok")->show();
             return;
         }
     } else if (m_songType == SongType::YOUTUBE) {
         auto res =
             this->addYTSong(songName, artistName, levelName, startOffset);
         if (res.isErr()) {
-            FLAlertLayer::create("Error", res.error(), "Ok")->show();
+            FLAlertLayer::create("Error", res.unwrapErr(), "Ok")->show();
             return;
         }
     } else if (m_songType == SongType::HOSTED) {
         auto res =
             this->addHostedSong(songName, artistName, levelName, startOffset);
         if (res.isErr()) {
-            FLAlertLayer::create("Error", res.error(), "Ok")->show();
+            FLAlertLayer::create("Error", res.unwrapErr(), "Ok")->show();
             return;
         }
     }
@@ -709,12 +709,12 @@ geode::Result<> NongAddPopup::addLocalSong(
             m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.error()));
+            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
         }
     } else {
         Result<LocalSong*> res = nongs->add(std::move(song));
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.error()));
+            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
         }
 
         event::ManualSongAdded(nongs, res.unwrap()).post();
@@ -783,13 +783,14 @@ geode::Result<> NongAddPopup::addYTSong(
             m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to update song: {}", res.error()));
+            return Err(
+                fmt::format("Failed to update song: {}", res.unwrapErr()));
         }
     } else {
         auto res = nongs->add(std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.error()));
+            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
         }
 
         event::ManualSongAdded(nongs, res.unwrap()).post();
@@ -840,13 +841,15 @@ geode::Result<> NongAddPopup::addHostedSong(
         auto res = nongs->replaceSong(id, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to update song: {}", res.error()));
+            return Err(
+                fmt::format("Failed to update song: {}", res.unwrapErr()));
         }
     } else {
         auto res = nongs->add(std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to createsong: {}", res.error()));
+            return Err(
+                fmt::format("Failed to createsong: {}", res.unwrapErr()));
         }
 
         event::ManualSongAdded(nongs, res.unwrap()).post();

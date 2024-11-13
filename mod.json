@@ -1,12 +1,12 @@
 {
-	"geode": "3.8.1",
-	"version": "3.0.0-beta.4",
+	"geode": "4.0.0-alpha.1",
+	"version": "3.0.0-beta.5",
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
-		"win": "2.206",
-    "mac": "2.206",
-		"android": "2.206"
+		"win": "2.2074",
+    "mac": "2.2074",
+		"android": "2.2074"
 	},
 	"developers": [ "Fleym", "Flafy" ],
 	"description": "A simple song manager for Geometry Dash",
@@ -77,8 +77,10 @@
 		]
 	},
 	"resources": {
-		"sprites": [
-			"resources/*.png"
-		]
+    "spritesheets": {
+      "JukeboxSheet": [
+        "resources/*.png"
+      ]
+    }
 	}
 }

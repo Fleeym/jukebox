@@ -8,8 +8,6 @@
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/CustomSongWidget.hpp"
 #include "Geode/binding/FLAlertLayer.hpp"
-#include "Geode/binding/MusicDownloadManager.hpp"
-#include "Geode/cocos/base_nodes/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
@@ -19,10 +17,12 @@
 #include "Geode/loader/Log.hpp"
 #include "Geode/loader/Mod.hpp"
 #include "Geode/ui/GeodeUI.hpp"
+#include "Geode/ui/Layout.hpp"
 #include "Geode/ui/Popup.hpp"
 #include "Geode/utils/web.hpp"
 #include "ccTypes.h"
 
+#include "events/get_song_info.hpp"
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
@@ -36,11 +36,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     m_songIDS = ids;
     m_parentWidget = parent;
     m_defaultSongID = defaultSongID;
-    // for (auto const& id : m_songIDS) {
-    //     auto result = NongManager::get().getNongs(id);
-    //     auto value = result.value();
-    //     m_data[id] = value;
-    // }
     bool isMultiple = ids.size() > 1;
     if (ids.size() == 1) {
         m_currentSongID = ids[0];
@@ -67,15 +62,25 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     CCMenuItemSpriteExtra* addBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::openAddPopup));
     m_addBtn = addBtn;
+
+    spr = CCSprite::createWithSpriteFrameName("JB_SFHButton.png"_spr);
+    CCMenuItemSpriteExtra* sfhButton = CCMenuItemSpriteExtra::create(
+        spr, this, menu_selector(NongDropdownLayer::onSfh));
+    m_sfhBtn = sfhButton;
+    m_sfhBtn->setID("sfh-button");
+
     spr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
     CCMenuItemSpriteExtra* discordBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::onDiscord));
     discordBtn->setID("discord-button");
+    m_discordBtn = discordBtn;
+
     spr = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
     spr->setScale(0.7f);
     CCMenuItemSpriteExtra* removeBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::deleteAllNongs));
     m_deleteBtn = removeBtn;
+
     if (isMultiple) {
         m_addBtn->setVisible(false);
         m_deleteBtn->setVisible(false);
@@ -84,6 +89,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         m_deleteBtn->setVisible(true);
     }
     menu->addChild(addBtn);
+    menu->addChild(sfhButton);
     menu->addChild(discordBtn);
     menu->addChild(removeBtn);
     ColumnLayout* layout = ColumnLayout::create();
@@ -139,18 +145,33 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     m_mainLayer->addChildAtPosition(topRightArt, Anchor::TopRight);
 
     this->createList();
-    CCSprite* title = CCSprite::create("JB_ListLogo.png"_spr);
+    CCSprite* title = CCSprite::createWithSpriteFrameName("JB_ListLogo.png"_spr);
     title->setPosition(ccp(contentSize.width / 2, contentSize.height - 10.f));
     title->setScale(0.75f);
     m_mainLayer->addChild(title);
     handleTouchPriority(this);
 
-    m_songErrorListener.bind([](event::SongError* event) {
+    m_songErrorListener.bind([this](event::SongError* event) {
         if (event->notifyUser()) {
-            FLAlertLayer* popup = FLAlertLayer::create("Error", event->error(), "OK");
-            popup->setZOrder(107);
+            FLAlertLayer* popup =
+                FLAlertLayer::create("Error", event->error(), "OK");
+            popup->setZOrder(this->getZOrder() + 1);
             popup->show();
         }
+        return ListenerResult::Propagate;
+    });
+
+    m_songInfoListener.bind([this](event::GetSongInfo* event) {
+        if (!m_list || m_currentSongID != event->gdSongID()) {
+            return ListenerResult::Propagate;
+        }
+
+        FLAlertLayer* popup = FLAlertLayer::create(
+            "Download failed", "Successfully refetched default song data",
+            "Ok");
+        popup->setZOrder(this->getZOrder() + 1);
+        popup->show();
+
         return ListenerResult::Propagate;
     });
 
@@ -159,11 +180,12 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
             return ListenerResult::Propagate;
         }
 
-        FLAlertLayer::create(
+        FLAlertLayer* popup = FLAlertLayer::create(
             "Download failed",
             fmt::format("Song download failed. Reason: {}", event->error()),
-            "Ok")
-            ->show();
+            "Ok");
+        popup->setZOrder(this->getZOrder() + 1);
+        popup->show();
 
         return ListenerResult::Propagate;
     });
@@ -190,11 +212,6 @@ void NongDropdownLayer::createList() {
             m_songIDS, CCSize{this->getCellSize().width, 220.f},
             [this](int gdSongID, const std::string& uniqueID) {
                 this->setActiveSong(gdSongID, uniqueID);
-            },
-            [this](int gdSongID) {
-                MusicDownloadManager::sharedState()->clearSong(gdSongID);
-                MusicDownloadManager::sharedState()->getSongInfo(gdSongID,
-                                                                 true);
             },
             [this](int gdSongID, const std::string& uniqueID, bool onlyAudio,
                    bool confirm) {
@@ -245,7 +262,8 @@ void NongDropdownLayer::setActiveSong(int gdSongID,
     if (auto err = NongManager::get().setActiveSong(gdSongID, uniqueID);
         err.isErr()) {
         FLAlertLayer::create(
-            "Failed", fmt::format("Failed to set song: {}", err.error()), "Ok")
+            "Failed", fmt::format("Failed to set song: {}", err.unwrapErr()),
+            "Ok")
             ->show();
         return;
     }
@@ -264,6 +282,19 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
         });
 }
 
+void NongDropdownLayer::onSfh(CCObject* target) {
+    geode::createQuickPopup(
+        "Song File Hub",
+        "Do you want to <cb>join the Song File Hub discord server</c> to find "
+        "and submit songs?",
+        "No", "Yes", [](FLAlertLayer* alert, bool btn2) {
+            if (btn2) {
+                geode::utils::web::openLinkInBrowser(
+                    "https://discord.gg/maSgd4zpEF");
+            }
+        });
+}
+
 void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
                                    bool onlyAudio, bool confirm) {
     auto func = [gdSongID, uniqueID, onlyAudio, confirm]() {
@@ -272,14 +303,15 @@ void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
                     NongManager::get().deleteSongAudio(gdSongID, uniqueID);
                 err.isErr()) {
                 log::error("Failed to delete audio for {}: {}", uniqueID,
-                           err.error());
+                           err.unwrapErr());
             }
         } else {
             if (auto err = NongManager::get().deleteSong(gdSongID, uniqueID);
                 err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
-                    fmt::format("Failed to delete song: {}", err.error()), "Ok")
+                    fmt::format("Failed to delete song: {}", err.unwrapErr()),
+                    "Ok")
                     ->show();
                 return;
             }
@@ -315,7 +347,7 @@ void NongDropdownLayer::downloadSong(int gdSongID,
         FLAlertLayer::create(
             "Failed",
             fmt::format("Failed to start/stop downloading song: {}",
-                        err.error()),
+                        err.unwrapErr()),
             "Ok")
             ->show();
         return;
@@ -329,7 +361,8 @@ void NongDropdownLayer::addSong(Nongs&& song, bool popup) {
     int id = m_currentSongID.value();
     if (auto err = NongManager::get().addNongs(std::move(song)); err.isErr()) {
         FLAlertLayer::create(
-            "Failed", fmt::format("Failed to add song: {}", err.error()), "Ok")
+            "Failed", fmt::format("Failed to add song: {}", err.unwrapErr()),
+            "Ok")
             ->show();
         return;
     }
@@ -358,7 +391,7 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
             if (auto err = NongManager::get().deleteAllSongs(id); err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
-                    fmt::format("Failed to delete nongs: {}", err.error()),
+                    fmt::format("Failed to delete nongs: {}", err.unwrapErr()),
                     "Ok")
                     ->show();
                 return;

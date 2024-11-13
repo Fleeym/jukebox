@@ -3,14 +3,13 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
-#include <utility>
 
 #include <matjson.hpp>
-#include <vector>
+#include "Geode/Result.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/loader/Mod.hpp"
-#include "Geode/utils/Result.hpp"
 
 #include "compat/compat.hpp"
 #include "nong.hpp"
@@ -23,6 +22,12 @@ namespace jukebox {
 namespace compat {
 
 namespace v2 {
+
+bool isSongValid(const matjson::Value& s) {
+    return s.contains("songName") && s["songName"].isString() &&
+           s.contains("authorName") && s["authorName"].isString() &&
+           s.contains("path") && s["path"].isString();
+}
 
 bool manifestExists() { return std::filesystem::exists(manifestPath()); }
 
@@ -62,36 +67,38 @@ void backupManifest(bool deleteOrig) {
 }
 
 Result<LocalSong> parseSong(const matjson::Value& i, int id) {
-    if (!i.contains("songName") || !i.contains("authorName") ||
-        !i.contains("path")) {
+    if (!isSongValid(i)) {
         return Err("Invalid JSON");
     }
-    std::filesystem::path path = i["path"].as_string();
+
+    std::filesystem::path path =
+        i["path"]
+            .asString()
+            .map([](std::string v) { return std::filesystem::path(v); })
+            .unwrap();
+
     return Ok(LocalSong(
-        SongMetadata(id, jukebox::random_string(16), i["songName"].as_string(),
-                     i["authorName"].as_string(), std::nullopt,
-                     i.contains("startOffset") && i["startOffset"].is_number()
-                         ? i["startOffset"].as_int()
-                         : 0),
+        SongMetadata(id, jukebox::random_string(16),
+                     i["songName"].asString().unwrap(),
+                     i["authorName"].asString().unwrap(), std::nullopt,
+                     i["startOffset"].asInt().unwrapOr(0)),
         path));
 }
 
 Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath,
-                             const matjson::Array& songs) {
+                             const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
-        if (!i.contains("path") || !i["path"].is_string()) {
+        if (!isSongValid(i)) {
             continue;
         }
 
-        std::filesystem::path path = i["path"].as_string();
+        std::filesystem::path path = i["path"].asString().unwrap();
         if (path == defaultPath) {
             return Ok(LocalSong(
-                SongMetadata(
-                    id, jukebox::random_string(16), i["songName"].as_string(),
-                    i["authorName"].as_string(), std::nullopt,
-                    i.contains("startOffset") && i["startOffset"].is_number()
-                        ? i["startOffset"].as_int()
-                        : 0),
+                SongMetadata(id, jukebox::random_string(16),
+                             i["songName"].asString().unwrap(),
+                             i["authorName"].asString().unwrap(), std::nullopt,
+                             i["startOffset"].asInt().unwrapOr(0)),
                 path));
         }
     }
@@ -100,21 +107,19 @@ Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath,
 }
 
 Result<LocalSong> getActive(int id, const std::filesystem::path& activePath,
-                            const matjson::Array& songs) {
+                            const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
-        if (!i.contains("path") || !i["path"].is_string()) {
+        if (!isSongValid(i)) {
             continue;
         }
 
-        std::filesystem::path path = i["path"].as_string();
+        std::filesystem::path path = i["path"].asString().unwrap();
         if (path == activePath) {
             return Ok(LocalSong(
-                SongMetadata(
-                    id, jukebox::random_string(16), i["songName"].as_string(),
-                    i["authorName"].as_string(), std::nullopt,
-                    i.contains("startOffset") && i["startOffset"].is_number()
-                        ? i["startOffset"].as_int()
-                        : 0),
+                SongMetadata(id, jukebox::random_string(16),
+                             i["songName"].asString().unwrap(),
+                             i["authorName"].asString().unwrap(), std::nullopt,
+                             i["startOffset"].asInt().unwrapOr(0)),
                 path));
         }
     }
@@ -142,58 +147,52 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
     input.read(&contents[0], contents.size());
     input.close();
 
-    std::string err;
-    std::optional<matjson::Value> res =
-        matjson::parse(std::string_view(contents), err);
-    if (!res.has_value()) {
-        return Err(fmt::format("Couldn't parse JSON from file: {}", err));
-    }
+    GEODE_UNWRAP_INTO(matjson::Value json,
+                      matjson::parse(std::string_view(contents))
+                          .mapErr([](matjson::ParseError err) {
+                              return fmt::format(
+                                  "Couldn't parse JSON from file: {}", err);
+                          }));
 
-    matjson::Value json = res.value();
-
-    if (!json.contains("version") || !json["version"].is_number()) {
+    if (!json.contains("version") || !json["version"].isNumber()) {
         return Err("Invalid JSON");
     }
 
-    int version = json["version"].as_int();
+    int version = json["version"].asInt().unwrap();
     if (version < 1 || version > 3) {
         return Err("Invalid JSON");
     }
 
-    if (!json.contains("nongs") || !json["nongs"].is_object()) {
+    if (!json.contains("nongs") || !json["nongs"].isObject()) {
         return Err("Invalid JSON");
     }
 
     std::unordered_map<int, CompatManifest> ret;
 
-    for (const std::pair<std::string, matjson::Value>& kv :
-         json["nongs"].as_object()) {
-        int id = std::stoi(kv.first);
-        matjson::Value data = kv.second;
+    for (const auto& [key, data] : json["nongs"]) {
+        int id = std::stoi(key);
 
-        if (!data.contains("defaultPath")) {
+        if (!data.contains("defaultPath") || !data["defaultPath"].isString() ||
+            !data.contains("active") || !data["active"].isString() ||
+            !data.contains("songs") || !data["songs"].isArray()) {
             log::warn("Skipping id {}, invalid data", id);
             continue;
         }
 
-        if (!data.contains("songs") || !data["songs"].is_array()) {
-            log::warn("Skipping id {}, invalid data", id);
-            continue;
-        }
-
-        std::filesystem::path defaultPath = data["defaultPath"].as_string();
-        std::filesystem::path activePath = data["active"].as_string();
-        matjson::Array songs = data["songs"].as_array();
+        std::filesystem::path defaultPath =
+            data["defaultPath"].asString().unwrap();
+        std::filesystem::path activePath = data["active"].asString().unwrap();
+        matjson::Value songs = data["songs"].asArray().unwrap();
 
         Result<LocalSong> defaultRes = getDefault(id, defaultPath, songs);
         if (defaultRes.isErr()) {
-            log::warn("{}", defaultRes.error());
+            log::warn("{}", defaultRes.unwrapErr());
             continue;
         }
 
         Result<LocalSong> activeRes = getActive(id, activePath, songs);
         if (activeRes.isErr()) {
-            log::warn("{}", activeRes.error());
+            log::warn("{}", activeRes.unwrapErr());
             continue;
         }
 
@@ -202,13 +201,12 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
         std::vector<LocalSong> manifestSongs;
 
         for (const matjson::Value& i : songs) {
-            if (!i.contains("songName") || !i.contains("authorName") ||
-                !i.contains("path")) {
+            if (!isSongValid(i)) {
                 log::warn("Found invalid song. Skipping...");
                 continue;
             }
 
-            std::filesystem::path path = i["path"].as_string();
+            std::filesystem::path path = i["path"].asString().unwrap();
             std::string unique;
 
             if (path == defaultPath) {
@@ -220,12 +218,9 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
             }
 
             manifestSongs.push_back(LocalSong(
-                SongMetadata(
-                    id, unique, i["songName"].as_string(),
-                    i["authorName"].as_string(), std::nullopt,
-                    i.contains("startOffset") && i["startOffset"].is_number()
-                        ? i["startOffset"].as_int()
-                        : 0),
+                SongMetadata(id, unique, i["songName"].asString().unwrap(),
+                             i["authorName"].asString().unwrap(), std::nullopt,
+                             i["startOffset"].asInt().unwrapOr(0)),
                 path));
         }
 
