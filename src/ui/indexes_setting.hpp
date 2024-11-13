@@ -56,7 +56,7 @@ struct geode::SettingTypeForValueType<jukebox::Indexes> {
 template <>
 struct matjson::Serialize<jukebox::Indexes> {
     static matjson::Value toJson(const jukebox::Indexes& value) {
-        matjson::Value arr{std::vector<matjson::Value>()};
+        matjson::Value arr = matjson::Value::array();
         for (const jukebox::IndexSource& elem : value.indexes) {
             arr.push(matjson::Serialize<jukebox::IndexSource>::toJson(elem));
         }
