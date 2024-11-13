@@ -1,50 +1,64 @@
-#include "nong_list.hpp"
+#include "ui/list/nong_list.hpp"
+#include <fmt/core.h>
 
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/base_nodes/Layout.hpp>
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/menu_nodes/CCMenu.h>
-#include <Geode/cocos/platform/CCPlatformMacros.h>
-#include <Geode/ui/ScrollLayer.hpp>
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include <filesystem>
+#include <memory>
 #include <optional>
-#include <unordered_map>
+#include <unordered_set>
 
-#include "../../managers/nong_manager.hpp"
-#include "nong_cell.hpp"
-#include "song_cell.hpp"
+#include "GUI/CCControlExtension/CCScale9Sprite.h"
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+#include "Geode/cocos/menu_nodes/CCMenu.h"
+#include "Geode/cocos/platform/CCPlatformMacros.h"
+#include "Geode/loader/Event.hpp"
+#include "Geode/loader/Log.hpp"
+#include "Geode/ui/Layout.hpp"
+#include "Geode/ui/ScrollLayer.hpp"
+
+#include "Geode/utils/cocos.hpp"
+#include "events/nong_deleted.hpp"
+#include "events/song_download_finished.hpp"
+#include "index.hpp"
+#include "managers/nong_manager.hpp"
+#include "nong.hpp"
+#include "ui/list/index_song_cell.hpp"
+#include "ui/list/nong_cell.hpp"
+#include "ui/list/song_cell.hpp"
 
 using namespace geode::prelude;
 
 namespace jukebox {
 
 bool NongList::init(
-    std::unordered_map<int, NongData>& data,
-    const cocos2d::CCSize& size,
-    std::function<void(int, const SongInfo&)> onSetActive,
-    std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongInfo&)> onDelete,
-    std::function<void(bool)> onListTypeChange
-) {
+    std::vector<int>& songIds, const cocos2d::CCSize& size,
+    std::function<void(int, const std::string&)> onSetActive,
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
+        onDelete,
+    std::function<void(int, const std::string&)> onDownload,
+    std::function<void(int, const std::string&)> onEdit,
+    std::function<void(std::optional<int>)> onListTypeChange) {
     if (!CCNode::init()) {
         return false;
     }
 
-    m_data = data;
+    m_songIds = songIds;
     m_onSetActive = onSetActive;
-    m_onFixDefault = onFixDefault;
     m_onDelete = onDelete;
+    m_onDownload = onDownload;
+    m_onEdit = onEdit;
     m_onListTypeChange = onListTypeChange;
 
-    if (m_data.size() == 1) {
-        m_currentSong = m_data.begin()->first;
+    if (m_songIds.size() == 1) {
+        m_currentSong = m_songIds.front();
     }
 
     this->setContentSize(size);
-    this->setAnchorPoint({ 0.5f, 0.5f });
+    this->setAnchorPoint({0.5f, 0.5f});
 
     m_bg = CCScale9Sprite::create("square02b_001.png");
-    m_bg->setColor({ 0, 0, 0 });
+    m_bg->setColor({0, 0, 0});
     m_bg->setOpacity(75);
     m_bg->setScale(0.3f);
     m_bg->setContentSize(size / m_bg->getScale());
@@ -53,153 +67,221 @@ bool NongList::init(
     CCMenu* menu = CCMenu::create();
     auto spr = CCSprite::createWithSpriteFrameName("backArrowPlain_01_001.png");
     auto backBtn = CCMenuItemSpriteExtra::create(
-        spr,
-        this,
-        menu_selector(NongList::onBack)
-    );
+        spr, this, menu_selector(NongList::onBack));
     m_backBtn = backBtn;
     m_backBtn->setVisible(false);
     menu->addChild(backBtn);
     menu->setLayout(ColumnLayout::create());
     menu->updateLayout();
     menu->setZOrder(1);
-    this->addChildAtPosition(menu, Anchor::Left, CCPoint { -10.0f, 0.0f });
+    this->addChildAtPosition(menu, Anchor::Left, CCPoint{-10.0f, 0.0f});
 
-    m_list = ScrollLayer::create({ size.width - s_padding, size.height - s_padding });
-    m_list->m_contentLayer->setLayout(
-        ColumnLayout::create()
-            ->setAxisReverse(true)
-            ->setAxisAlignment(AxisAlignment::End)
-            ->setAutoGrowAxis(size.height)
-            ->setGap(s_padding / 2)
-    );
+    m_list =
+        ScrollLayer::create({size.width - s_padding, size.height - s_padding});
+    m_list->m_contentLayer->setLayout(ColumnLayout::create()
+                                          ->setAxisReverse(true)
+                                          ->setAxisAlignment(AxisAlignment::End)
+                                          ->setAutoGrowAxis(size.height)
+                                          ->setGap(s_padding / 2));
 
-    this->addChildAtPosition(
-        m_list,
-        Anchor::Center,
-        -m_list->getScaledContentSize() / 2
-    );
+    this->addChildAtPosition(m_list, Anchor::Center,
+                             -m_list->getScaledContentSize() / 2);
+
+    m_onListTypeChange(m_currentSong);
 
     this->build();
     return true;
 }
 
+void NongList::setDownloadProgress(std::string uniqueID, float progress) {}
+
 void NongList::build() {
     if (m_list->m_contentLayer->getChildrenCount() > 0) {
-        m_list->m_contentLayer->removeAllChildren();
+        m_list->m_contentLayer->removeAllChildrenWithCleanup(true);
     }
 
-    if (m_data.size() == 0) {
+    if (m_songIds.size() == 0) {
         return;
     }
 
-    CCSize itemSize = {
-        m_list->getScaledContentSize().width,
-        s_itemSize
-    };
+    CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
+
+    if (m_onListTypeChange) {
+        m_onListTypeChange(m_currentSong);
+    }
 
     if (!m_currentSong) {
-        if (m_onListTypeChange) {
-            m_onListTypeChange(true);
-        }
-        for (const auto& kv : m_data) {
-            SongInfo display;
-            auto active = NongManager::get()->getActiveNong(kv.first);
+        for (int id : m_songIds) {
+            std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
 
-            if (!active) {
+            if (!nongs) {
                 continue;
             }
 
-            int id = kv.first;
+            Song* active = nongs.value()->active();
+
             m_list->m_contentLayer->addChild(
-                jukebox::SongCell::create(
-                    id,
-                    active.value(),
-                    itemSize,
-                    [this, id] () {
-                        this->onSelectSong(id);
-                    }
-                )
-            );
+                SongCell::create(id, active->metadata(), itemSize,
+                                 [this, id]() { this->onSelectSong(id); }));
         }
     } else {
-        if (m_onListTypeChange) {
-            m_onListTypeChange(false);
-        }
         // Single item
         int id = m_currentSong.value();
-        if (!m_data.contains(id)) {
-            return;
-        }
-        NongData data = m_data.at(id);
-        auto active = NongManager::get()->getActiveNong(id);
-        auto defaultRes = NongManager::get()->getDefaultNong(id);
-        if (!defaultRes) {
-            return;
-        }
-        if (!active) {
+
+        std::optional<Nongs*> optNongs = NongManager::get().getNongs(id);
+        if (!optNongs) {
             return;
         }
 
-        auto defaultSong = defaultRes.value();
+        Nongs* nongs = optNongs.value();
+        LocalSong* defaultSong = nongs->defaultSong();
+        std::string defaultID = defaultSong->metadata()->uniqueID;
+        Song* active = nongs->active();
 
-        m_list->m_contentLayer->addChild(
-            jukebox::NongCell::create(
-                id, defaultSong,
-                true,
-                defaultSong.path == data.active,
-                itemSize,
-                [this, id, defaultSong] () {
-                    m_onSetActive(id, defaultSong);
-                },
-                [this, id] () {
-                    m_onFixDefault(id);
-                },
-                [this, id, defaultSong] () {
-                    m_onDelete(id, defaultSong);
-                }
-            )
-        );
+        m_list->m_contentLayer->addChild(NongCell::create(
+            id, defaultSong, true,
+            defaultSong->metadata()->uniqueID == active->metadata()->uniqueID,
+            itemSize, [this, id, defaultID]() { m_onSetActive(id, defaultID); },
+            [this, id, defaultID]() { m_onDelete(id, defaultID, true, true); },
+            [this, id, defaultID]() { m_onDownload(id, defaultID); },
+            [this, id, defaultID]() { m_onEdit(id, defaultID); }));
 
-        for (const SongInfo& song : data.songs) {
-            if (song.path == data.defaultPath) {
+        CCLabelBMFont* localSongs =
+            CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
+        localSongs->setID("local-section");
+        localSongs->setLayoutOptions(
+            AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+        m_list->m_contentLayer->addChild(localSongs);
+
+        std::unordered_set<std::string> localYt;
+        std::unordered_set<std::string> localHosted;
+
+        if (nongs->locals().size() == 0 && nongs->youtube().size() == 0 &&
+            nongs->hosted().size() == 0) {
+            this->addNoLocalSongsNotice();
+        }
+
+        for (std::unique_ptr<LocalSong>& nong : nongs->locals()) {
+            this->addSongToList(nong.get(), nongs);
+        }
+
+        for (std::unique_ptr<YTSong>& nong : nongs->youtube()) {
+            this->addSongToList(nong.get(), nongs);
+            if (nong->indexID().has_value()) {
+                localYt.insert(fmt::format("{}|{}", nong->indexID().value(),
+                                           nong->metadata()->uniqueID));
+            }
+        }
+
+        for (std::unique_ptr<HostedSong>& nong : nongs->hosted()) {
+            this->addSongToList(nong.get(), nongs);
+            if (nong->indexID().has_value()) {
+                localHosted.insert(fmt::format("{}|{}", nong->indexID().value(),
+                                               nong->metadata()->uniqueID));
+            }
+        }
+
+        if (nongs->indexSongs().size() > 0) {
+            CCLabelBMFont* indexLabel =
+                CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            indexLabel->setID("index-section");
+            indexLabel->setLayoutOptions(
+                AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+            m_list->m_contentLayer->addChild(indexLabel);
+        }
+
+        for (index::IndexSongMetadata* index : nongs->indexSongs()) {
+            const std::string id =
+                fmt::format("{}|{}", index->parentID->m_id, index->uniqueID);
+
+            if (index->ytId.has_value() && localYt.contains(id)) {
                 continue;
             }
-            m_list->m_contentLayer->addChild(
-                jukebox::NongCell::create(
-                    id, song,
-                    song.path == data.defaultPath,
-                    song.path == data.active,
-                    itemSize,
-                    [this, id, song] () {
-                        m_onSetActive(id, song);
-                    },
-                    [this, id] () {
-                        m_onFixDefault(id);
-                    },
-                    [this, id, song] () {
-                        m_onDelete(id, song);
-                    }
-                )
-            );
+
+            if (index->url.has_value() && localHosted.contains(id)) {
+                continue;
+            }
+
+            this->addIndexSongToList(index, nongs);
         }
     }
     m_list->m_contentLayer->updateLayout();
     this->scrollToTop();
 }
 
-void NongList::scrollToTop() {
-    m_list->m_contentLayer->setPositionY(
-        -m_list->m_contentLayer->getContentHeight() + m_list->getContentHeight()
-    );
+void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
+    int id = m_currentSong.value();
+    Song* defaultSong = parent->defaultSong();
+    Song* active = parent->active();
+
+    CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
+
+    std::string uniqueID = nong->metadata()->uniqueID;
+    std::optional<std::filesystem::path> path = nong->path();
+    bool isFromIndex = nong->indexID().has_value();
+    bool isDownloaded =
+        path.has_value() && std::filesystem::exists(path.value());
+    NongCell* cell = NongCell::create(
+        id, nong, uniqueID == defaultSong->metadata()->uniqueID,
+        uniqueID == active->metadata()->uniqueID, itemSize,
+        [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
+        [this, id, uniqueID]() { m_onDelete(id, uniqueID, false, true); },
+        [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
+        [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
+    cell->setID(uniqueID);
+
+    if (!liveInsert) {
+        m_list->m_contentLayer->addChild(cell);
+        return;
+    }
+
+    CCNode* indexSection =
+        m_list->m_contentLayer->getChildByID("index-section");
+
+    if (indexSection) {
+        m_list->m_contentLayer->insertBefore(cell, indexSection);
+    } else {
+        m_list->m_contentLayer->addChild(cell);
+    }
 }
 
-void NongList::setData(std::unordered_map<int, NongData>& data) {
-    m_data = data;
+void NongList::addIndexSongToList(index::IndexSongMetadata* song,
+                                  Nongs* parent) {
+    const CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
+    IndexSongCell* cell =
+        IndexSongCell::create(song, m_currentSong.value(), itemSize);
+    cell->setID(fmt::format("{}-{}", song->parentID->m_id, song->uniqueID));
+    m_list->m_contentLayer->addChild(cell);
+}
+
+void NongList::addNoLocalSongsNotice(bool liveInsert) {
+    CCLabelBMFont* label =
+        CCLabelBMFont::create("You have no stored nongs :(", "bigFont.fnt");
+    label->setID("no-local-songs");
+    label->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
+    label->limitLabelWidth(150.0f, 0.7f, 0.1f);
+
+    if (!liveInsert) {
+        m_list->m_contentLayer->addChild(label);
+    } else {
+        CCNode* section = m_list->m_contentLayer->getChildByID("local-section");
+        if (!section) {
+            log::error(
+                "Couldn't insert no local songs notice. Section not found");
+        } else {
+            m_list->m_contentLayer->insertAfter(label, section);
+        }
+    }
+}
+
+void NongList::scrollToTop() {
+    m_list->m_contentLayer->setPositionY(
+        -m_list->m_contentLayer->getContentHeight() +
+        m_list->getContentHeight());
 }
 
 void NongList::onBack(cocos2d::CCObject* target) {
-    if (!m_currentSong.has_value() || m_data.size() < 2) {
+    if (!m_currentSong.has_value() || m_songIds.size() < 2) {
         return;
     }
 
@@ -210,13 +292,16 @@ void NongList::onBack(cocos2d::CCObject* target) {
 }
 
 void NongList::setCurrentSong(int songId) {
-    if (m_data.contains(songId)) {
+    if (std::find(m_songIds.begin(), m_songIds.end(), songId) !=
+        m_songIds.end()) {
         m_currentSong = songId;
     }
 }
 
 void NongList::onSelectSong(int songId) {
-    if (m_currentSong.has_value() || !m_data.contains(songId)) {
+    if (m_currentSong.has_value() ||
+        std::find(m_songIds.begin(), m_songIds.end(), songId) ==
+            m_songIds.end()) {
         return;
     }
 
@@ -226,16 +311,113 @@ void NongList::onSelectSong(int songId) {
     m_backBtn->setVisible(true);
 }
 
+ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
+    if (!m_list || !m_currentSong.has_value() ||
+        !e->indexSource().has_value()) {
+        return ListenerResult::Propagate;
+    }
+
+    std::optional<Nongs*> optNongs =
+        NongManager::get().getNongs(m_currentSong.value());
+
+    if (!optNongs.has_value()) {
+        return ListenerResult::Propagate;
+    }
+
+    Nongs* nongs = optNongs.value();
+
+    if (!nongs->findSong(e->destination()->metadata()->uniqueID)) {
+        return ListenerResult::Propagate;
+    }
+
+    index::IndexSongMetadata* meta = e->indexSource().value();
+    if (CCNode* i = m_list->m_contentLayer->getChildByID(
+            fmt::format("{}-{}", meta->parentID->m_id, meta->uniqueID))) {
+        i->removeFromParentAndCleanup(true);
+    }
+
+    this->addSongToList(e->destination(), nongs, true);
+
+    // Remove "you have no local songs label"
+    if (auto node = m_list->m_contentLayer->getChildByID("no-local-songs")) {
+        node->removeFromParentAndCleanup(true);
+    }
+
+    m_list->m_contentLayer->updateLayout();
+
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongList::onNongDeleted(event::NongDeleted* e) {
+    if (!m_list || !m_currentSong.has_value() ||
+        m_currentSong.value() != e->gdId()) {
+        return ListenerResult::Propagate;
+    }
+
+    CCNode* found = m_list->m_contentLayer->getChildByID(e->uniqueId());
+    if (found) {
+        found->removeFromParentAndCleanup(true);
+        m_list->m_contentLayer->updateLayout();
+    }
+
+    std::optional<Nongs*> optNongs =
+        NongManager::get().getNongs(m_currentSong.value());
+
+    if (!optNongs.has_value()) {
+        return ListenerResult::Propagate;
+    }
+
+    Nongs* nongs = optNongs.value();
+
+    for (index::IndexSongMetadata* i : nongs->indexSongs()) {
+        if (i->uniqueID != e->uniqueId()) {
+            continue;
+        }
+
+        if (!m_list->m_contentLayer->getChildByID("index-section")) {
+            CCLabelBMFont* indexLabel =
+                CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            indexLabel->setID("index-section");
+            indexLabel->setLayoutOptions(
+                AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+            m_list->m_contentLayer->addChild(indexLabel);
+        }
+
+        this->addIndexSongToList(i, nongs);
+        m_list->m_contentLayer->updateLayout();
+    }
+
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongList::onSongAdded(event::ManualSongAdded* e) {
+    if (!m_list || !m_currentSong.has_value() ||
+        m_currentSong.value() != e->nongs()->songID()) {
+        return ListenerResult::Propagate;
+    }
+
+    this->addSongToList(e->song(), e->nongs(), true);
+
+    // Remove "you have no local songs label"
+    if (auto node = m_list->m_contentLayer->getChildByID("no-local-songs")) {
+        node->removeFromParentAndCleanup(true);
+    }
+
+    m_list->m_contentLayer->updateLayout();
+    return ListenerResult::Propagate;
+}
+
 NongList* NongList::create(
-    std::unordered_map<int, NongData>& data,
-    const cocos2d::CCSize& size,
-    std::function<void(int, const SongInfo&)> onSetActive,
-    std::function<void(int)> onFixDefault,
-    std::function<void(int, const SongInfo&)> onDelete,
-    std::function<void(bool)> onListTypeChange
-) {
+    std::vector<int>& songIds, const cocos2d::CCSize& size,
+    std::function<void(int, const std::string&)> onSetActive,
+    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
+        onDelete,
+    std::function<void(int, const std::string&)> onDownload,
+    std::function<void(int, const std::string&)> onEdit,
+    std::function<void(std::optional<int>)> onListTypeChange) {
     auto ret = new NongList();
-    if (!ret->init(data, size, onSetActive, onFixDefault, onDelete, onListTypeChange)) {
+    if (!ret->init(songIds, size, onSetActive, onDelete, onDownload, onEdit,
+                   onListTypeChange)) {
         CC_SAFE_DELETE(ret);
         return nullptr;
     }
@@ -244,4 +426,4 @@ NongList* NongList::create(
     return ret;
 }
 
-}
+}  // namespace jukebox

@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.0.0
+
+ * Add Song File Hub support back!
+ * Merge features with Auto Nong (the index system) - thanks to Flafy for helping merge the mods and agreeing to help develop the mod
+ * Add MacOS support - thanks to hiimjustin for porting the mod
+ * Small tweaks to the NONG list UI
+ * Small UX improvements to the NONG list - the list doesn't scroll to the top for any action
+ * Change the way songs are stored internally, old data will migrate over
+ * Lots of miscellaneous fixes and improvements
+
 ## v2.11.0
 
  * Add metadata parsing for autocompletion of song info (experimental)

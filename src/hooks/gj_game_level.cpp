@@ -1,35 +1,37 @@
-#include <Geode/modify/GJGameLevel.hpp>
-#include <Geode/binding/GJGameLevel.hpp>
-#include <Geode/modify/Modify.hpp>
-#include <Geode/utils/string.hpp>
-
 #include <filesystem>
+#include <optional>
 
-#include "../managers/nong_manager.hpp"
-#include "../types/song_info.hpp"
+#include "Geode/binding/GJGameLevel.hpp"
+#include "Geode/modify/GJGameLevel.hpp"  // IWYU pragma: keep
+#include "Geode/modify/Modify.hpp"
+#include "Geode/utils/string.hpp"
+
+#include "managers/nong_manager.hpp"
 
 using namespace geode::prelude;
+using namespace jukebox;
 
 class $modify(GJGameLevel) {
     gd::string getAudioFileName() {
-        jukebox::NongManager::get()->m_currentlyPreparingNong = std::nullopt;
+        NongManager::get().m_currentlyPreparingNong = std::nullopt;
+        // If we have a custom song, return
         if (m_songID != 0) {
             return GJGameLevel::getAudioFileName();
         }
         int id = (-m_audioTrack) - 1;
-        auto active = jukebox::NongManager::get()->getActiveNong(id);
-        if (!active.has_value()) {
+        std::optional<Nongs*> res = NongManager::get().getNongs(id);
+        if (!res.has_value()) {
             return GJGameLevel::getAudioFileName();
         }
-        jukebox::SongInfo value = active.value();
-        if (!std::filesystem::exists(value.path)) {
+        Song* active = res.value()->active();
+        if (!std::filesystem::exists(active->path().value())) {
             return GJGameLevel::getAudioFileName();
         }
-        jukebox::NongManager::get()->m_currentlyPreparingNong = value;
-        #ifdef GEODE_IS_WINDOWS
-        return geode::utils::string::wideToUtf8(value.path.c_str());
-        #else
-        return value.path.string();
-        #endif
+        jukebox::NongManager::get().m_currentlyPreparingNong = res.value();
+#ifdef GEODE_IS_WINDOWS
+        return geode::utils::string::wideToUtf8(active->path().value().c_str());
+#else
+        return active->path().value().string();
+#endif
     }
 };

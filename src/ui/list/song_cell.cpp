@@ -1,20 +1,14 @@
 #include "song_cell.hpp"
 
-#include "GUI/CCControlExtension/CCScale9Sprite.h"
-#include <Geode/utils/cocos.hpp>
 #include <ccTypes.h>
-#include <Geode/c++stl/gdstdlib.hpp>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <fmt/format.h>
+#include "GUI/CCControlExtension/CCScale9Sprite.h"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 
 namespace jukebox {
 
-bool SongCell::init(
-    int id,
-    const SongInfo& songInfo,
-    const CCSize& size,
-    std::function<void()> selectCallback
-) {
+bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size,
+                    std::function<void()> selectCallback) {
     if (!CCNode::init()) {
         return false;
     }
@@ -23,34 +17,33 @@ bool SongCell::init(
     m_callback = selectCallback;
 
     this->setContentSize(size);
-    this->setAnchorPoint(CCPoint { 0.5f, 0.5f });
+    this->setAnchorPoint(CCPoint{0.5f, 0.5f});
 
     auto bg = CCScale9Sprite::create("square02b_001.png");
-    bg->setColor({ 0, 0, 0 });
+    bg->setColor({0, 0, 0});
     bg->setOpacity(75);
     bg->setScale(0.3f);
     bg->setContentSize(size / bg->getScale());
     this->addChildAtPosition(bg, Anchor::Center);
 
-    auto label = CCLabelBMFont::create(m_active.songName.c_str(), "bigFont.fnt");
+    auto label = CCLabelBMFont::create(songInfo->name.c_str(), "bigFont.fnt");
     label->setAnchorPoint(ccp(0, 0.5f));
     label->limitLabelWidth(240.f, 0.8f, 0.1f);
     label->setPosition(ccp(12.f, 40.f));
     this->addChild(label);
     m_songNameLabel = label;
-    auto author = CCLabelBMFont::create(m_active.authorName.c_str(), "goldFont.fnt");
+    auto author =
+        CCLabelBMFont::create(songInfo->artist.c_str(), "goldFont.fnt");
     author->setAnchorPoint(ccp(0, 0.5f));
     author->limitLabelWidth(260.f, 0.6f, 0.1f);
     author->setPosition(ccp(12.f, 15.f));
     m_authorNameLabel = author;
     this->addChild(author);
-    auto idLabel = CCLabelBMFont::create(
-        fmt::format("#{}", id).c_str(),
-        "chatFont.fnt"
-    );
-    idLabel->setPosition({ size.width - 5.f, 0 + 3.f });
-    idLabel->setAnchorPoint({ 1.0f, 0.0f });
-    idLabel->setColor(ccColor3B(230, 230, 230));
+    auto idLabel =
+        CCLabelBMFont::create(fmt::format("#{}", id).c_str(), "chatFont.fnt");
+    idLabel->setPosition({size.width - 5.f, 0 + 3.f});
+    idLabel->setAnchorPoint({1.0f, 0.0f});
+    idLabel->setColor(ccColor3B{230, 230, 230});
     idLabel->setScale(0.6f);
     m_songIDLabel = idLabel;
     this->addChild(idLabel);
@@ -59,18 +52,13 @@ bool SongCell::init(
     spr->setFlipX(true);
     spr->setScale(0.8f);
     auto btn = CCMenuItemSpriteExtra::create(
-        spr,
-        this, 
-        menu_selector(SongCell::onSelectSong)
-    );
+        spr, this, menu_selector(SongCell::onSelectSong));
     menu->addChild(btn);
     this->addChild(menu);
     menu->setPosition(ccp(290.f, 30.f));
     return true;
 }
 
-void SongCell::onSelectSong(CCObject*) {
-    m_callback();
-}
+void SongCell::onSelectSong(CCObject*) { m_callback(); }
 
-}
+}  // namespace jukebox

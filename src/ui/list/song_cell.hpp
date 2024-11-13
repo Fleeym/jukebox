@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Geode/c++stl/gdstdlib.hpp>
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <functional>
 
-#include "../../types/song_info.hpp"
+#include "Geode/cocos/base_nodes/CCNode.h"
+#include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+
+#include "nong.hpp"
 
 using namespace geode::prelude;
 
@@ -15,7 +15,7 @@ class NongDropdownLayer;
 
 class SongCell : public CCNode {
 protected:
-    SongInfo m_active;
+    SongMetadata* m_active;
     CCLabelBMFont* m_songNameLabel;
     CCLabelBMFont* m_authorNameLabel;
     CCLabelBMFont* m_songIDLabel;
@@ -23,19 +23,12 @@ protected:
 
     std::function<void()> m_callback;
 
-    bool init(
-        int id,
-        const SongInfo& songInfo,
-        const CCSize& size,
-        std::function<void()> selectCallback
-    );
+    bool init(int id, SongMetadata* songInfo, const CCSize& size,
+              std::function<void()> selectCallback);
+
 public:
-    static SongCell* create(
-        int id,
-        const SongInfo& songInfo,
-        const CCSize& size,
-        std::function<void()> selectCallback
-    ) {
+    static SongCell* create(int id, SongMetadata* songInfo, const CCSize& size,
+                            std::function<void()> selectCallback) {
         auto ret = new SongCell();
         if (ret && ret->init(id, songInfo, size, selectCallback)) {
             return ret;
@@ -46,4 +39,4 @@ public:
     void onSelectSong(CCObject*);
 };
 
-}
+}  // namespace jukebox

@@ -1,51 +1,82 @@
-#include <Geode/binding/MusicDownloadManager.hpp>
-#include <Geode/modify/MusicDownloadManager.hpp>
-#include <Geode/utils/string.hpp>
+#include "hooks/music_download_manager.hpp"
 
-#include "../managers/nong_manager.hpp"
-#include "../types/song_info.hpp"
-#include "../events/get_song_info_event.hpp"
+#include <cstddef>
+#include <optional>
+
+#include "Geode/binding/GameLevelManager.hpp"
+#include "Geode/binding/MusicDownloadManager.hpp"
+#include "Geode/binding/SongInfoObject.hpp"
+#include "Geode/c++stl/string.hpp"
+#include "Geode/cocos/cocoa/CCDictionary.h"
+#include "Geode/cocos/cocoa/CCString.h"
+#include "Geode/utils/cocos.hpp"
+#include "Geode/utils/string.hpp"
+
+#include "events/get_song_info.hpp"
+#include "managers/nong_manager.hpp"
+#include "nong.hpp"
 
 using namespace jukebox;
 
-class $modify(MusicDownloadManager) {
-	gd::string pathForSong(int id) {
-        NongManager::get()->m_currentlyPreparingNong = std::nullopt;
-        auto active = NongManager::get()->getActiveNong(id);
-        if (!active.has_value()) {
-            return MusicDownloadManager::pathForSong(id);
-        }
-        auto value = active.value();
-		if (!fs::exists(value.path)) {
-            return MusicDownloadManager::pathForSong(id);
-		}
-        NongManager::get()->m_currentlyPreparingNong = active;
-        #ifdef GEODE_IS_WINDOWS
-        return geode::utils::string::wideToUtf8(value.path.c_str());
-        #else
-        return value.path.string();
-        #endif
-	}
-    void onGetSongInfoCompleted(gd::string p1, gd::string p2) {
-        MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
-        auto songID = std::stoi(p2);
-        GetSongInfoEvent(this->getSongInfoObject(songID), songID).post();
+gd::string JBMusicDownloadManager::pathForSong(int id) {
+    NongManager::get().m_currentlyPreparingNong = std::nullopt;
+    std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
+    if (!nongs.has_value()) {
+        return MusicDownloadManager::pathForSong(id);
+    }
+    Nongs* value = nongs.value();
+    Song* active = value->active();
+    if (!std::filesystem::exists(active->path().value())) {
+        return MusicDownloadManager::pathForSong(id);
+    }
+    NongManager::get().m_currentlyPreparingNong = value;
+#ifdef GEODE_IS_WINDOWS
+    return geode::utils::string::wideToUtf8(active->path().value().c_str());
+#else
+    return active->path().value().string();
+#endif
+}
+
+void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
+                                                    gd::string p2) {
+    MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
+    int songID = std::stoi(p2);
+
+    constexpr size_t SONG_NAME_INDEX = 3;
+    constexpr size_t ARTIST_NAME_INDEX = 7;
+
+    CCDictionary* dict =
+        GameLevelManager::sharedState()->responseToDict(p1, true);
+
+    CCArrayExt<CCString*> keys = CCArrayExt<CCString*>(dict->allKeys());
+
+    // Size 0 -> got an invalid response from the servers
+    if (keys.size() == 0 || keys.size() < ARTIST_NAME_INDEX) {
+        return;
     }
 
-    SongInfoObject* getSongInfoObject(int id) {
-        auto og = MusicDownloadManager::getSongInfoObject(id);
-        if (og == nullptr) {
-            return og;
-        }
-        if (NongManager::get()->hasActions(id)) {
-            return og;
-        }
-        auto active = NongManager::get()->getActiveNong(id);
-        if (active.has_value()) {
-            auto value = active.value();
-            og->m_songName = value.songName;
-            og->m_artistName = value.authorName;
-        }
+    CCString* songName = keys[SONG_NAME_INDEX];
+    CCString* artistName = keys[ARTIST_NAME_INDEX];
+
+    if (!songName || !artistName) {
+        return;
+    }
+
+    event::GetSongInfo(songName->getCString(), artistName->getCString(), songID)
+        .post();
+}
+
+SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {
+    auto og = MusicDownloadManager::getSongInfoObject(id);
+    if (og == nullptr) {
         return og;
     }
-};
+    std::optional<Nongs*> opt = NongManager::get().getNongs(id);
+    if (opt.has_value()) {
+        Nongs* res = opt.value();
+        Song* active = res->active();
+        og->m_songName = active->metadata()->name;
+        og->m_artistName = active->metadata()->artist;
+    }
+    return og;
+}

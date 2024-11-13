@@ -14,6 +14,11 @@ jobs:
         config:
           - name: Windows
             os: windows-latest
+            build-type: RelWithDebInfo
+          
+          # - name: macOS
+          #   os: macos-latest
+
           - name: Android32
             os: ubuntu-latest
             target: Android32
@@ -28,11 +33,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build the mod
+      - name: Build
         uses: geode-sdk/build-geode-mod@main
         with:
+          export-pdb: true
           combine: true
           target: ${{ matrix.config.target }}
+          build-config: ${{ matrix.config.build-type || 'Release' }}
 
   package:
     name: Package builds
@@ -43,9 +50,8 @@ jobs:
       - name: Combine builds
         uses: geode-sdk/build-geode-mod/combine@main
         id: build
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Build Artifact
+          name: Build Output
           path: ${{ steps.build.outputs.build-output }}

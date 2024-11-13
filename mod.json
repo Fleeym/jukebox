@@ -1,44 +1,86 @@
 {
-	"geode": "3.8.1",
-	"version": "2.11.0",
+	"geode": "4.0.0-alpha.1",
+	"version": "3.0.0-beta.5",
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
-		"win": "2.206",
-		"android": "2.206"
+		"win": "2.2074",
+    "mac": "2.2074",
+		"android": "2.2074"
 	},
-	"developer": "Fleym",
+	"developers": [ "Fleym", "Flafy" ],
 	"description": "A simple song manager for Geometry Dash",
 	"repository": "https://github.com/Fleeym/jukebox",
+	"links": {
+		"community": "https://discord.gg/SFE7qxYFyU",
+		"source": "https://github.com/Fleeym/jukebox"
+	},
 	"issues": {
-		"info": "For any issues regarding this mod, send me a message on my discord: 'fleeym'. If you can, please give the level or song ID you are having problems with."
+		"info": "For any issues regarding this mod, send me a message on my discord: 'fleeym'. If you can, please give the level or song ID you are having problems with.",
+		"url": "https://github.com/Fleeym/jukebox/issues"
 	},
 	"tags": [
-		"music"
+		"music",
+		"online",
+		"utility",
+		"interface"
 	],
 	"settings": {
+		"indexes": {
+			"name": "Indexes",
+			"description": "An index is a JSON file that tells Jukebox where to fetch song data from. The default indexes that are provided fetch data from Song File Hub. The system is extensible, so you can add your own indexes!",
+			"type": "custom:indexes",
+			"default": [
+        {
+          "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json",
+          "enabled": true,
+          "userAdded": false
+        },
+				{
+          "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json",
+          "enabled": true,
+          "userAdded": false
+        }
+			]
+		},
+    "visual-title": {
+      "name": "Visual",
+      "type": "title"
+    },
+    "old-label-display": {
+      "name": "Old popup flow",
+      "type": "bool",
+      "description": "Enables the old way to open the nong popup, by clicking on the song label",
+      "default": false
+    },
+    "experimental-title": {
+      "name": "Experimental",
+      "type": "title",
+      "description": "Settings that may improve your live, or crash your game. Have fun! :)"
+    },
 		"fix-empty-size": {
 			"name": "Fix 0.0B",
 			"type": "bool",
-			"description": "Fixes multi asset levels showing 0.0B size (experimental, might cause lag when downloading assets)",
+			"description": "Fixes multi asset levels showing 0.0B size. Might cause lag when downloading assets.",
 			"default": false
 		},
 		"autocomplete-metadata": {
 			"name": "Autocomplete metadata",
 			"type": "bool",
-			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny big of lag after picking a song file.",
-			"default": true
+			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny big of lag after picking a song file. Doesn't play nice with UTF-8, at the moment",
+			"default": false
 		}
 	},
 	"api": {
 		"include": [
-			"include/*.hpp",
-			"src/types/song_info.hpp"
+			"include/*.hpp"
 		]
 	},
 	"resources": {
-		"sprites": [
-			"resources/*.png"
-		]
+    "spritesheets": {
+      "JukeboxSheet": [
+        "resources/*.png"
+      ]
+    }
 	}
 }
