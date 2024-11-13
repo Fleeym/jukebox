@@ -2,6 +2,7 @@
 
 ## v3.0.0
 
+ * Add support for Geometry Dash 2.2074
  * Add Song File Hub support back!
  * Merge features with Auto Nong (the index system) - thanks to Flafy for helping merge the mods and agreeing to help develop the mod
  * Add MacOS support - thanks to hiimjustin for porting the mod
