@@ -207,7 +207,7 @@ struct matjson::Serialize<jukebox::Nongs> {
 
         ret["active"] = value.active()->metadata()->uniqueID;
 
-        matjson::Value locals = {};
+        matjson::Value locals = matjson::Value::array();
 
         for (std::unique_ptr<jukebox::LocalSong>& local : value.locals()) {
             locals.push(matjson::Serialize<jukebox::LocalSong>::toJson(*local));
@@ -215,7 +215,7 @@ struct matjson::Serialize<jukebox::Nongs> {
 
         ret["locals"] = locals;
 
-        matjson::Value youtubes = {};
+        matjson::Value youtubes = matjson::Value::array();
         for (std::unique_ptr<jukebox::YTSong>& youtube : value.youtube()) {
             if (!youtube->path().has_value()) {
                 continue;
@@ -225,7 +225,7 @@ struct matjson::Serialize<jukebox::Nongs> {
         }
         ret["youtube"] = youtubes;
 
-        matjson::Value hosteds = {};
+        matjson::Value hosteds = matjson::Value::array();
         for (std::unique_ptr<jukebox::HostedSong>& hosted : value.hosted()) {
             if (!hosted->path().has_value()) {
                 continue;
