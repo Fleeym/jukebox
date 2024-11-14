@@ -200,7 +200,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         m_fields->nongs = nongs;
         this->createSongLabels(nongs);
-        if (nongs->isDefaultActive()) {
+        if (!nongs->isDefaultActive()) {
             m_deleteBtn->setVisible(false);
         }
     }
