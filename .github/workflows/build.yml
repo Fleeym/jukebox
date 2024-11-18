@@ -3,8 +3,7 @@ name: Build Jukebox
 on:
   workflow_dispatch:
   push:
-    branches:
-      - "**"
+  pull_request:
 
 jobs:
   build:
@@ -15,13 +14,14 @@ jobs:
           - name: Windows
             os: windows-latest
             build-type: RelWithDebInfo
-          
-          - name: macOS
-            os: macos-latest
+  
+          # - name: macOS
+          #   os: macos-latest
 
           - name: Android32
             os: ubuntu-latest
             target: Android32
+
           - name: Android64
             os: ubuntu-latest
             target: Android64
@@ -51,8 +51,9 @@ jobs:
       - name: Combine builds
         uses: geode-sdk/build-geode-mod/combine@main
         id: build
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Build Output
+          name: Build artifact
           path: ${{ steps.build.outputs.build-output }}
