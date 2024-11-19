@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.0.1
+
+ * Fix index songs not appearing on first launch when migrating from v2
+
 ## v3.0.0
 
  * Add support for Geometry Dash 2.2074
