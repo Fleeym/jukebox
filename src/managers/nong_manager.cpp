@@ -260,6 +260,9 @@ Result<> NongManager::migrateV2() {
             Nongs nongs = Nongs(kv.first, std::move(defaultSong));
             m_manifest.m_nongs.insert(
                 {id, std::make_unique<Nongs>(std::move(nongs))});
+
+            Nongs* n = m_manifest.m_nongs[kv.first].get();
+            IndexManager::get().registerIndexNongs(n);
         }
 
         Nongs* nongs = m_manifest.m_nongs[kv.first].get();
