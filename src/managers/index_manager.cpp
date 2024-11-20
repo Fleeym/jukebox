@@ -310,22 +310,23 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
                    gdSongID);
     }
 
-    std::optional<Nongs*> optNongs = NongManager::get().getNongs(gdSongID);
-    if (!optNongs.has_value()) {
+    Nongs* nongs = nullptr;
+
+    if (!NongManager::get().hasSongID(gdSongID)) {
         SongInfoObject* obj =
             MusicDownloadManager::sharedState()->getSongInfoObject(gdSongID);
 
-        NongManager::get().initSongID(obj, gdSongID, false);
+        GEODE_UNWRAP_INTO(nongs,
+                          NongManager::get()
+                              .initSongID(obj, gdSongID, false)
+                              .mapErr([gdSongID](const std::string& err) {
+                                  return fmt::format(
+                                      "Failed to initialize song ID {}: {}",
+                                      gdSongID, err);
+                              }));
+    } else {
+        nongs = NongManager::get().getNongs(gdSongID).value();
     }
-
-    optNongs = NongManager::get().getNongs(gdSongID);
-
-    // This should honestly never happen, but who knows
-    if (!optNongs.has_value()) {
-        return Err("Couldn't initialize song ID {}", gdSongID);
-    }
-
-    Nongs* nongs = optNongs.value();
 
     DownloadSongTask task;
     std::optional<IndexSongMetadata*> indexMeta = std::nullopt;

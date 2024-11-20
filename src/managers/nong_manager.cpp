@@ -11,6 +11,7 @@
 #include <fmt/core.h>
 #include <matjson.hpp>
 #include <unordered_map>
+#include <utility>
 #include "Geode/Result.hpp"
 #include "Geode/binding/LevelTools.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
@@ -42,62 +43,72 @@ int NongManager::adjustSongID(int id, bool robtop) {
     return robtop ? (id < 0 ? id : -id - 1) : id;
 }
 
-void NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
-    if (m_manifest.m_nongs.contains(id)) {
-        return;
-    }
+bool NongManager::hasSongID(int id) { return m_manifest.m_nongs.contains(id); }
 
-    bool initialized = false;
+Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
+                                       bool robtop) {
+    int adjusted = this->adjustSongID(id, robtop);
+
+    if (this->hasSongID(adjusted)) {
+        return Err("Song already exists");
+    }
 
     if (!obj && robtop) {
-        log::error("Critical. No song object for RobTop song");
-        return;
+        return Err("Critical. No song object for RobTop song");
     }
-    int adjusted = adjustSongID(id, robtop);
 
     if (obj && robtop) {
         std::string filename = LevelTools::getAudioFileName(id);
         std::filesystem::path gdDir = std::filesystem::path(
             CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
-        m_manifest.m_nongs.insert(
-            {adjusted,
-             std::make_unique<Nongs>(Nongs{
-                 adjusted,
-                 LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
-                                        obj->m_songName, obj->m_artistName},
-                           gdDir / "Resources" / filename}})});
-        initialized = true;
+        std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(
+            Nongs{adjusted,
+                  LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
+                                         obj->m_songName, obj->m_artistName},
+                            gdDir / "Resources" / filename}});
+
+        Nongs* n = nongs.get();
+        m_manifest.m_nongs.insert({adjusted, std::move(nongs)});
+        IndexManager::get().registerIndexNongs(n);
+
+        return Ok(n);
     }
 
-    if (!obj && !initialized) {
-        // Try and maybe fetch it
+    if (!obj) {
+        // See if we already have it stored in the savefile
         obj = MusicDownloadManager::sharedState()->getSongInfoObject(id);
     }
 
-    if (!obj && !initialized) {
+    if (!obj) {
         // Try fetch song info from servers
         MusicDownloadManager::sharedState()->getSongInfo(id, true);
-        m_manifest.m_nongs.insert(
-            {adjusted,
-             std::make_unique<Nongs>(Nongs{id, LocalSong::createUnknown(id)})});
-        return;
+        std::unique_ptr<Nongs> nongs =
+            std::make_unique<Nongs>(Nongs{id, LocalSong::createUnknown(id)});
+
+        Nongs* n = nongs.get();
+        m_manifest.m_nongs.insert({adjusted, std::move(nongs)});
+
+        IndexManager::get().registerIndexNongs(n);
+        return Ok(n);
     }
 
-    if (!initialized) {
-        m_manifest.m_nongs.insert(
-            {adjusted,
-             std::make_unique<Nongs>(Nongs{
-                 adjusted,
-                 LocalSong{
-                     SongMetadata{adjusted, jukebox::random_string(16),
-                                  obj->m_songName, obj->m_artistName},
-                     std::filesystem::path(MusicDownloadManager::sharedState()
-                                               ->pathForSong(id)
-                                               .c_str())}})});
-    }
+    // Finally, if obj exists just insert normally
+    std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(Nongs{
+        adjusted,
+        LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
+                               obj->m_songName, obj->m_artistName},
+                  std::filesystem::path(MusicDownloadManager::sharedState()
+                                            ->pathForSong(id)
+                                            .c_str())}});
 
-    Nongs* nongs = m_manifest.m_nongs[adjusted].get();
-    IndexManager::get().registerIndexNongs(nongs);
+    Nongs* n = nongs.get();
+    m_manifest.m_nongs.insert({
+        adjusted,
+        std::move(nongs)
+    });
+
+    IndexManager::get().registerIndexNongs(n);
+    return Ok(n);
 }
 
 std::string NongManager::getFormattedSize(const std::filesystem::path& path) {

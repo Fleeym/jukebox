@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 
+#include <Geode/Result.hpp>
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Mod.hpp"
@@ -63,7 +64,9 @@ public:
         return path;
     }
 
-    void initSongID(SongInfoObject* obj, int id, bool robtop);
+    bool hasSongID(int id);
+
+    geode::Result<Nongs*> initSongID(SongInfoObject* obj, int id, bool robtop);
 
     /**
      * Adjusts a song ID with respect to Robtop songs

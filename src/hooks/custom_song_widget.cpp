@@ -1,9 +1,11 @@
+#include <Geode/Result.hpp>
 #include <memory>
 #include <optional>
 #include <sstream>
 
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/CustomSongWidget.hpp"
+#include "Geode/binding/FLAlertLayer.hpp"
 #include "Geode/binding/GameManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
@@ -21,6 +23,7 @@
 #include "Geode/utils/cocos.hpp"
 
 #include "managers/nong_manager.hpp"
+#include "nong.hpp"
 #include "ui/nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
@@ -175,28 +178,51 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (obj == nullptr) {
             return;
         }
-        if (m_songs.size() != 0) {
-            this->getMultiAssetSongInfo();
-        }
-        int id = obj->m_songID;
-        if (m_isRobtopSong) {
-            id++;
-            id = -id;
-        }
-        if (id == 0) {
-            this->restoreUI();
-            return;
-        }
+
         if (m_showSelectSongBtn && obj->m_artistName.empty() &&
             obj->m_songUrl.empty()) {
             this->restoreUI();
             return;
         }
-        NongManager::get().initSongID(obj, obj->m_songID, m_isRobtopSong);
-        std::optional<Nongs*> result = NongManager::get().getNongs(
-            NongManager::get().adjustSongID(id, m_isRobtopSong));
 
-        auto nongs = result.value();
+        if (m_songs.size() != 0) {
+            this->getMultiAssetSongInfo();
+        }
+
+        int id = obj->m_songID;
+        int adjustedId =
+            NongManager::get().adjustSongID(obj->m_songID, m_isRobtopSong);
+
+        if (adjustedId == 0) {
+            this->restoreUI();
+            return;
+        }
+
+        Nongs* nongs = nullptr;
+
+        if (!NongManager::get().hasSongID(adjustedId)) {
+            Result<Nongs*> res =
+                NongManager::get().initSongID(obj, id, m_isRobtopSong);
+            if (res.isErr()) {
+                std::string err = res.unwrapErr();
+                log::error("{}", err);
+                FLAlertLayer::create(
+                    "Error",
+                    fmt::format(
+                        "Failed to initialize Jukebox data for this "
+                        "song ID. Please open a help thread on the "
+                        "Discord server if this keeps happening. Error: {}",
+                        err),
+                    "Ok")
+                    ->show();
+                this->restoreUI();
+                return;
+            } else {
+                nongs = res.unwrap();
+            }
+        } else {
+            nongs = NongManager::get().getNongs(adjustedId).value();
+        }
 
         m_fields->nongs = nongs;
         this->createSongLabels(nongs);
@@ -218,10 +244,22 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
     void getMultiAssetSongInfo() {
         for (auto const& kv : m_songs) {
-            NongManager::get().initSongID(nullptr, kv.first, false);
-            auto result = NongManager::get().getNongs(kv.first);
-            auto value = result.value();
-            m_fields->assetNongData[kv.first] = value;
+            Nongs* nongs = nullptr;
+            if (!NongManager::get().hasSongID(kv.first)) {
+                Result<Nongs*> result =
+                    NongManager::get().initSongID(nullptr, kv.first, false);
+
+                if (result.isErr()) {
+                    log::error("Failed to init multi asset song: {}",
+                               result.unwrapErr());
+                    continue;
+                }
+
+                nongs = result.unwrap();
+            } else {
+                nongs = NongManager::get().getNongs(kv.first).value();
+            }
+            m_fields->assetNongData[kv.first] = nongs;
         }
     }
 
