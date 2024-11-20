@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCObject.h"
@@ -11,15 +12,23 @@
 #include "events/song_download_progress.hpp"
 #include "events/song_state_changed.hpp"
 #include "nong.hpp"
+#include "spitfire/reactive_node.hpp"
 
 using namespace geode::prelude;
 
 namespace jukebox {
 
+struct NongCellState {
+    bool active;
+    bool isDownloaded;
+    std::optional<float> downloadProgress = std::nullopt;
+};
+
 class NongDropdownLayer;
 
-class NongCell : public CCNode {
+class NongCell : public spitfire::ReactiveNode<NongCellState> {
 protected:
+    Nongs* m_parent = nullptr;
     int m_songID;
     std::string m_uniqueID;
     CCLabelBMFont* m_songNameLabel = nullptr;
@@ -33,10 +42,8 @@ protected:
     std::function<void()> m_onDownload;
     std::function<void()> m_onEdit;
 
-    bool m_isDefault;
-    bool m_isActive;
-    bool m_isDownloaded;
     bool m_isDownloadable;
+    bool m_isDefault;
 
     CCMenuItemSpriteExtra* m_fixButton = nullptr;
     CCMenuItemSpriteExtra* m_downloadButton = nullptr;
@@ -53,11 +60,12 @@ protected:
     EventListener<EventFilter<event::SongStateChanged>> m_stateListener{
         this, &NongCell::onStateChange};
 
-    bool init(int songID, Song*, bool isDefault, bool selected,
+    bool init(Nongs* parent, Song*, bool isDefault, bool selected,
               CCSize const& size, std::function<void()> onSelect,
               std::function<void()> onDelete, std::function<void()> onDownload,
               std::function<void()> onEdit);
-
+    
+    void onChanges(const NongCellState& state);
     ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
     ListenerResult onGetSongInfo(event::GetSongInfo* e);
     ListenerResult onDownloadFailed(event::SongDownloadFailed* e);
@@ -65,7 +73,7 @@ protected:
 
 public:
     Song* m_songInfo = nullptr;
-    static NongCell* create(int songID, Song* song, bool isDefault,
+    static NongCell* create(Nongs* parent, Song* song, bool isDefault,
                             bool selected, CCSize const& size,
                             std::function<void()> onSelect,
                             std::function<void()> onDelete,

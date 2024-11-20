@@ -20,29 +20,31 @@
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
 #include "nong.hpp"
+#include "spitfire/reactive_node.hpp"
 
 namespace jukebox {
 
 constexpr float PADDING_X = 12.0f;
 constexpr float PADDING_Y = 6.0f;
 
-bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
+bool NongCell::init(Nongs* parent, Song* info, bool isDefault, bool selected,
                     CCSize const& size, std::function<void()> onSelect,
                     std::function<void()> onDelete,
                     std::function<void()> onDownload,
                     std::function<void()> onEdit) {
-    if (!CCNode::init()) {
+    if (!spitfire::ReactiveNode<NongCellState>::init(NongCellState{
+            .active = selected,
+            .isDownloaded = info->path().has_value() &&
+                            std::filesystem::exists(info->path().value())})) {
         return false;
     }
 
-    m_songID = songID;
+    m_parent = parent;
+    m_songID = parent->songID();
     m_uniqueID = info->metadata()->uniqueID;
+    m_isDownloadable = info->type() != NongType::LOCAL;
     m_songInfo = info;
     m_isDefault = isDefault;
-    m_isActive = selected;
-    m_isDownloaded = m_songInfo->path().has_value() &&
-                     std::filesystem::exists(m_songInfo->path().value());
-    m_isDownloadable = m_songInfo->type() != NongType::LOCAL;
     m_onSelect = onSelect;
     m_onDelete = onDelete;
     m_onDownload = onDownload;
@@ -65,7 +67,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
 
     CCMenu* menu = CCMenu::create();
 
-    if (m_isDownloaded || m_isDefault) {
+    if (this->state().isDownloaded || m_isDefault) {
         const char* selectSprName =
             selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
 
@@ -116,7 +118,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
         m_downloadButton = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(NongCell::onDownload));
         m_downloadButton->setID("download-button");
-        m_downloadButton->setVisible(!m_isDownloaded);
+        m_downloadButton->setVisible(!m_isDownloadable);
         menu->addChild(m_downloadButton);
 
         CCSprite* progressBarBack =
@@ -245,7 +247,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
 }
 
 void NongCell::onFixDefault(CCObject* target) {
-    if (!m_isActive) {
+    if (!this->state().active) {
         FLAlertLayer::create("Error", "Set this NONG as <cr>active</c> first",
                              "Ok")
             ->show();
@@ -263,17 +265,58 @@ void NongCell::onFixDefault(CCObject* target) {
         });
 }
 
+void NongCell::onChanges(const NongCellState& state) {
+    if (m_isDownloadable) {
+        if (state.downloadProgress.has_value()) {
+            if (!m_downloadProgressContainer->isVisible()) {
+                m_downloadProgressContainer->setVisible(true);
+                m_downloadButton->setColor({105, 105, 105});
+            }
+
+            m_downloadProgress->setPercentage(state.downloadProgress.value());
+        } else {
+            if (m_downloadProgressContainer->isVisible()) {
+                m_downloadProgressContainer->setVisible(false);
+                m_downloadButton->setColor({255, 255, 255});
+            }
+        }
+    }
+
+    if (m_isDefault && m_fixButton) {
+        CCSprite* sprite =
+            CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
+        sprite->setScale(0.8f);
+        if (!state.active) {
+            sprite->setColor({0x80, 0x80, 0x80});
+        }
+
+        m_fixButton->setSprite(sprite);
+    }
+
+    const char* selectSprName =
+        state.active ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
+
+    CCSprite* selectSpr = CCSprite::createWithSpriteFrameName(selectSprName);
+    selectSpr->setScale(0.7f);
+
+    if (state.active) {
+        m_songNameLabel->setColor({188, 254, 206});
+    } else {
+        m_songNameLabel->setColor({255, 255, 255});
+    }
+
+    m_selectButton->setSprite(selectSpr);
+}
+
 ListenerResult NongCell::onDownloadProgress(event::SongDownloadProgress* e) {
     if (e->uniqueID() != m_uniqueID || e->gdSongID() != m_songID) {
         return ListenerResult::Propagate;
     }
 
-    if (!m_downloadProgressContainer->isVisible()) {
-        m_downloadProgressContainer->setVisible(true);
-        m_downloadButton->setColor(ccc3(105, 105, 105));
-    }
+    this->updateState([this, e](NongCellState& current) {
+        current.downloadProgress = e->progress();
+    });
 
-    m_downloadProgress->setPercentage(e->progress());
     return ListenerResult::Propagate;
 }
 
@@ -282,58 +325,24 @@ ListenerResult NongCell::onDownloadFailed(event::SongDownloadFailed* e) {
         return ListenerResult::Propagate;
     }
 
-    m_downloadProgressContainer->setVisible(false);
-    m_downloadProgress->setPercentage(0.0f);
-    CCSprite* downloadSpr =
-        CCSprite::createWithSpriteFrameName("GJ_downloadBtn_001.png");
-    downloadSpr->setScale(0.7f);
-    m_downloadButton->setSprite(downloadSpr);
-    m_downloadButton->setColor({255, 255, 255});
+    this->updateState([](NongCellState& current) {
+        current.downloadProgress = std::nullopt;
+    });
 
     return ListenerResult::Propagate;
 }
 
 ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
-    bool sameIDAsActive =
-        e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
-    bool switchedToActive = !m_isActive && sameIDAsActive;
-    bool switchedToInactive = m_isActive && !sameIDAsActive;
-
-    if (e->nongs()->songID() != m_songID || (!m_isDownloaded && !m_isDefault)) {
-        return ListenerResult::Propagate;
-    }
-
-    if (!switchedToActive && !switchedToInactive) {
+    if (e->nongs()->songID() != m_songID) {
         return ListenerResult::Propagate;
     }
 
     bool selected = e->nongs()->active()->metadata()->uniqueID == m_uniqueID;
-    m_isActive = selected;
 
-    if (m_isDefault && m_fixButton) {
-        CCSprite* sprite =
-            CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
-        sprite->setScale(0.8f);
-        if (!selected) {
-            sprite->setColor({0x80, 0x80, 0x80});
-        }
-
-        m_fixButton->setSprite(sprite);
+    if (selected != this->state().active) {
+        this->updateState(
+            [selected](NongCellState& state) { state.active = selected; });
     }
-
-    const char* selectSprName =
-        selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
-
-    CCSprite* selectSpr = CCSprite::createWithSpriteFrameName(selectSprName);
-    selectSpr->setScale(0.7f);
-
-    if (selected) {
-        m_songNameLabel->setColor({188, 254, 206});
-    } else {
-        m_songNameLabel->setColor({255, 255, 255});
-    }
-
-    m_selectButton->setSprite(selectSpr);
 
     return ListenerResult::Propagate;
 }
@@ -365,14 +374,14 @@ void NongCell::onEdit(CCObject* target) { m_onEdit(); }
 
 void NongCell::onDelete(CCObject* target) { m_onDelete(); }
 
-NongCell* NongCell::create(int songID, Song* song, bool isDefault,
+NongCell* NongCell::create(Nongs* parent, Song* song, bool isDefault,
                            bool selected, CCSize const& size,
                            std::function<void()> onSelect,
                            std::function<void()> onDelete,
                            std::function<void()> onDownload,
                            std::function<void()> onEdit) {
     auto ret = new NongCell();
-    if (ret && ret->init(songID, song, isDefault, selected, size, onSelect,
+    if (ret && ret->init(parent, song, isDefault, selected, size, onSelect,
                          onDelete, onDownload, onEdit)) {
         return ret;
     }

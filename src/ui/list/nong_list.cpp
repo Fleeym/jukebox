@@ -139,7 +139,7 @@ void NongList::build() {
         Song* active = nongs->active();
 
         m_list->m_contentLayer->addChild(NongCell::create(
-            id, defaultSong, true,
+            nongs, defaultSong, true,
             defaultSong->metadata()->uniqueID == active->metadata()->uniqueID,
             itemSize, [this, id, defaultID]() { m_onSetActive(id, defaultID); },
             [this, id, defaultID]() { m_onDelete(id, defaultID, true, true); },
@@ -222,7 +222,7 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     bool isDownloaded =
         path.has_value() && std::filesystem::exists(path.value());
     NongCell* cell = NongCell::create(
-        id, nong, uniqueID == defaultSong->metadata()->uniqueID,
+        parent, nong, uniqueID == defaultSong->metadata()->uniqueID,
         uniqueID == active->metadata()->uniqueID, itemSize,
         [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
         [this, id, uniqueID]() { m_onDelete(id, uniqueID, false, true); },
