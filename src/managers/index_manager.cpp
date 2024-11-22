@@ -180,7 +180,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
             }
         }
 
-        index->m_songs.m_youtube.push_back(std::move(song));
+        index->m_songs.m_hosted.push_back(std::move(song));
     }
 
     IndexMetadata* ref = index.get();
