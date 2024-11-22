@@ -679,24 +679,24 @@ geode::Result<> NongAddPopup::addLocalSong(
     }
     destination /= unique;
 
-    if (std::filesystem::exists(destination, error_code)) {
-        std::filesystem::remove(destination, error_code);
+    if (destination.compare(songPath) != 0) {
+        bool result = std::filesystem::copy_file(
+            songPath,
+            destination,
+            std::filesystem::copy_options::overwrite_existing,
+            error_code);
+        if (error_code) {
+            return Err(fmt::format(
+                "Failed to save song. Please try again! Error category: {}, "
+                "message: {}",
+                error_code.category().name(),
+                error_code.category().message(error_code.value())));
+        }
+        if (!result) {
+            return Err(
+                "Failed to copy song to Jukebox's songs folder. Please try again.");
+        }
     }
-
-    bool result = std::filesystem::copy_file(songPath, destination, error_code);
-    if (error_code) {
-        return Err(fmt::format(
-            "Failed to save song. Please try again! Error category: {}, "
-            "message: {}",
-            error_code.category().name(),
-            error_code.category().message(error_code.value())));
-    }
-    if (!result) {
-        return Err(
-            "Failed to copy song to Jukebox's songs folder. Please try again.");
-    }
-
-    std::string error = "";
 
     LocalSong song = LocalSong{
         SongMetadata{m_songID, id, songName, artistName, levelName, offset},
