@@ -167,7 +167,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         }
 
         FLAlertLayer* popup = FLAlertLayer::create(
-            "Download failed", "Successfully refetched default song data",
+            "Song Refetched", "Successfully refetched default song data",
             "Ok");
         popup->setZOrder(this->getZOrder() + 1);
         popup->show();
