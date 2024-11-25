@@ -1,6 +1,7 @@
 #include <optional>
 
 #include <Geode/modify/LevelCell.hpp>
+#include "Geode/binding/GJGameLevel.hpp"
 #include "Geode/binding/LevelCell.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"

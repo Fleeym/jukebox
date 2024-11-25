@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "Geode/binding/CCMenuItemToggler.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 

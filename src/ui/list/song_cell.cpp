@@ -3,7 +3,9 @@
 #include <ccTypes.h>
 #include <fmt/format.h>
 #include "GUI/CCControlExtension/CCScale9Sprite.h"
+#include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
+#include "Geode/ui/Layout.hpp"
 
 namespace jukebox {
 

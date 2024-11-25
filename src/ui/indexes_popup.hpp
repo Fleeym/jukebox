@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "Geode/cocos/cocoa/CCObject.h"
+#include "Geode/ui/Popup.hpp"
 #include "Geode/ui/ScrollLayer.hpp"
 
 #include "index.hpp"

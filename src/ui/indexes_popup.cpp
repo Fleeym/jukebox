@@ -6,7 +6,6 @@
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/ui/Layout.hpp"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
-#include "Geode/loader/Log.hpp"
 #include "Geode/ui/Popup.hpp"
 
 #include "index.hpp"

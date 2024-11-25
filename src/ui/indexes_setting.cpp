@@ -6,6 +6,7 @@
 
 #include <matjson.hpp>
 #include "Geode/Result.hpp"
+#include "Geode/binding/ButtonSprite.hpp"
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/platform/CCPlatformMacros.h"

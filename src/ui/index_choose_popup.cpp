@@ -6,9 +6,9 @@
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/cocos/CCDirector.h"
 #include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/ui/Layout.hpp"
 #include "Geode/cocos/label_nodes/CCLabelBMFont.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
+#include "Geode/ui/Layout.hpp"
 
 #include <fmod_common.h>
 #include <fmt/core.h>

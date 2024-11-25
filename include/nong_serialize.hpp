@@ -56,8 +56,15 @@ struct matjson::Serialize<jukebox::LocalSong> {
                               value.dump(matjson::NO_INDENTATION));
         }
 
-        return geode::Ok(jukebox::LocalSong{std::move(metadata),
-                                            value["path"].asString().unwrap()});
+        std::string path = value["path"].asString().unwrap();
+
+#ifdef GEODE_IS_WINDOWS
+        std::filesystem::path p = geode::utils::string::utf8ToWide(path);
+#else
+        std::filesystem::path p = path;
+#endif
+
+        return geode::Ok(jukebox::LocalSong{std::move(metadata), std::move(p)});
     }
 
     static matjson::Value toJson(const jukebox::LocalSong& value) {
