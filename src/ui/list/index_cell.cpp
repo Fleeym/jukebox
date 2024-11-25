@@ -4,12 +4,12 @@
 #include "Geode/binding/CCMenuItemSpriteExtra.hpp"
 #include "Geode/binding/CCMenuItemToggler.hpp"
 #include "Geode/cocos/base_nodes/CCNode.h"
-#include "Geode/ui/Layout.hpp"
 #include "Geode/cocos/cocoa/CCGeometry.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
-
+#include "Geode/ui/Layout.hpp"
 #include "Geode/ui/TextInput.hpp"
+
 #include "index.hpp"
 
 namespace jukebox {
@@ -83,9 +83,8 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
     inputNode->setMaxCharCount(300);
     inputNode->setString(m_index->m_url, false);
     inputNode->setTextAlign(TextInputAlign::Left);
-    inputNode->setCallback([this](std::string const& str) {
-        m_index->m_url = str;
-    });
+    inputNode->setCallback(
+        [this](std::string const& str) { m_index->m_url = str; });
 
     auto menu = CCMenu::create();
     menu->addChild(inputNode);
