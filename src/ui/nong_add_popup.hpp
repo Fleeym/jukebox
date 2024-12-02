@@ -45,6 +45,8 @@ protected:
     std::string m_memoizedLocalInput;
     std::string m_memoizedHostedInput;
 
+    std::optional<std::filesystem::path> m_localPath = std::nullopt;
+
     CCNode* m_container = nullptr;
     TextInput* m_songNameInput = nullptr;
     TextInput* m_artistNameInput = nullptr;

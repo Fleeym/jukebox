@@ -454,6 +454,7 @@ void NongAddPopup::onFileOpen(
             }
         }
 
+        m_localPath = path;
         m_specialInput->setString(strPath);
     }
 }
@@ -627,24 +628,21 @@ void NongAddPopup::addSong(CCObject* target) {
 geode::Result<> NongAddPopup::addLocalSong(
     const std::string& songName, const std::string& artistName,
     const std::optional<std::string> levelName, int offset) {
-    std::filesystem::path songPath = m_specialInput->getString();
-#ifdef GEODE_IS_WINDOWS
-    if (wcslen(songPath.c_str()) == 0) {
-#else
-    if (strlen(songPath.c_str()) == 0) {
-#endif
+    if (!m_localPath.has_value()) {
         return Err("No file selected.");
     }
-    if (!std::filesystem::exists(songPath)) {
-        return Err(fmt::format("The selected file ({}) does not exist.",
-                               songPath.string()));
+
+    std::filesystem::path path = m_localPath.value();
+
+    if (!std::filesystem::exists(path)) {
+        return Err(fmt::format("The selected file ({}) does not exist.", path));
     }
 
-    if (std::filesystem::is_directory(songPath)) {
+    if (std::filesystem::is_directory(path)) {
         return Err("You selected a directory.");
     }
 
-    std::string extension = songPath.extension().string();
+    std::string extension = path.extension().string();
 
     // make the extension lowercase, who knows what people got on their
     // computers
@@ -679,12 +677,10 @@ geode::Result<> NongAddPopup::addLocalSong(
     }
     destination /= unique;
 
-    if (destination.compare(songPath) != 0) {
+    if (destination.compare(path) != 0) {
         bool result = std::filesystem::copy_file(
-            songPath,
-            destination,
-            std::filesystem::copy_options::overwrite_existing,
-            error_code);
+            path, destination,
+            std::filesystem::copy_options::overwrite_existing, error_code);
         if (error_code) {
             return Err(fmt::format(
                 "Failed to save song. Please try again! Error category: {}, "
@@ -694,7 +690,8 @@ geode::Result<> NongAddPopup::addLocalSong(
         }
         if (!result) {
             return Err(
-                "Failed to copy song to Jukebox's songs folder. Please try again.");
+                "Failed to copy song to Jukebox's songs folder. Please try "
+                "again.");
         }
     }
 
