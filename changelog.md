@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.0.2
+
+ * Fix file paths not being read correctly when adding NONGs manually
+ * Fix a crash that sometimes happened when loading levels with official songs
+ * Fix a crash related to having Windows in a different language than English
+ * Fix a misstype in the "song refetched" popup
+ * Fix local song editing not actually editing a path
+ * Fix IndexManager loading the wrong indexes for hosted
+ * Fix a typo in the mod settings
+ * Fix manually added hosted songs not downloading
+ * Fix UI not being updated correctly when changing NONGs on official songs
+
 ## v3.0.1
 
  * Fix index songs not appearing on first launch when migrating from v2
