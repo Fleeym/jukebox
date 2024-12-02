@@ -73,7 +73,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 if (!m_songInfoObject) {
                     return ListenerResult::Propagate;
                 }
-                if (event->nongs()->songID() != m_songInfoObject->m_songID) {
+                if (event->nongs()->songID() !=
+                    NongManager::get().adjustSongID(m_songInfoObject->m_songID,
+                                                    m_isRobtopSong)) {
                     return ListenerResult::Propagate;
                 }
 
@@ -236,6 +238,20 @@ class $modify(JBSongWidget, CustomSongWidget) {
         // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk
         // {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn,
         // m_showDownloadBtn, m_isRobtopSong, m_unkBool2, m_isMusicLibrary);
+
+        if (m_fields->firstRun && m_isRobtopSong && m_songInfoObject) {
+            std::optional<Nongs*> opt =
+                NongManager::get().getNongs(NongManager::get().adjustSongID(
+                    m_songInfoObject->m_songID, true));
+            if (opt) {
+                Nongs* n = opt.value();
+
+                m_songInfoObject->m_songName = n->active()->metadata()->name;
+                m_songInfoObject->m_artistName =
+                    n->active()->metadata()->artist;
+            }
+        }
+
         CustomSongWidget::updateSongInfo();
         if (!m_fields->firstRun) {
             this->setupJBSW();
