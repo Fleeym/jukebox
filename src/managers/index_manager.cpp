@@ -305,11 +305,6 @@ void IndexManager::cacheIndexName(const std::string& indexId,
 }
 
 Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
-    if (!m_nongsForId.contains(gdSongID)) {
-        return Err("Can't download nong for id {}. No index songs found.",
-                   gdSongID);
-    }
-
     Nongs* nongs = nullptr;
 
     if (!NongManager::get().hasSongID(gdSongID)) {
@@ -372,6 +367,11 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
     }
 
     // Look in indexes otherwise
+    if (!m_nongsForId.contains(gdSongID)) {
+        return Err("Can't download nong for id {}. No index songs found.",
+                   gdSongID);
+    }
+
     if (!found) {
         std::vector<IndexSongMetadata*> songs = m_nongsForId[gdSongID];
         for (IndexSongMetadata* s : songs) {
@@ -489,6 +489,8 @@ void IndexManager::onDownloadFinish(
     Song* insertedSong = nullptr;
 
     if (auto s = std::holds_alternative<Song*>(source)) {
+        Song* localSong = std::get<Song*>(source);
+        localSong->setPath(path);
         event::SongDownloadFinished(std::nullopt, std::get<Song*>(source))
             .post();
         return;

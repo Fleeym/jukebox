@@ -55,6 +55,7 @@ public:
 
     SongMetadata* metadata() const { return m_metadata.get(); }
     std::filesystem::path path() const { return m_path; }
+    void setPath(std::filesystem::path&& p) { m_path = p; }
 };
 
 LocalSong::LocalSong(SongMetadata&& metadata, const std::filesystem::path& path)
@@ -78,6 +79,9 @@ LocalSong::~LocalSong() = default;
 SongMetadata* LocalSong::metadata() const { return m_impl->metadata(); }
 std::optional<std::filesystem::path> LocalSong::path() const {
     return m_impl->path();
+}
+void LocalSong::setPath(std::filesystem::path p) {
+    m_impl->setPath(std::move(p));
 }
 
 LocalSong LocalSong::createUnknown(int songID) {
@@ -137,6 +141,7 @@ public:
 
         return Ok(download::startYoutubeDownload(m_youtubeID));
     }
+    void setPath(std::filesystem::path&& p) { m_path = p; }
 };
 
 YTSong::YTSong(SongMetadata&& metadata, std::string youtubeID,
@@ -171,6 +176,9 @@ void YTSong::setIndexID(const std::string& id) { m_impl->m_indexID = id; }
 
 std::optional<std::filesystem::path> YTSong::path() const {
     return m_impl->path();
+}
+void YTSong::setPath(std::filesystem::path p) {
+    m_impl->setPath(std::move(p));
 }
 
 Result<Task<Result<ByteVector>, float>> YTSong::startDownload() {
@@ -219,6 +227,7 @@ public:
 
         return Ok(download::startHostedDownload(m_url));
     }
+    void setPath(std::filesystem::path&& p) { m_path = p; }
 };
 
 HostedSong::HostedSong(SongMetadata&& metadata, std::string url,
@@ -246,6 +255,9 @@ std::optional<std::string> HostedSong::indexID() const {
 void HostedSong::setIndexID(const std::string& id) { m_impl->m_indexID = id; }
 std::optional<std::filesystem::path> HostedSong::path() const {
     return m_impl->path();
+}
+void HostedSong::setPath(std::filesystem::path p) {
+    m_impl->setPath(std::move(p));
 }
 
 Result<Task<Result<ByteVector>, float>> HostedSong::startDownload() {
@@ -675,8 +687,17 @@ public:
     }
 
     Result<HostedSong*> add(HostedSong&& song) {
+        for (const std::unique_ptr<HostedSong>& i : m_hosted) {
+            if (i->url() == song.url() && i->metadata() == song.metadata()) {
+                std::string err =
+                    fmt::format("Attempted to add a duplicate song for id {}",
+                                song.metadata()->gdID);
+                return Err(err);
+            }
+        }
+
         auto s = std::make_unique<HostedSong>(std::move(song));
-        auto ret = s.get();
+        HostedSong* ret = s.get();
 
         m_hosted.push_back(std::move(s));
 

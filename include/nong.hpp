@@ -55,6 +55,7 @@ public:
     virtual void setIndexID(const std::string& id) = 0;
     // For local songs, this will always have a value, otherwise do check
     virtual std::optional<std::filesystem::path> path() const = 0;
+    virtual void setPath(std::filesystem::path p) = 0;
 };
 
 class JUKEBOX_DLL LocalSong final : public Song {
@@ -77,6 +78,7 @@ public:
     NongType type() const { return NongType::LOCAL; };
     SongMetadata* metadata() const;
     std::optional<std::filesystem::path> path() const;
+    void setPath(std::filesystem::path p);
     std::optional<std::string> indexID() const { return std::nullopt; }
     void setIndexID(const std::string& id) {}
 
@@ -108,6 +110,7 @@ public:
     std::optional<std::string> indexID() const;
     void setIndexID(const std::string& id);
     std::optional<std::filesystem::path> path() const;
+    void setPath(std::filesystem::path p);
     geode::Result<geode::Task<geode::Result<geode::ByteVector>, float>>
     startDownload();
 };
@@ -136,6 +139,7 @@ public:
     std::optional<std::string> indexID() const;
     void setIndexID(const std::string& id);
     std::optional<std::filesystem::path> path() const;
+    void setPath(std::filesystem::path p);
     geode::Result<geode::Task<geode::Result<geode::ByteVector>, float>>
     startDownload();
 };

@@ -6,12 +6,12 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <unordered_map>
+#include <utility>
 
 #include <fmt/chrono.h>
 #include <fmt/core.h>
 #include <matjson.hpp>
-#include <unordered_map>
-#include <utility>
 #include "Geode/Result.hpp"
 #include "Geode/binding/LevelTools.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
@@ -102,10 +102,7 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
                                             .c_str())}});
 
     Nongs* n = nongs.get();
-    m_manifest.m_nongs.insert({
-        adjusted,
-        std::move(nongs)
-    });
+    m_manifest.m_nongs.insert({adjusted, std::move(nongs)});
 
     IndexManager::get().registerIndexNongs(n);
     return Ok(n);

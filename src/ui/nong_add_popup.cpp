@@ -821,18 +821,15 @@ geode::Result<> NongAddPopup::addHostedSong(
 
     Nongs* nongs = NongManager::get().getNongs(m_songID).value();
 
-    HostedSong song = HostedSong{
-        SongMetadata{
-            m_songID,
-            id,
-            songName,
-            artistName,
-            levelName,
-            offset,
-        },
-        m_specialInput->getString(),
-        std::nullopt,
-    };
+    HostedSong song = HostedSong{SongMetadata{
+                                     m_songID,
+                                     id,
+                                     songName,
+                                     artistName,
+                                     levelName,
+                                     offset,
+                                 },
+                                 hostedLink, std::nullopt};
 
     if (m_replacedNong.has_value()) {
         auto res = nongs->replaceSong(id, std::move(song));
@@ -846,8 +843,10 @@ geode::Result<> NongAddPopup::addHostedSong(
 
         if (res.isErr()) {
             return Err(
-                fmt::format("Failed to createsong: {}", res.unwrapErr()));
+                fmt::format("Failed to create song: {}", res.unwrapErr()));
         }
+
+        (void)nongs->commit();
 
         event::ManualSongAdded(nongs, res.unwrap()).post();
     }

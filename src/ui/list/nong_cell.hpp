@@ -5,9 +5,11 @@
 #include "Geode/cocos/base_nodes/CCNode.h"
 #include "Geode/cocos/cocoa/CCObject.h"
 
+#include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/loader/Event.hpp"
 #include "events/get_song_info.hpp"
 #include "events/song_download_failed.hpp"
+#include "events/song_download_finished.hpp"
 #include "events/song_download_progress.hpp"
 #include "events/song_state_changed.hpp"
 #include "nong.hpp"
@@ -38,6 +40,7 @@ protected:
     bool m_isDownloaded;
     bool m_isDownloadable;
 
+    CCMenu* m_buttonMenu = nullptr;
     CCMenuItemSpriteExtra* m_fixButton = nullptr;
     CCMenuItemSpriteExtra* m_downloadButton = nullptr;
     CCMenuItemSpriteExtra* m_selectButton = nullptr;
@@ -48,6 +51,8 @@ protected:
         this, &NongCell::onDownloadProgress};
     EventListener<EventFilter<event::GetSongInfo>> m_songInfoListener{
         this, &NongCell::onGetSongInfo};
+    EventListener<EventFilter<event::SongDownloadFinished>>
+        m_downloadSuccessListener{this, &NongCell::onDownloadFinish};
     EventListener<EventFilter<event::SongDownloadFailed>>
         m_downloadFailedListener{this, &NongCell::onDownloadFailed};
     EventListener<EventFilter<event::SongStateChanged>> m_stateListener{
@@ -61,6 +66,7 @@ protected:
     ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
     ListenerResult onGetSongInfo(event::GetSongInfo* e);
     ListenerResult onDownloadFailed(event::SongDownloadFailed* e);
+    ListenerResult onDownloadFinish(event::SongDownloadFinished* e);
     ListenerResult onStateChange(event::SongStateChanged* e);
 
 public:

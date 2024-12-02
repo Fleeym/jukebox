@@ -12,10 +12,12 @@
 #include "Geode/cocos/menu_nodes/CCMenu.h"
 #include "Geode/cocos/sprite_nodes/CCSprite.h"
 #include "Geode/loader/Event.hpp"
+#include "Geode/loader/Log.hpp"
 #include "Geode/ui/Layout.hpp"
 #include "Geode/ui/Popup.hpp"
 
 #include "events/song_download_failed.hpp"
+#include "events/song_download_finished.hpp"
 #include "events/song_state_changed.hpp"
 #include "managers/index_manager.hpp"
 #include "managers/nong_manager.hpp"
@@ -64,21 +66,21 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     this->addChildAtPosition(bg, Anchor::Center);
 
     CCMenu* menu = CCMenu::create();
+    m_buttonMenu = menu;
 
-    if (m_isDownloaded || m_isDefault) {
-        const char* selectSprName =
-            selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
+    const char* selectSprName =
+        selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
 
-        CCSprite* selectSpr =
-            CCSprite::createWithSpriteFrameName(selectSprName);
-        selectSpr->setScale(0.7f);
+    CCSprite* selectSpr =
+        CCSprite::createWithSpriteFrameName(selectSprName);
+    selectSpr->setScale(0.7f);
 
-        m_selectButton = CCMenuItemSpriteExtra::create(
-            selectSpr, this, menu_selector(NongCell::onSet));
-        m_selectButton->setAnchorPoint({0.5f, 0.5f});
-        m_selectButton->setID("set-button");
-        menu->addChild(m_selectButton);
-    }
+    m_selectButton = CCMenuItemSpriteExtra::create(
+        selectSpr, this, menu_selector(NongCell::onSet));
+    m_selectButton->setAnchorPoint({0.5f, 0.5f});
+    m_selectButton->setID("set-button");
+    m_selectButton->setVisible(m_isDownloaded || m_isDefault);
+    menu->addChild(m_selectButton);
 
     menu->setID("buttons-menu");
     menu->setAnchorPoint({1.0f, 0.5f});
@@ -268,6 +270,8 @@ ListenerResult NongCell::onDownloadProgress(event::SongDownloadProgress* e) {
         return ListenerResult::Propagate;
     }
 
+    log::info("{}", e->progress());
+
     if (!m_downloadProgressContainer->isVisible()) {
         m_downloadProgressContainer->setVisible(true);
         m_downloadButton->setColor(ccc3(105, 105, 105));
@@ -289,6 +293,23 @@ ListenerResult NongCell::onDownloadFailed(event::SongDownloadFailed* e) {
     downloadSpr->setScale(0.7f);
     m_downloadButton->setSprite(downloadSpr);
     m_downloadButton->setColor({255, 255, 255});
+
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongCell::onDownloadFinish(event::SongDownloadFinished* e) {
+    if (e->destination()->metadata()->gdID != m_songID ||
+        e->destination()->metadata()->uniqueID != m_uniqueID) {
+        return ListenerResult::Propagate;
+    }
+
+    m_downloadProgressContainer->setVisible(false);
+    m_downloadProgress->setPercentage(0.0f);
+    m_downloadButton->setVisible(false);
+    m_selectButton->setVisible(true);
+    m_buttonMenu->updateLayout();
+
+    m_isDownloaded = true;
 
     return ListenerResult::Propagate;
 }
@@ -357,7 +378,13 @@ ListenerResult NongCell::onGetSongInfo(event::GetSongInfo* e) {
     return ListenerResult::Propagate;
 }
 
-void NongCell::onSet(CCObject* target) { m_onSelect(); }
+void NongCell::onSet(CCObject* target) { 
+    if (!m_isDownloaded && !m_isDefault) {
+        return;
+    }
+
+    m_onSelect();
+}
 
 void NongCell::onDownload(CCObject* target) { m_onDownload(); }
 
