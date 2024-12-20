@@ -15,10 +15,8 @@ jobs:
           - name: Windows
             os: windows-latest
             build-type: RelWithDebInfo
-          
           - name: macOS
             os: macos-latest
-
           - name: Android32
             os: ubuntu-22.04
             target: Android32
@@ -36,7 +34,6 @@ jobs:
       - name: Build
         uses: geode-sdk/build-geode-mod@main
         with:
-          sdk: nightly
           export-pdb: true
           combine: true
           target: ${{ matrix.config.target }}
