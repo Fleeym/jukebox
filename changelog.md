@@ -11,6 +11,7 @@
  * Fix a typo in the mod settings
  * Fix manually added hosted songs not downloading
  * Fix UI not being updated correctly when changing NONGs on official songs
+ * Bump Geode to v4.1.0
 
 ## v3.0.1
 

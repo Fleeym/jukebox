@@ -1,14 +1,17 @@
 {
-	"geode": "4.0.1",
-	"version": "3.0.2-beta.3",
+	"geode": "4.1.0",
+	"version": "3.0.2",
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
 		"win": "2.2074",
-    "mac": "2.2074",
+		"mac": "2.2074",
 		"android": "2.2074"
 	},
-	"developers": [ "Fleym", "Flafy" ],
+	"developers": [
+		"Fleym",
+		"Flafy"
+	],
 	"description": "A simple song manager for Geometry Dash",
 	"repository": "https://github.com/Fleeym/jukebox",
 	"links": {
@@ -31,33 +34,33 @@
 			"description": "An index is a JSON file that tells Jukebox where to fetch song data from. The default indexes that are provided fetch data from Song File Hub. The system is extensible, so you can add your own indexes!",
 			"type": "custom:indexes",
 			"default": [
-        {
-          "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json",
-          "enabled": true,
-          "userAdded": false
-        },
 				{
-          "url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json",
-          "enabled": true,
-          "userAdded": false
-        }
+					"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/auto-nong-index.min.json",
+					"enabled": true,
+					"userAdded": false
+				},
+				{
+					"url": "https://raw.githubusercontent.com/FlafyDev/auto-nong-indexes/v2/sfh-index.min.json",
+					"enabled": true,
+					"userAdded": false
+				}
 			]
 		},
-    "visual-title": {
-      "name": "Visual",
-      "type": "title"
-    },
-    "old-label-display": {
-      "name": "Old popup flow",
-      "type": "bool",
-      "description": "Enables the old way to open the nong popup, by clicking on the song label",
-      "default": false
-    },
-    "experimental-title": {
-      "name": "Experimental",
-      "type": "title",
-      "description": "Settings that may improve your life, or crash your game. Have fun! :)"
-    },
+		"visual-title": {
+			"name": "Visual",
+			"type": "title"
+		},
+		"old-label-display": {
+			"name": "Old popup flow",
+			"type": "bool",
+			"description": "Enables the old way to open the nong popup, by clicking on the song label",
+			"default": false
+		},
+		"experimental-title": {
+			"name": "Experimental",
+			"type": "title",
+			"description": "Settings that may improve your life, or crash your game. Have fun! :)"
+		},
 		"fix-empty-size": {
 			"name": "Fix 0.0B",
 			"type": "bool",
@@ -77,10 +80,10 @@
 		]
 	},
 	"resources": {
-    "spritesheets": {
-      "JukeboxSheet": [
-        "resources/*.png"
-      ]
-    }
+		"spritesheets": {
+			"JukeboxSheet": [
+				"resources/*.png"
+			]
+		}
 	}
 }
