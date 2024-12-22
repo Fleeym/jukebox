@@ -10,6 +10,6 @@ namespace download {
 
 using DownloadTask = geode::Task<geode::Result<geode::ByteVector>, float>;
 
-}
+}  // namespace download
 
 }  // namespace jukebox
