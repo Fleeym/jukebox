@@ -80,14 +80,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
             fmt::format("Couldn't open file: {}", path.filename().string()));
     }
 
-    std::string contents;
-    input.seekg(0, std::ios::end);
-    contents.resize(input.tellg());
-    input.seekg(0, std::ios::beg);
-    input.read(&contents[0], contents.size());
-    input.close();
-
-    GEODE_UNWRAP_INTO(matjson::Value jsonObj, matjson::parse(contents));
+    GEODE_UNWRAP_INTO(matjson::Value jsonObj, matjson::parse(input));
 
     return this->loadIndex(std::move(jsonObj));
 }

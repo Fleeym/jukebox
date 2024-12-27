@@ -140,15 +140,8 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
             fmt::format("Couldn't open file: {}", path.filename().string()));
     }
 
-    std::string contents;
-    input.seekg(0, std::ios::end);
-    contents.resize(input.tellg());
-    input.seekg(0, std::ios::beg);
-    input.read(&contents[0], contents.size());
-    input.close();
-
     GEODE_UNWRAP_INTO(matjson::Value json,
-                      matjson::parse(std::string_view(contents))
+                      matjson::parse(input)
                           .mapErr([](matjson::ParseError err) {
                               return fmt::format(
                                   "Couldn't parse JSON from file: {}", err);

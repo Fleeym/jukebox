@@ -348,18 +348,8 @@ Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
             fmt::format("Couldn't open file: {}", path.filename().string()));
     }
 
-    // Did some brief research, this seems to be the most efficient method
-    // https://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
-
-    std::string contents;
-    input.seekg(0, std::ios::end);
-    contents.resize(input.tellg());
-    input.seekg(0, std::ios::beg);
-    input.read(contents.data(), contents.size());
-    input.close();
-
     GEODE_UNWRAP_INTO(matjson::Value json,
-                      matjson::parse(contents).mapErr([id](std::string err) {
+                      matjson::parse(input).mapErr([id](std::string err) {
                           return fmt::format(
                               "Couldn't parse JSON from file: {}", err);
                       }));
