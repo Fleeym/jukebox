@@ -194,7 +194,7 @@ struct matjson::Serialize<jukebox::HostedSong> {
                                  {"offset", value.metadata()->startOffset},
                                  {"url", value.url()}});
         if (value.indexID().has_value()) {
-            ret["index_id"] = value.indexID();
+            ret["index_id"] = value.indexID().value();
         }
 
         if (value.metadata()->level.has_value()) {
