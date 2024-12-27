@@ -71,8 +71,7 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
     const char* selectSprName =
         selected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
 
-    CCSprite* selectSpr =
-        CCSprite::createWithSpriteFrameName(selectSprName);
+    CCSprite* selectSpr = CCSprite::createWithSpriteFrameName(selectSprName);
     selectSpr->setScale(0.7f);
 
     m_selectButton = CCMenuItemSpriteExtra::create(
@@ -248,15 +247,15 @@ bool NongCell::init(int songID, Song* info, bool isDefault, bool selected,
 
 void NongCell::onFixDefault(CCObject* target) {
     if (!m_isActive) {
-        FLAlertLayer::create("Error", "Set this NONG as <cr>active</c> first",
-                             "Ok")
+        FLAlertLayer::create(
+            "Error", "Set the default song as <cr>active</c> first", "Ok")
             ->show();
         return;
     }
 
     createQuickPopup(
         "Fix default",
-        "Do you want to refetch song info <cb>for the default NONG</c>? Use "
+        "Do you want to refetch song info <cb>for the default song</c>? Use "
         "this <cr>ONLY</c> if it gets renamed by accident!",
         "No", "Yes", [this](FLAlertLayer* alert, bool btn2) {
             if (btn2) {
@@ -360,7 +359,7 @@ ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
 }
 
 ListenerResult NongCell::onGetSongInfo(event::GetSongInfo* e) {
-    if (e->gdSongID() != m_songID) {
+    if (e->gdSongID() != m_songID || !m_isDefault) {
         return ListenerResult::Propagate;
     }
 
@@ -378,7 +377,7 @@ ListenerResult NongCell::onGetSongInfo(event::GetSongInfo* e) {
     return ListenerResult::Propagate;
 }
 
-void NongCell::onSet(CCObject* target) { 
+void NongCell::onSet(CCObject* target) {
     if (!m_isDownloaded && !m_isDefault) {
         return;
     }

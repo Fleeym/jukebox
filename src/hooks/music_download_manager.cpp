@@ -1,15 +1,11 @@
 #include "hooks/music_download_manager.hpp"
 
-#include <cstddef>
 #include <optional>
 
-#include "Geode/binding/GameLevelManager.hpp"
 #include "Geode/binding/MusicDownloadManager.hpp"
 #include "Geode/binding/SongInfoObject.hpp"
 #include "Geode/c++stl/string.hpp"
-#include "Geode/cocos/cocoa/CCDictionary.h"
-#include "Geode/cocos/cocoa/CCString.h"
-#include "Geode/utils/cocos.hpp"
+#include "Geode/loader/Log.hpp"
 #include "Geode/utils/string.hpp"
 
 #include "events/get_song_info.hpp"
@@ -39,30 +35,18 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
 
 void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
                                                     gd::string p2) {
+    m_fields->overrideSongInfo = true;
     MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
     int songID = std::stoi(p2);
 
-    constexpr size_t SONG_NAME_INDEX = 3;
-    constexpr size_t ARTIST_NAME_INDEX = 7;
+    SongInfoObject* obj = this->getSongInfoObject(songID);
+    m_fields->overrideSongInfo = false;
 
-    CCDictionary* dict =
-        GameLevelManager::sharedState()->responseToDict(p1, true);
-
-    CCArrayExt<CCString*> keys = CCArrayExt<CCString*>(dict->allKeys());
-
-    // Size 0 -> got an invalid response from the servers
-    if (keys.size() == 0 || keys.size() < ARTIST_NAME_INDEX) {
+    if (obj == nullptr) {
         return;
     }
 
-    CCString* songName = keys[SONG_NAME_INDEX];
-    CCString* artistName = keys[ARTIST_NAME_INDEX];
-
-    if (!songName || !artistName) {
-        return;
-    }
-
-    event::GetSongInfo(songName->getCString(), artistName->getCString(), songID)
+    event::GetSongInfo(obj->m_songName, obj->m_artistName, songID)
         .post();
 }
 
@@ -71,12 +55,21 @@ SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {
     if (og == nullptr) {
         return og;
     }
-    std::optional<Nongs*> opt = NongManager::get().getNongs(id);
-    if (opt.has_value()) {
-        Nongs* res = opt.value();
-        Song* active = res->active();
-        og->m_songName = active->metadata()->name;
-        og->m_artistName = active->metadata()->artist;
+
+    if (m_fields->overrideSongInfo) {
+        return og;
     }
+
+    std::optional<Nongs*> opt = NongManager::get().getNongs(id);
+
+    if (!opt) {
+        return og;
+    }
+
+    Nongs* res = opt.value();
+    Song* active = res->active();
+
+    og->m_songName = active->metadata()->name;
+    og->m_artistName = active->metadata()->artist;
     return og;
 }

@@ -355,22 +355,20 @@ Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
     input.seekg(0, std::ios::end);
     contents.resize(input.tellg());
     input.seekg(0, std::ios::beg);
-    input.read(&contents[0], contents.size());
+    input.read(contents.data(), contents.size());
     input.close();
 
     GEODE_UNWRAP_INTO(matjson::Value json,
-                      matjson::parse(std::string_view(contents))
-                          .mapErr([id](std::string err) {
-                              return fmt::format(
-                                  "{}: Couldn't parse JSON from file: {}", id,
-                                  err);
-                          }));
+                      matjson::parse(contents).mapErr([id](std::string err) {
+                          return fmt::format(
+                              "Couldn't parse JSON from file: {}", err);
+                      }));
 
     GEODE_UNWRAP_INTO(Nongs nongs,
                       matjson::Serialize<Nongs>::fromJson(json, id).mapErr(
                           [id](std::string err) {
-                              return fmt::format("{}: Failed to parse JSON: {}",
-                                                 id, err);
+                              return fmt::format("Failed to parse JSON: {}",
+                                                 err);
                           }));
 
     return Ok(std::make_unique<Nongs>(std::move(nongs)));
