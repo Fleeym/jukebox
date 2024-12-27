@@ -1,6 +1,6 @@
 {
 	"geode": "4.1.1",
-	"version": "3.0.2",
+	"version": "3.0.3-DEV",
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
@@ -70,7 +70,7 @@
 		"autocomplete-metadata": {
 			"name": "Autocomplete metadata",
 			"type": "bool",
-			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny big of lag after picking a song file. Doesn't play nice with UTF-8, at the moment",
+			"description": "Try to autocomplete song info from metadata when adding. Causes a tiny bit of lag after picking a song file. Doesn't play nice with UTF-8, at the moment",
 			"default": false
 		}
 	},
