@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.0.3
+
+ * Simplify default song fixing - less bugs!
+ * Rewrite index loading - optimizations and bug fixes
+ * Fix a typo in the mod settings
+
 ## v3.0.2
 
  * Fix file paths not being read correctly when adding NONGs manually
