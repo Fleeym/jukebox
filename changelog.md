@@ -5,6 +5,7 @@
  * Simplify default song fixing - less bugs!
  * Rewrite index loading - optimizations and bug fixes
  * Fix a typo in the mod settings
+ * Let `matjson` handle json file reading completely
 
 ## v3.0.2
 
