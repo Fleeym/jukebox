@@ -6,8 +6,9 @@
 #include <unordered_map>
 #include <variant>
 
-#include "Geode/loader/Event.hpp"
+#include <matjson.hpp>
 #include "Geode/Result.hpp"
+#include "Geode/loader/Event.hpp"
 #include "Geode/utils/Task.hpp"
 #include "Geode/utils/general.hpp"
 
@@ -56,6 +57,9 @@ protected:
     void onDownloadFinish(
         std::variant<index::IndexSongMetadata*, Song*>&& source,
         Nongs* destination, ByteVector&& data);
+    Task<Result<matjson::Value>, float> fetchIndex(
+        const index::IndexSource& index);
+    void onIndexFetched(const std::string& url, Result<matjson::Value>* r);
 
 public:
     bool init();
@@ -68,6 +72,7 @@ public:
     Result<> fetchIndexes();
 
     Result<> loadIndex(std::filesystem::path path);
+    Result<> loadIndex(matjson::Value&& jsonObj);
 
     Result<std::vector<index::IndexSource>> getIndexes();
 

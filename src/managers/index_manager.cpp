@@ -18,6 +18,7 @@
 #include "Geode/loader/Event.hpp"
 #include "Geode/loader/Log.hpp"
 #include "Geode/loader/Mod.hpp"
+#include "Geode/utils/Task.hpp"
 #include "Geode/utils/general.hpp"
 #include "Geode/utils/web.hpp"
 
@@ -49,12 +50,9 @@ bool IndexManager::init() {
         return true;
     }
 
-    if (Result<> res = this->fetchIndexes(); res.isErr()) {
-        event::SongError(
-            false, fmt::format("Failed to fetch indexes: {}", res.unwrapErr()))
-            .post();
-        return false;
-    }
+    this->fetchIndexes().inspectErr([](const std::string& err) {
+        log::error("Failed to start fetching indexes: {}", err);
+    });
 
     m_initialized = true;
     return true;
@@ -90,9 +88,13 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
     input.close();
 
     GEODE_UNWRAP_INTO(matjson::Value jsonObj, matjson::parse(contents));
+
+    return this->loadIndex(std::move(jsonObj));
+}
+
+Result<> IndexManager::loadIndex(matjson::Value&& jsonObj) {
     GEODE_UNWRAP_INTO(IndexMetadata indexMeta,
                       matjson::Serialize<IndexMetadata>::fromJson(jsonObj));
-
     std::unique_ptr<IndexMetadata> index =
         std::make_unique<IndexMetadata>(std::move(indexMeta));
 
@@ -198,83 +200,84 @@ Result<> IndexManager::fetchIndexes() {
 
     for (const IndexSource& index : indexes) {
         if (!index.m_enabled || index.m_url.size() < 3) {
+            log::info("Skipping index {}, as it is disabled", index.m_url);
             continue;
         }
 
-        // Hash url to use as a filename per index
-        std::hash<std::string> hasher;
-        std::size_t hashValue = hasher(index.m_url);
-        std::stringstream hashStream;
-        hashStream << std::hex << hashValue;
+        const std::string url = index.m_url;
 
-        std::filesystem::path filepath =
-            this->baseIndexesPath() / fmt::format("{}.json", hashStream.str());
+        log::info("Starting fetch for index {}", index.m_url);
 
-        FetchIndexTask task =
-            web::WebRequest()
-                .timeout(std::chrono::seconds(30))
-                .get(index.m_url)
-                .map(
-                    [this, filepath, index](
-                        web::WebResponse* response) -> FetchIndexTask::Value {
-                        if (response->ok() && response->string().isOk()) {
-                            GEODE_UNWRAP_INTO(
-                                matjson::Value jsonObj,
-                                matjson::parse(response->string().unwrap()));
-
-                            jsonObj.set("url", index.m_url);
-
-                            GEODE_UNWRAP(
-                                matjson::Serialize<IndexMetadata>::fromJson(
-                                    jsonObj));
-
-                            std::ofstream output(filepath);
-                            if (!output.is_open()) {
-                                return Err(fmt::format("Couldn't open file: {}",
-                                                       filepath));
-                            }
-                            output << jsonObj.dump(matjson::NO_INDENTATION);
-                            output.close();
-
-                            return Ok();
-                        }
-                        return Err("Web request failed");
-                    },
-                    [](web::WebProgress* progress) -> FetchIndexTask::Progress {
-                        return progress->downloadProgress().value_or(0) / 100.f;
-                    });
-
-        auto listener = EventListener<FetchIndexTask>();
-        listener.bind([this, index, filepath](FetchIndexTask::Event* event) {
-            if (float* progress = event->getProgress()) {
-                return;
-            }
-
-            m_indexListeners.erase(index.m_url);
-
-            if (FetchIndexTask::Value* result = event->getValue()) {
-                if (result->isErr()) {
-                    event::SongError(false,
-                                     fmt::format("Failed to fetch index: {}",
-                                                 result->unwrapErr()))
-                        .post();
-                } else {
-                    log::info("Index fetched and cached: {}", index.m_url);
-                }
-            } else if (event->isCancelled()) {
-            }
-
-            if (Result<> res = this->loadIndex(filepath); res.isErr()) {
-                event::SongError(false, fmt::format("Failed to load index: {}",
-                                                    res.unwrapErr()))
-                    .post();
-            }
-        });
-        listener.setFilter(task);
-        m_indexListeners.emplace(index.m_url, std::move(listener));
+        this->fetchIndex(index).listen(
+            [this, url](Result<matjson::Value>* r) {
+                this->onIndexFetched(url, r);
+            },
+            [](auto) {},  // irrelevant
+            [index]() {
+                log::error("Failed to fetch index {}. Task cancelled.",
+                           index.m_url);
+            });
     }
 
     return Ok();
+}
+
+Task<Result<matjson::Value>, float> IndexManager::fetchIndex(
+    const index::IndexSource& index) {
+    return web::WebRequest()
+        .timeout(std::chrono::seconds(30))
+        .get(index.m_url)
+        .map(
+            [this,
+             index](web::WebResponse* response) -> Result<matjson::Value> {
+                if (response->ok()) {
+                    GEODE_UNWRAP_INTO(matjson::Value jsonObj, response->json());
+
+                    jsonObj.set("url", index.m_url);
+
+                    GEODE_UNWRAP(
+                        matjson::Serialize<IndexMetadata>::fromJson(jsonObj));
+
+                    return Ok(std::move(jsonObj));
+                }
+                return Err(fmt::format("Web request failed. Status code: {}",
+                                       response->code()));
+            },
+            [](web::WebProgress* progress) {
+                return progress->downloadProgress().value_or(0) / 100.f;
+            });
+}
+
+void IndexManager::onIndexFetched(const std::string& url,
+                                  Result<matjson::Value>* result) {
+    if (result->isErr()) {
+        log::error("Failed to fetch index {}: {}", url, result->unwrapErr());
+        return;
+    }
+
+    matjson::Value json = result->unwrap();
+
+    const static std::hash<std::string> hasher;
+    std::size_t hashValue = hasher(url);
+
+    const std::filesystem::path filepath =
+        this->baseIndexesPath() / fmt::format("{0:x}.json", hashValue);
+    log::info("{}", filepath);
+
+    log::info("Fetched index: {}", url);
+
+    std::ofstream out(filepath);
+    if (out.is_open()) {
+        const std::string str = json.dump(matjson::NO_INDENTATION);
+        out.write(str.data(), str.length());
+        log::info("Cached index: {}", url);
+    } else {
+        log::info("Failed to cache index: {}", url);
+    }
+
+    this->loadIndex(std::move(json)).inspectErr([url](const std::string& err) {
+        log::info("Failed to load index {}: {}", url, err);
+    });
 }
 
 std::optional<float> IndexManager::getSongDownloadProgress(
