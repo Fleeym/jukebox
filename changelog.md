@@ -6,6 +6,8 @@
  * Rewrite index loading - optimizations and bug fixes
  * Fix a typo in the mod settings
  * Let `matjson` handle json file reading completely
+ * Fix 2 rare crashes caused by pointer shennanigans
+ * Fix an incompatibility with Improved Song Browser by alphalaneous
 
 ## v3.0.2
 
