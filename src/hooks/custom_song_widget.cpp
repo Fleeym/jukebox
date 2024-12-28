@@ -175,6 +175,23 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
     }
 
+    void onDelete(CCObject* obj) {
+        if (!m_fields->nongs) {
+            CustomSongWidget::onDelete(obj);
+            return;
+        }
+
+        if (!m_fields->nongs->isDefaultActive()) {
+            FLAlertLayer::create("Cannot delete",
+                                 "Cannot delete song while a NONG is set. "
+                                 "Change to default song first.",
+                                 "Ok")
+                ->show();
+        } else {
+            CustomSongWidget::onDelete(obj);
+        }
+    }
+
     void setupJBSW() {
         SongInfoObject* obj = m_songInfoObject;
         if (obj == nullptr) {
@@ -228,9 +245,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         m_fields->nongs = nongs;
         this->createSongLabels(nongs);
-        if (!nongs->isDefaultActive() && m_deleteBtn) {
-            m_deleteBtn->setVisible(false);
-        }
     }
 
     void updateSongInfo() {
