@@ -228,7 +228,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         m_fields->nongs = nongs;
         this->createSongLabels(nongs);
-        if (!nongs->isDefaultActive()) {
+        if (!nongs->isDefaultActive() && m_deleteBtn) {
             m_deleteBtn->setVisible(false);
         }
     }
@@ -363,6 +363,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (m_songs.size() == 0 && m_sfx.size() == 0 && !m_isMusicLibrary) {
             if (m_fields->sizeIdLabel != nullptr) {
                 m_fields->sizeIdLabel->removeFromParent();
+                m_fields->sizeIdLabel = nullptr;
             }
             auto data = NongManager::get().getNongs(songID).value();
 
