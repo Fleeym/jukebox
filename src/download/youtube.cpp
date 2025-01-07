@@ -61,8 +61,8 @@ web::WebTask getMetadata(const std::string& id) {
         .timeout(std::chrono::seconds(30))
         .bodyJSON(matjson::makeObject(
             {{"url", fmt::format("https://www.youtube.com/watch?v={}", id)},
-             {"aFormat", "mp3"},
-             {"isAudioOnly", "true"}}))
+             {"audioFormat", "mp3"},
+             {"downloadMode", "audio"}}))
         .header("Accept", "application/json")
         .header("Content-Type", "application/json")
         .post("https://api.cobalt.tools/api/json");
