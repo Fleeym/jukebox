@@ -336,6 +336,12 @@ ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
         i->removeFromParentAndCleanup(true);
     }
 
+    auto res = nongs->setActive(e->destination()->metadata()->uniqueID);
+    if (!res) {
+        log::error("Failed to set newly downloaded song {} as active: {}",
+                   e->destination()->metadata()->uniqueID, res.unwrapErr());
+    }
+
     this->addSongToList(e->destination(), nongs, true);
 
     // Remove "you have no local songs label"
