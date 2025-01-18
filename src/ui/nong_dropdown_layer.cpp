@@ -63,12 +63,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         spr, this, menu_selector(NongDropdownLayer::openAddPopup));
     m_addBtn = addBtn;
 
-    spr = CCSprite::createWithSpriteFrameName("JB_SFHButton.png"_spr);
-    CCMenuItemSpriteExtra* sfhButton = CCMenuItemSpriteExtra::create(
-        spr, this, menu_selector(NongDropdownLayer::onSfh));
-    m_sfhBtn = sfhButton;
-    m_sfhBtn->setID("sfh-button");
-
     spr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
     CCMenuItemSpriteExtra* discordBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::onDiscord));
@@ -89,7 +83,6 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         m_deleteBtn->setVisible(true);
     }
     menu->addChild(addBtn);
-    menu->addChild(sfhButton);
     menu->addChild(discordBtn);
     menu->addChild(removeBtn);
     ColumnLayout* layout = ColumnLayout::create();
@@ -272,21 +265,8 @@ void NongDropdownLayer::setActiveSong(int gdSongID,
 void NongDropdownLayer::onDiscord(CCObject* target) {
     geode::createQuickPopup(
         "Discord",
-        "Do you want to <cb>join the Jukebox discord server</c> to receive "
+        "Do you want to <cb>join the Song File Hub discord server</c> to receive "
         "updates and submit bug reports?",
-        "No", "Yes", [](FLAlertLayer* alert, bool btn2) {
-            if (btn2) {
-                geode::utils::web::openLinkInBrowser(
-                    "https://discord.gg/SFE7qxYFyU");
-            }
-        });
-}
-
-void NongDropdownLayer::onSfh(CCObject* target) {
-    geode::createQuickPopup(
-        "Song File Hub",
-        "Do you want to <cb>join the Song File Hub discord server</c> to find "
-        "and submit songs?",
         "No", "Yes", [](FLAlertLayer* alert, bool btn2) {
             if (btn2) {
                 geode::utils::web::openLinkInBrowser(

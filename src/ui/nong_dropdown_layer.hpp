@@ -32,7 +32,6 @@ protected:
     NongList* m_list = nullptr;
 
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
-    CCMenuItemSpriteExtra* m_sfhBtn = nullptr;
     CCMenuItemSpriteExtra* m_discordBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 
@@ -55,7 +54,6 @@ protected:
 public:
     void onSelectSong(int songID);
     void onDiscord(CCObject*);
-    void onSfh(CCObject*);
     void setActiveSong(int gdSongID, const std::string& uniqueID);
     void deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio,
                     bool confirm);
