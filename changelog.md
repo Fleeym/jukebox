@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.1.0
+
+ * Remove original Discord server button and replace it with Song File Hub
+ * Make newly downloaded songs automatically set as active
+ * Bump to Geode v4.2.0
+ * Add MIT License to the mod
+
 ## v3.0.3
 
  * Simplify default song fixing - less bugs!
