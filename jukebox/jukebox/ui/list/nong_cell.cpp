@@ -24,6 +24,8 @@
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/nong.hpp>
 
+using namespace geode::prelude;
+
 namespace jukebox {
 
 constexpr float PADDING_X = 12.0f;

@@ -2,13 +2,12 @@
 
 #include <functional>
 
-#include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/binding/CCMenuItemToggler.hpp>
 
 #include <jukebox/nong/index.hpp>
-
-using namespace geode::prelude;
 
 namespace jukebox {
 
@@ -16,7 +15,7 @@ using namespace jukebox::index;
 
 class IndexesPopup;
 
-class IndexCell : public CCNode {
+class IndexCell : public cocos2d::CCNode {
 protected:
     IndexesPopup* m_parentPopup;
     IndexSource* m_index;
@@ -25,12 +24,12 @@ protected:
     CCMenuItemToggler* m_toggleButton;
 
     bool init(IndexesPopup* parentPopup, IndexSource* index,
-              std::function<void()> onDelete, CCSize const& size);
+              std::function<void()> onDelete, cocos2d::CCSize const& size);
 
 public:
     static IndexCell* create(IndexesPopup* parentPopup, IndexSource* index,
                              std::function<void()> onDelete,
-                             CCSize const& size);
+                             cocos2d::CCSize const& size);
     void updateUI();
     void onToggle(CCObject*);
     void onDelete(CCObject*);

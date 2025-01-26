@@ -13,27 +13,25 @@
 #include <jukebox/nong/index.hpp>
 #include <jukebox/nong/index_serialize.hpp>
 
-using namespace geode::prelude;
-
 namespace jukebox {
 
 using namespace jukebox::index;
 
 struct Indexes {
     std::vector<IndexSource> indexes;
-    bool operator==(const Indexes& other);
+    bool operator==(const Indexes& other) const;
 };
 
-class IndexSetting : public SettingBaseValueV3<Indexes> {
+class IndexSetting : public geode::SettingBaseValueV3<Indexes> {
 public:
-    static Result<std::shared_ptr<SettingV3>> parse(const std::string& key,
-                                                    const std::string& modID,
-                                                    const matjson::Value& json);
+    static geode::Result<std::shared_ptr<SettingV3>> parse(
+        const std::string& key, const std::string& modID,
+        const matjson::Value& json);
 
-    SettingNodeV3* createNode(float width) override;
+    geode::SettingNodeV3* createNode(float width) override;
 };
 
-class IndexSettingNode : public SettingValueNodeV3<IndexSetting> {
+class IndexSettingNode : public geode::SettingValueNodeV3<IndexSetting> {
 protected:
     CCMenuItemSpriteExtra* m_resetBtn;
 
@@ -73,6 +71,6 @@ struct matjson::Serialize<jukebox::Indexes> {
                 matjson::Serialize<jukebox::IndexSource>::fromJson(elem));
             ret.indexes.push_back(source);
         }
-        return Ok(ret);
+        return geode::Ok(ret);
     }
 };

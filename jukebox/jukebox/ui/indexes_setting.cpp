@@ -21,7 +21,7 @@ namespace jukebox {
 
 using namespace jukebox::index;
 
-bool Indexes::operator==(const Indexes& other) {
+bool Indexes::operator==(const Indexes& other) const {
     return this->indexes == other.indexes;
 }
 

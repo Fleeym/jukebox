@@ -18,6 +18,7 @@
 #include <jukebox/nong/index.hpp>
 
 using namespace jukebox::index;
+using namespace geode::prelude;
 
 namespace jukebox {
 

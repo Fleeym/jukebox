@@ -9,15 +9,14 @@
 
 #include <jukebox/nong/index.hpp>
 
-using namespace geode::prelude;
-
 namespace jukebox {
 
 using namespace jukebox::index;
 
 using IndexesCallback = std::function<void(std::vector<IndexSource>)>;
 
-class IndexesPopup : public Popup<std::vector<IndexSource>, IndexesCallback> {
+class IndexesPopup
+    : public geode::Popup<std::vector<IndexSource>, IndexesCallback> {
 protected:
     std::vector<IndexSource> m_indexes;
     IndexesCallback m_setIndexesCallback;
@@ -26,7 +25,7 @@ protected:
     bool setup(std::vector<IndexSource>,
                IndexesCallback setIndexesCallback) override;
     void createList();
-    CCSize getPopupSize();
+    cocos2d::CCSize getPopupSize();
     void onClose(CCObject*) override;
     void onAdd(CCObject*);
 

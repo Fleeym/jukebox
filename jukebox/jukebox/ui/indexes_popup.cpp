@@ -13,6 +13,8 @@
 #include <jukebox/nong/index.hpp>
 #include <jukebox/ui/list/index_cell.hpp>
 
+using namespace geode::prelude;
+
 namespace jukebox {
 
 using namespace jukebox::index;

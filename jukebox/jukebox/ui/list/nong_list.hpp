@@ -42,11 +42,11 @@ protected:
 
     std::vector<NongCell*> listedNongCells;
 
-    geode::EventListener<EventFilter<event::SongDownloadFinished>>
+    geode::EventListener<geode::EventFilter<event::SongDownloadFinished>>
         m_downloadFinishedListener = {this, &NongList::onDownloadFinish};
-    geode::EventListener<EventFilter<event::NongDeleted>>
+    geode::EventListener<geode::EventFilter<event::NongDeleted>>
         m_nongDeletedListener = {this, &NongList::onNongDeleted};
-    geode::EventListener<EventFilter<event::ManualSongAdded>>
+    geode::EventListener<geode::EventFilter<event::ManualSongAdded>>
         m_nongAddedListener = {this, &NongList::onSongAdded};
 
     static constexpr float s_padding = 10.0f;

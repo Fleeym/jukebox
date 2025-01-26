@@ -19,26 +19,26 @@
 #include <jukebox/ui/list/song_cell.hpp>
 #include <jukebox/ui/nong_add_popup.hpp>
 
-using namespace geode::prelude;
-
 namespace jukebox {
 
 class NongDropdownLayer
-    : public Popup<std::vector<int>, CustomSongWidget*, int> {
+    : public geode::Popup<std::vector<int>, CustomSongWidget*, int> {
 protected:
     std::vector<int> m_songIDS;
     std::optional<int> m_currentSongID = std::nullopt;
     int m_defaultSongID;
-    Ref<CustomSongWidget> m_parentWidget;
+    geode::Ref<CustomSongWidget> m_parentWidget;
     NongList* m_list = nullptr;
 
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_discordBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
 
-    EventListener<EventFilter<event::SongError>> m_songErrorListener;
-    EventListener<EventFilter<event::GetSongInfo>> m_songInfoListener;
-    EventListener<EventFilter<event::SongDownloadFailed>>
+    geode::EventListener<geode::EventFilter<jukebox::event::SongError>>
+        m_songErrorListener;
+    geode::EventListener<geode::EventFilter<jukebox::event::GetSongInfo>>
+        m_songInfoListener;
+    geode::EventListener<geode::EventFilter<jukebox::event::SongDownloadFailed>>
         m_downloadFailedListener;
 
     bool m_fetching = false;
@@ -46,15 +46,15 @@ protected:
     bool setup(std::vector<int> ids, CustomSongWidget* parent,
                int defaultSongID) override;
     void createList();
-    CCSize getCellSize() const;
-    void deleteAllNongs(CCObject*);
-    void fetchSongFileHub(CCObject*);
-    void onSettings(CCObject*);
-    void openAddPopup(CCObject*);
+    cocos2d::CCSize getCellSize() const;
+    void deleteAllNongs(cocos2d::CCObject*);
+    void fetchSongFileHub(cocos2d::CCObject*);
+    void onSettings(cocos2d::CCObject*);
+    void openAddPopup(cocos2d::CCObject*);
 
 public:
     void onSelectSong(int songID);
-    void onDiscord(CCObject*);
+    void onDiscord(cocos2d::CCObject*);
     void setActiveSong(int gdSongID, const std::string& uniqueID);
     void deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio,
                     bool confirm);

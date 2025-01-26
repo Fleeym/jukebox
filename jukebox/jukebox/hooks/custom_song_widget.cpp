@@ -42,7 +42,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool searching = false;
         std::unordered_map<int, Nongs*> assetNongData;
         EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
-        std::unique_ptr<EventListener<EventFilter<event::SongStateChanged>>>
+        std::unique_ptr<
+            EventListener<EventFilter<jukebox::event::SongStateChanged>>>
             m_songStateListener;
     };
 
@@ -69,8 +70,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
         m_fields->firstRun = false;
 
         m_fields->m_songStateListener = std::make_unique<
-            EventListener<EventFilter<event::SongStateChanged>>>(
-            ([this](event::SongStateChanged* event) {
+            EventListener<EventFilter<jukebox::event::SongStateChanged>>>(
+            ([this](jukebox::event::SongStateChanged* event) {
                 if (!m_songInfoObject) {
                     return ListenerResult::Propagate;
                 }

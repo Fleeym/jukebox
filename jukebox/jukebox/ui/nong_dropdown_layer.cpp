@@ -29,6 +29,8 @@
 #include <jukebox/ui/list/nong_list.hpp>
 #include <jukebox/ui/nong_add_popup.hpp>
 
+using namespace geode::prelude;
+
 namespace jukebox {
 
 bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,

@@ -41,6 +41,7 @@
 #include <jukebox/ui/index_choose_popup.hpp>
 #include <jukebox/utils/random_string.hpp>
 
+using namespace geode::prelude;
 using namespace jukebox::index;
 
 void setInputProps(TextInput* i) {

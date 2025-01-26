@@ -35,9 +35,10 @@
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/indexes_setting.hpp>
 
-namespace jukebox {
-
+using namespace geode::prelude;
 using namespace jukebox::index;
+
+namespace jukebox {
 
 bool IndexManager::init() {
     if (m_initialized) {

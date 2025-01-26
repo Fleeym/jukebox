@@ -14,8 +14,6 @@
 #include <jukebox/events/song_error.hpp>
 #include <jukebox/nong/nong.hpp>
 
-using namespace geode::prelude;
-
 namespace jukebox {
 
 class NongManager {
@@ -37,16 +35,18 @@ protected:
         }
     }
 
-    Result<> saveNongs(std::optional<int> saveId = std::nullopt);
-    EventListener<EventFilter<jukebox::event::SongError>> m_songErrorListener;
-    EventListener<EventFilter<jukebox::event::GetSongInfo>> m_songInfoListener;
-    Result<std::unique_ptr<Nongs>> loadNongsFromPath(
+    geode::Result<> saveNongs(std::optional<int> saveId = std::nullopt);
+    geode::EventListener<geode::EventFilter<jukebox::event::SongError>>
+        m_songErrorListener;
+    geode::EventListener<geode::EventFilter<jukebox::event::GetSongInfo>>
+        m_songInfoListener;
+    geode::Result<std::unique_ptr<Nongs>> loadNongsFromPath(
         const std::filesystem::path& path);
 
-    Result<> migrateV2();
+    geode::Result<> migrateV2();
 
 public:
-    using MultiAssetSizeTask = Task<std::string>;
+    using MultiAssetSizeTask = geode::Task<std::string>;
     std::optional<Nongs*> m_currentlyPreparingNong;
 
     bool init();
@@ -55,12 +55,13 @@ public:
 
     std::filesystem::path baseManifestPath() {
         static std::filesystem::path path =
-            Mod::get()->getSaveDir() / "manifest";
+            geode::Mod::get()->getSaveDir() / "manifest";
         return path;
     }
 
     std::filesystem::path baseNongsPath() {
-        static std::filesystem::path path = Mod::get()->getSaveDir() / "nongs";
+        static std::filesystem::path path =
+            geode::Mod::get()->getSaveDir() / "nongs";
         return path;
     }
 
@@ -125,34 +126,34 @@ public:
      * Add NONGs
      * @param nong NONG to add
      */
-    Result<> addNongs(Nongs&& nong);
+    geode::Result<> addNongs(Nongs&& nong);
 
     /**
      * Set active song
      * @param gdSongID the id of the song in GD
      * @param uniqueID the unique id of the song in Jukebox
      */
-    Result<> setActiveSong(int gdSongID, std::string uniqueID);
+    geode::Result<> setActiveSong(int gdSongID, std::string uniqueID);
 
     /**
      * Delete a song
      * @param gdSongID the id of the song in GD
      * @param uniqueID the unique id of the song in Jukebox
      */
-    Result<> deleteSong(int gdSongID, std::string uniqueID);
+    geode::Result<> deleteSong(int gdSongID, std::string uniqueID);
 
     /**
      * Delete a song's audio file
      * @param gdSongID the id of the song in GD
      * @param uniqueID the unique id of the song in Jukebox
      */
-    Result<> deleteSongAudio(int gdSongID, std::string uniqueID);
+    geode::Result<> deleteSongAudio(int gdSongID, std::string uniqueID);
 
     /**
      * Delete all NONGs for a song ID
      * @param gdSongID id of the song
      */
-    Result<> deleteAllSongs(int gdSongID);
+    geode::Result<> deleteAllSongs(int gdSongID);
 
     /**
      * Get a path to a song file

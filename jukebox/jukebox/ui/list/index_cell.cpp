@@ -12,6 +12,8 @@
 
 #include <jukebox/nong/index.hpp>
 
+using namespace geode::prelude;
+
 namespace jukebox {
 
 bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,

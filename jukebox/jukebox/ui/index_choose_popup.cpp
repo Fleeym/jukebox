@@ -17,6 +17,8 @@
 
 #include <jukebox/managers/index_manager.hpp>
 
+using namespace geode::prelude;
+
 namespace jukebox {
 
 bool IndexChoosePopup::setup(

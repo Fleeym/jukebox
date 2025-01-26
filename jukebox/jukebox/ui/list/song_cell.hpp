@@ -10,27 +10,26 @@
 
 #include <jukebox/nong/nong.hpp>
 
-using namespace geode::prelude;
-
 namespace jukebox {
 
 class NongDropdownLayer;
 
-class SongCell : public CCNode {
+class SongCell : public cocos2d::CCNode {
 protected:
     SongMetadata* m_active;
-    CCLabelBMFont* m_songNameLabel;
-    CCLabelBMFont* m_authorNameLabel;
-    CCLabelBMFont* m_songIDLabel;
+    cocos2d::CCLabelBMFont* m_songNameLabel;
+    cocos2d::CCLabelBMFont* m_authorNameLabel;
+    cocos2d::CCLabelBMFont* m_songIDLabel;
     int m_songID;
 
     std::function<void()> m_callback;
 
-    bool init(int id, SongMetadata* songInfo, const CCSize& size,
+    bool init(int id, SongMetadata* songInfo, const cocos2d::CCSize& size,
               std::function<void()> selectCallback);
 
 public:
-    static SongCell* create(int id, SongMetadata* songInfo, const CCSize& size,
+    static SongCell* create(int id, SongMetadata* songInfo,
+                            const cocos2d::CCSize& size,
                             std::function<void()> selectCallback) {
         auto ret = new SongCell();
         if (ret && ret->init(id, songInfo, size, selectCallback)) {

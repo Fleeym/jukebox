@@ -46,7 +46,7 @@ void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
         return;
     }
 
-    event::GetSongInfo(obj->m_songName, obj->m_artistName, songID)
+    jukebox::event::GetSongInfo(obj->m_songName, obj->m_artistName, songID)
         .post();
 }
 

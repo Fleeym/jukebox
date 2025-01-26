@@ -24,6 +24,8 @@
 #include <jukebox/nong/nong_serialize.hpp>
 #include <jukebox/utils/random_string.hpp>
 
+using namespace geode::prelude;
+
 namespace jukebox {
 
 std::optional<Nongs*> NongManager::getNongs(int songID) {

@@ -7,6 +7,8 @@
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/ui/indexes_setting.hpp>
 
+using namespace geode::prelude;
+
 $execute {
     (void)Mod::get()->registerCustomSettingType("indexes",
                                                 &jukebox::IndexSetting::parse);

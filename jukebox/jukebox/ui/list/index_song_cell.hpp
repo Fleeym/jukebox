@@ -14,45 +14,45 @@
 #include <jukebox/events/song_download_progress.hpp>
 #include <jukebox/nong/index.hpp>
 
-using namespace geode::prelude;
-using namespace jukebox::index;
-
 namespace jukebox {
 
-class IndexSongCell : public CCNode {
+class IndexSongCell : public cocos2d::CCNode {
 protected:
-    IndexSongMetadata* m_song = nullptr;
+    index::IndexSongMetadata* m_song = nullptr;
     int m_gdId;
 
     CCNode* m_songInfoNode = nullptr;
-    CCLabelBMFont* m_songNameLabel = nullptr;
-    CCLabelBMFont* m_artistLabel = nullptr;
-    CCLabelBMFont* m_indexNameLabel = nullptr;
+    cocos2d::CCLabelBMFont* m_songNameLabel = nullptr;
+    cocos2d::CCLabelBMFont* m_artistLabel = nullptr;
+    cocos2d::CCLabelBMFont* m_indexNameLabel = nullptr;
 
-    CCMenu* m_downloadMenu = nullptr;
+    cocos2d::CCMenu* m_downloadMenu = nullptr;
     CCMenuItemSpriteExtra* m_downloadButton = nullptr;
 
-    CCNode* m_progressContainer = nullptr;
-    CCProgressTimer* m_progressBar = nullptr;
-    CCSprite* m_progressBarBack = nullptr;
+    cocos2d::CCNode* m_progressContainer = nullptr;
+    cocos2d::CCProgressTimer* m_progressBar = nullptr;
+    cocos2d::CCSprite* m_progressBarBack = nullptr;
 
     bool m_downloading = false;
 
-    EventListener<EventFilter<event::SongDownloadProgress>> m_downloadListener;
-    EventListener<EventFilter<event::SongDownloadFailed>>
+    geode::EventListener<
+        geode::EventFilter<jukebox::event::SongDownloadProgress>>
+        m_downloadListener;
+    geode::EventListener<geode::EventFilter<jukebox::event::SongDownloadFailed>>
         m_downloadFailedListener{this, &IndexSongCell::onDownloadFailed};
 
-    bool init(IndexSongMetadata* song, int gdId, const CCSize& size);
+    bool init(index::IndexSongMetadata* song, int gdId,
+              const cocos2d::CCSize& size);
 
     void onDownload(CCObject*);
     geode::ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
     geode::ListenerResult onDownloadFailed(event::SongDownloadFailed* e);
 
 public:
-    IndexSongMetadata* song() const { return m_song; }
+    index::IndexSongMetadata* song() const { return m_song; }
 
-    static IndexSongCell* create(IndexSongMetadata* song, int gdId,
-                                 const CCSize& size);
+    static IndexSongCell* create(index::IndexSongMetadata* song, int gdId,
+                                 const cocos2d::CCSize& size);
 };
 
 }  // namespace jukebox
