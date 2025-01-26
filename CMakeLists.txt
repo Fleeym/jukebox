@@ -2,32 +2,29 @@ cmake_minimum_required(VERSION 3.21.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64") 
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 
-project(jukebox VERSION 1.0.0)
+project(jukebox VERSION 3.1.0)
 
 file(GLOB SOURCES
-    src/ui/*.cpp
-    src/ui/list/*.cpp
-    src/managers/*.cpp
-    src/hooks/*.cpp
-    src/events/*.cpp
-    src/api/*.cpp
-    src/download/*.cpp
-    src/utils/*.cpp
-    src/compat/*.cpp
-	src/*.cpp
+    jukebox/jukebox/ui/*.cpp
+    jukebox/jukebox/ui/list/*.cpp
+    jukebox/jukebox/managers/*.cpp
+    jukebox/jukebox/hooks/*.cpp
+    jukebox/jukebox/events/*.cpp
+    jukebox/jukebox/download/*.cpp
+    jukebox/jukebox/utils/*.cpp
+    jukebox/jukebox/compat/*.cpp
+	jukebox/jukebox/nong/*.cpp
+	jukebox/jukebox/*.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
-target_include_directories(${PROJECT_NAME} PUBLIC include src)
+target_include_directories(${PROJECT_NAME} PUBLIC jukebox)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-
-if (PROJECT_IS_TOP_LEVEL)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE FLEYM_JUKEBOX_EXPORTING)
-endif()
 
 if (NOT DEFINED ENV{GEODE_SDK})
     message(FATAL_ERROR "Unable to find Geode SDK! Please define GEODE_SDK environment variable to point to Geode")

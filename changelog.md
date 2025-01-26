@@ -3,6 +3,7 @@
 ## v3.1.0
 
  * Remove original Discord server button and replace it with Song File Hub
+ * Add better error for failed downloads with status code 502
  * Make newly downloaded songs automatically set as active
  * Bump to Geode v4.2.0
  * Add MIT License to the mod
