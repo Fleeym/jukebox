@@ -1,8 +1,10 @@
 #include <Geode/binding/LevelSelectLayer.hpp>
 #include <Geode/binding/LevelTools.hpp>
+#include <Geode/binding/MenuLayer.hpp>
 #include <Geode/c++stl/string.hpp>
 #include <Geode/modify/LevelSelectLayer.hpp>  // IWYU pragma: keep
 #include <Geode/modify/LevelTools.hpp>        // IWYU pragma: keep
+#include <Geode/modify/MenuLayer.hpp>         // IWYU pragma: keep
 
 #include <jukebox/managers/nong_manager.hpp>
 
@@ -38,6 +40,17 @@ class $modify(LevelTools) {
             return res.value()->active()->metadata()->name;
         }
         return LevelTools::getAudioTitle(id);
+    }
+};
+
+class $modify(MenuLayer) {
+    // Fix for Overcharged Main Menu
+    bool init() {
+        g_disableTitleOverride = true;
+        bool ret = MenuLayer::init();
+        g_disableTitleOverride = false;
+
+        return ret;
     }
 };
 
