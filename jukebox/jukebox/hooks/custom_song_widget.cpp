@@ -117,7 +117,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         m_fields->songIds = std::string(p1);
         m_fields->sfxIds = std::string(p2);
         this->fixMultiAssetSize();
-        if (m_isRobtopSong) {
+        if (!m_songInfoObject || m_isRobtopSong) {
             return;
         }
 
