@@ -6,6 +6,7 @@
  * Fix Overcharged Main Menu showing NONG names for main levels
  * Remove the api key from mod.json as the mod doesn't expose an api anymore
  * Do some internal refactoring of the mod, shouldn't break anything
+ * Bump to Geode v4.3.1
 
 ## v3.1.0
 
