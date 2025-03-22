@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.1.1
+
+ * Fix a crash that can happen when Show Audio Assets by Taswert is enabled
+ * Fix Overcharged Main Menu showing NONG names for main levels
+ * Remove the api key from mod.json as the mod doesn't expose an api anymore
+ * Do some internal refactoring of the mod, shouldn't break anything
+
 ## v3.1.0
 
  * Remove original Discord server button and replace it with Song File Hub
