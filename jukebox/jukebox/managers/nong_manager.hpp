@@ -1,7 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <memory>
 #include <optional>
 
 #include <Geode/Result.hpp>
@@ -40,8 +39,9 @@ protected:
         m_songErrorListener;
     geode::EventListener<geode::EventFilter<jukebox::event::GetSongInfo>>
         m_songInfoListener;
-    geode::Result<std::unique_ptr<Nongs>> loadNongsFromPath(
+    geode::Result<Nongs> loadNongsFromPath(
         const std::filesystem::path& path);
+    geode::Result<Nongs> loadSFXFromPath(const std::filesystem::path& path);
 
     geode::Result<> migrateV2();
 
@@ -65,7 +65,7 @@ public:
         return path;
     }
 
-    bool hasSongID(int id);
+    bool hasSongID(int id, bool sfx = false);
 
     geode::Result<Nongs*> initSongID(SongInfoObject* obj, int id, bool robtop);
 
@@ -93,9 +93,10 @@ public:
      * Fetches all NONG data for a certain songID
      *
      * @param songID the id of the song
+     * @param sfx whether to lookup in the sfx list or not
      * @return the data from the JSON or nullopt if it wasn't created yet
      */
-    std::optional<Nongs*> getNongs(int songID);
+    std::optional<Nongs*> getNongs(int songID, bool sfx = false);
 
     /**
      * Formats a size in bytes to a x.xxMB string

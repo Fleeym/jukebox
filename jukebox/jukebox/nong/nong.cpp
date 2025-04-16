@@ -270,6 +270,7 @@ class Nongs::Impl {
 private:
     friend class Nongs;
 
+    bool m_sfx;
     int m_songID;
     Song* m_active;
     std::unique_ptr<LocalSong> m_default;
@@ -293,14 +294,16 @@ private:
     }
 
 public:
-    Impl(int songID, std::unique_ptr<LocalSong> defaultSong)
+    Impl(int songID, std::unique_ptr<LocalSong> defaultSong, bool sfx)
         : m_songID(songID),
           m_active(defaultSong.get()),
-          m_default(std::move(defaultSong)) {}
+          m_default(std::move(defaultSong)),
+          m_sfx(sfx) {}
 
-    Impl(int songID)
+    Impl(int songID, bool sfx)
         : Impl(songID,
-               std::make_unique<LocalSong>(LocalSong::createUnknown(songID))) {}
+               std::make_unique<LocalSong>(LocalSong::createUnknown(songID)),
+               sfx) {}
 
     geode::Result<> commit(Nongs* self) {
         const std::filesystem::path path =
@@ -739,10 +742,11 @@ public:
     std::vector<std::unique_ptr<HostedSong>>& hosted() { return m_hosted; }
 };
 
-Nongs::Nongs(int songID, LocalSong&& defaultSong)
+Nongs::Nongs(int songID, LocalSong&& defaultSong, bool sfx)
     : m_impl(std::make_unique<Impl>(
-          songID, std::make_unique<LocalSong>(defaultSong))) {}
-Nongs::Nongs(int songID) : m_impl(std::make_unique<Impl>(songID)) {}
+          songID, std::make_unique<LocalSong>(defaultSong), sfx)) {}
+Nongs::Nongs(int songID, bool sfx)
+    : m_impl(std::make_unique<Impl>(songID, sfx)) {}
 
 std::optional<Song*> Nongs::findSong(const std::string& uniqueID) {
     return m_impl->findSong(uniqueID);

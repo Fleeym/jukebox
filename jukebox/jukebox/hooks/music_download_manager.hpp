@@ -12,6 +12,7 @@ struct JBMusicDownloadManager
     };
     
     gd::string pathForSong(int id);
+    gd::string pathForSFX(int id);
     void onGetSongInfoCompleted(gd::string p1, gd::string p2);
     SongInfoObject* getSongInfoObject(int id);
 };

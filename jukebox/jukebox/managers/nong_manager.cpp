@@ -28,12 +28,20 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-std::optional<Nongs*> NongManager::getNongs(int songID) {
-    if (!m_manifest.m_nongs.contains(songID)) {
-        return std::nullopt;
-    }
+std::optional<Nongs*> NongManager::getNongs(int songID, bool sfx) {
+    if (sfx) {
+        if (!m_manifest.m_sfxNongs.contains(songID)) {
+            return std::nullopt;
+        }
 
-    return m_manifest.m_nongs[songID].get();
+        return m_manifest.m_sfxNongs[songID].get();
+    } else {
+        if (!m_manifest.m_nongs.contains(songID)) {
+            return std::nullopt;
+        }
+
+        return m_manifest.m_nongs[songID].get();
+    }
 }
 
 int NongManager::getCurrentManifestVersion() { return m_manifest.m_version; }
@@ -44,7 +52,13 @@ int NongManager::adjustSongID(int id, bool robtop) {
     return robtop ? (id < 0 ? id : -id - 1) : id;
 }
 
-bool NongManager::hasSongID(int id) { return m_manifest.m_nongs.contains(id); }
+bool NongManager::hasSongID(int id, bool sfx) {
+    if (sfx) {
+        return m_manifest.m_sfxNongs.contains(id);
+    } else {
+        return m_manifest.m_nongs.contains(id);
+    }
+}
 
 Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
                                        bool robtop) {
@@ -62,7 +76,7 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
         std::string filename = LevelTools::getAudioFileName(id);
         std::filesystem::path gdDir = std::filesystem::path(
             CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
-        std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(
+        std::shared_ptr<Nongs> nongs = std::make_shared<Nongs>(
             Nongs{adjusted,
                   LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
                                          obj->m_songName, obj->m_artistName},
@@ -83,8 +97,8 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
     if (!obj) {
         // Try fetch song info from servers
         MusicDownloadManager::sharedState()->getSongInfo(id, true);
-        std::unique_ptr<Nongs> nongs =
-            std::make_unique<Nongs>(Nongs{id, LocalSong::createUnknown(id)});
+        std::shared_ptr<Nongs> nongs =
+            std::make_shared<Nongs>(Nongs{id, LocalSong::createUnknown(id)});
 
         Nongs* n = nongs.get();
         m_manifest.m_nongs.insert({adjusted, std::move(nongs)});
@@ -94,7 +108,7 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
     }
 
     // Finally, if obj exists just insert normally
-    std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(Nongs{
+    std::shared_ptr<Nongs> nongs = std::make_shared<Nongs>(Nongs{
         adjusted,
         LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
                                obj->m_songName, obj->m_artistName},
@@ -222,6 +236,13 @@ bool NongManager::init() {
             continue;
         }
 
+        std::string filename = entry.path().filename().string();
+        bool sfx = false;
+
+        if (filename.starts_with("sfx")) {
+            sfx = true;
+        }
+
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
             log::error("Failed to read file {}: {}", entry.path().filename(),
@@ -232,10 +253,11 @@ bool NongManager::init() {
             continue;
         }
 
-        std::unique_ptr<Nongs> ptr = std::move(res.unwrap());
-        int id = ptr->songID();
+        Nongs nongs = std::move(res.unwrap());
+        int id = nongs.songID();
 
-        m_manifest.m_nongs.insert({id, std::move(ptr)});
+        m_manifest.m_nongs.insert(
+            {id, std::make_shared<Nongs>(std::move(nongs))});
     }
 
     log::info("Read {} files successfuly!", m_manifest.m_nongs.size());
@@ -268,7 +290,7 @@ Result<> NongManager::migrateV2() {
             int id = kv.first;
             Nongs nongs = Nongs(kv.first, std::move(defaultSong));
             m_manifest.m_nongs.insert(
-                {id, std::make_unique<Nongs>(std::move(nongs))});
+                {id, std::make_shared<Nongs>(std::move(nongs))});
 
             Nongs* n = m_manifest.m_nongs[kv.first].get();
             IndexManager::get().registerIndexNongs(n);
@@ -333,7 +355,7 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
     return Ok();
 }
 
-Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
+Result<Nongs> NongManager::loadNongsFromPath(
     const std::filesystem::path& path) {
     auto stem = path.stem().string();
     // Watch someone edit a json name and have the game crash
@@ -362,7 +384,7 @@ Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
                                                  err);
                           }));
 
-    return Ok(std::make_unique<Nongs>(std::move(nongs)));
+    return Ok(std::move(nongs));
 }
 
 void NongManager::refetchDefault(int songID) {

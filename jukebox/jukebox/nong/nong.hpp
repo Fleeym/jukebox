@@ -150,8 +150,8 @@ private:
     std::unique_ptr<Impl> m_impl;
 
 public:
-    Nongs(int songID, LocalSong&& defaultSong);
-    Nongs(int songID);
+    Nongs(int songID, LocalSong&& defaultSong, bool sfx = false);
+    Nongs(int songID, bool sfx = false);
 
     // No copies for this one
     Nongs(const Nongs&) = delete;
@@ -167,6 +167,7 @@ public:
     Song* active() const;
 
     bool isDefaultActive() const;
+    bool isSFX() const;
 
     geode::Result<> commit();
     /**
@@ -201,7 +202,8 @@ class Manifest {
 
 private:
     int m_version = s_latestVersion;
-    std::unordered_map<int, std::unique_ptr<Nongs>> m_nongs = {};
+    std::unordered_map<int, std::shared_ptr<Nongs>> m_nongs = {};
+    std::unordered_map<int, std::shared_ptr<Nongs>> m_sfxNongs = {};
 
 public:
     constexpr static inline int s_latestVersion = 4;

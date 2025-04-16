@@ -33,6 +33,10 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
 #endif
 }
 
+gd::string JBMusicDownloadManager::pathForSFX(int id) {
+    return MusicDownloadManager::pathForSFX(id);
+}
+
 void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
                                                     gd::string p2) {
     m_fields->overrideSongInfo = true;
