@@ -15,6 +15,7 @@
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Log.hpp>
+#include <Geode/utils/general.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/compat/compat.hpp>
@@ -135,7 +136,11 @@ NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(
             std::istringstream stream(songs);
             std::string s;
             while (std::getline(stream, s, ',')) {
-                int id = std::stoi(s);
+                Result<int> idRes = geode::utils::numFromString<int>(s);
+                if (idRes.isErr()) {
+                    continue;
+                }
+                int id = idRes.unwrap();
                 auto result = this->getNongs(id);
                 if (!result.has_value()) {
                     continue;
@@ -336,8 +341,8 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
 Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
     const std::filesystem::path& path) {
     auto stem = path.stem().string();
-    // Watch someone edit a json name and have the game crash
-    int id = std::stoi(stem);
+    GEODE_UNWRAP_INTO(int id, geode::utils::numFromString<int>(stem));
+
     if (id == 0) {
         return Err(
             fmt::format("Invalid filename {}", path.filename().string()));
