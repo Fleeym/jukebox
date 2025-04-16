@@ -86,6 +86,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 m_songInfoObject->m_songName = active->metadata()->name;
                 m_songInfoObject->m_artistName = active->metadata()->artist;
                 this->updateSongInfo();
+                this->fixMultiAssetSize();
 
                 return ListenerResult::Propagate;
             }));
@@ -137,6 +138,47 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->fixMultiAssetSize();
     }
 
+    void onFixMultiAssetSizeFinished(
+        NongManager::MultiAssetSizeTask::Event* e) {
+        if (!m_songIDLabel) {
+            return;
+        }
+
+        std::string* value = e->getValue();
+
+        if (!value) {
+            return;
+        }
+
+        int downloaded = 0;
+        int total = 0;
+        for (auto [k, v] : m_songs) {
+            total++;
+            if (v) {
+                downloaded++;
+            }
+        }
+        for (auto [k, v] : m_sfx) {
+            total++;
+            if (v) {
+                downloaded++;
+            }
+        }
+
+        std::string label;
+
+        if (downloaded != total) {
+            label = fmt::format("Songs: {}  SFX: {}  Size: {} ({}/{})",
+                                m_songs.size(), m_sfx.size(), *value,
+                                downloaded, total);
+        } else {
+            label = fmt::format("Songs: {}  SFX: {}  Size: {}", m_songs.size(),
+                                m_sfx.size(), *value);
+        }
+
+        m_songIDLabel->setString(label.c_str());
+    }
+
     void fixMultiAssetSize() {
         auto flag = Mod::get()->getSettingValue<bool>("fix-empty-size");
         if ((m_fields->songIds.empty() && m_fields->sfxIds.empty()) || !flag) {
@@ -144,17 +186,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
 
         m_fields->m_multiAssetListener.bind(
-            [this](NongManager::MultiAssetSizeTask::Event* e) {
-                if (!m_songIDLabel) {
-                    return;
-                }
-                if (const std::string* value = e->getValue()) {
-                    m_songIDLabel->setString(
-                        fmt::format("Songs: {}  SFX: {}  Size: {}",
-                                    m_songs.size(), m_sfx.size(), *value)
-                            .c_str());
-                }
-            });
+            this, &JBSongWidget::onFixMultiAssetSizeFinished);
         m_fields->m_multiAssetListener.setFilter(
             NongManager::get().getMultiAssetSizes(m_fields->songIds,
                                                   m_fields->sfxIds));
