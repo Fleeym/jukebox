@@ -3,6 +3,7 @@
 #include <matjson.hpp>
 #include <string>
 
+#include <Geode/loader/Mod.hpp>
 #include <Geode/Result.hpp>
 #include <Geode/utils/web.hpp>
 
@@ -57,6 +58,12 @@ Result<std::string> getUrlFromMetadataPayload(web::WebResponse* r) {
 }
 
 web::WebTask getMetadata(const std::string& id) {
+    int timeout = Mod::get()->getSettingValue<int>("download-timeout");
+
+    if (timeout < 30) {
+        timeout = 30;
+    }
+
     return web::WebRequest()
         .timeout(std::chrono::seconds(30))
         .bodyJSON(matjson::makeObject(

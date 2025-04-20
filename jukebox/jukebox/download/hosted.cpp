@@ -1,6 +1,7 @@
 #include <jukebox/download/hosted.hpp>
 
 #include <fmt/core.h>
+#include <Geode/loader/Mod.hpp>
 #include <Geode/Result.hpp>
 #include <Geode/utils/web.hpp>
 
@@ -13,8 +14,14 @@ namespace jukebox {
 namespace download {
 
 DownloadTask startHostedDownload(const std::string& url) {
+    int timeout = Mod::get()->getSettingValue<int>("download-timeout");
+
+    if (timeout < 30) {
+        timeout = 30;
+    }
+
     return web::WebRequest()
-        .timeout(std::chrono::seconds(30))
+        .timeout(std::chrono::seconds(timeout))
         .get(url)
         .map(
             [](web::WebResponse* response) -> DownloadTask::Value {
