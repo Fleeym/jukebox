@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.21.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64") 
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
+    set(CMAKE_OSX_ARCHITECTURES "arm64")
+else()
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 
-project(jukebox VERSION 3.1.0)
+project(jukebox VERSION 3.2.0)
 
 file(GLOB SOURCES
     jukebox/jukebox/ui/*.cpp
