@@ -78,6 +78,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 if (!m_songInfoObject) {
                     return ListenerResult::Propagate;
                 }
+
+                this->maybeChangeDownloadedMark(event->nongs());
+
                 if (event->nongs()->songID() !=
                     NongManager::get().adjustSongID(m_songInfoObject->m_songID,
                                                     m_isRobtopSong)) {
@@ -95,6 +98,22 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }));
 
         return true;
+    }
+
+    void maybeChangeDownloadedMark(Nongs* nongs) {
+        if (m_songs.size() == 0) {
+            return;
+        }
+
+        std::optional optPath = nongs->active()->path();
+
+        if (auto found = m_songs.find(nongs->songID()); found != m_songs.end()) {
+            if (!optPath) {
+                found->second = false;
+            } else {
+                found->second = std::filesystem::exists(optPath.value());
+            }
+        }
     }
 
     void adjustSongInfoObject(SongInfoObject* object) {
