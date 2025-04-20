@@ -32,6 +32,7 @@
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/Task.hpp>
 #include <Geode/utils/file.hpp>
+#include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
 #include <fmod.hpp>
 
@@ -595,7 +596,10 @@ void NongAddPopup::addSong(CCObject* target) {
     int startOffset = 0;
 
     if (startOffsetStr != "") {
-        startOffset = std::stoi(startOffsetStr);
+        Result<int> startOffsetRes = geode::utils::numFromString<int>(startOffsetStr);
+        if (startOffsetRes.isOk()) {
+            startOffset = startOffsetRes.unwrap();
+        }
     }
 
     if (m_songType == SongType::LOCAL) {

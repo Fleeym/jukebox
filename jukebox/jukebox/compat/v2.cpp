@@ -10,6 +10,7 @@
 #include <Geode/Result.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/utils/general.hpp>
 
 #include <jukebox/compat/compat.hpp>
 #include <jukebox/nong/nong.hpp>
@@ -163,7 +164,7 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
     std::unordered_map<int, CompatManifest> ret;
 
     for (const auto& [key, data] : json["nongs"]) {
-        int id = std::stoi(key);
+        GEODE_UNWRAP_INTO(int id, geode::utils::numFromString<int>(key));
 
         if (!data.contains("defaultPath") || !data["defaultPath"].isString() ||
             !data.contains("active") || !data["active"].isString() ||

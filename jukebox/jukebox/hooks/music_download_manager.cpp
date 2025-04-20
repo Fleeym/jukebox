@@ -6,6 +6,7 @@
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/c++stl/string.hpp>
 #include <Geode/loader/Log.hpp>
+#include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
 
 #include <jukebox/events/get_song_info.hpp>
@@ -37,7 +38,12 @@ void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
                                                     gd::string p2) {
     m_fields->overrideSongInfo = true;
     MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
-    int songID = std::stoi(p2);
+    geode::Result<int> songIDRes = geode::utils::numFromString<int>(p2);
+    if (songIDRes.isErr()) {
+        return;
+    }
+
+    int songID = songIDRes.unwrap();
 
     SongInfoObject* obj = this->getSongInfoObject(songID);
     m_fields->overrideSongInfo = false;

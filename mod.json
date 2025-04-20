@@ -67,16 +67,16 @@
 			"description": "Enables the old way to open the nong popup, by clicking on the song label",
 			"default": false
 		},
+		"fix-empty-size": {
+			"name": "Fix 0.0B",
+			"type": "bool",
+			"description": "Fixes levels with multiple songs (and sfx) showing 0.0B size.",
+			"default": true
+		},
 		"experimental-title": {
 			"name": "Experimental",
 			"type": "title",
 			"description": "Settings that may improve your life, or crash your game. Have fun! :)"
-		},
-		"fix-empty-size": {
-			"name": "Fix 0.0B",
-			"type": "bool",
-			"description": "Fixes multi asset levels showing 0.0B size. Might cause lag when downloading assets.",
-			"default": false
 		},
 		"autocomplete-metadata": {
 			"name": "Autocomplete metadata",
