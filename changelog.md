@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.2.0
+
+ * Remove all usage of std::stoi, fixing some crashes in the process
+ * Improve 0.0B fix, taken out of Experimental settings
+ * Add configurable request timeout for downloads
+ * Remove usage of a custom label for the song ID / size label
+ * Fix undownloaded songs not being marked as downloaded when switching to a NONG
+
 ## v3.1.1
 
  * Fix a crash that can happen when Show Audio Assets by Taswert is enabled
