@@ -29,6 +29,10 @@
 		"interface"
 	],
 	"settings": {
+		"downloads": {
+			"name": "Downloads",
+			"type": "title"
+		},
 		"indexes": {
 			"name": "Indexes",
 			"description": "An index is a JSON file that tells Jukebox where to fetch song data from. The default indexes that are provided fetch data from Song File Hub. The system is extensible, so you can add your own indexes!",
@@ -45,6 +49,13 @@
 					"userAdded": false
 				}
 			]
+		},
+		"download-timeout": {
+			"name": "Download timeout (s)",
+			"description": "How many seconds to wait when downloading a song until the download cancels",
+			"type": "int",
+			"default": 60,
+			"min": 30
 		},
 		"visual-title": {
 			"name": "Visual",
