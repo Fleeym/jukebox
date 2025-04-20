@@ -205,11 +205,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->labelMenu->removeFromParent();
             m_fields->labelMenu = nullptr;
         }
-        if (m_fields->sizeIdLabel != nullptr) {
-            m_songIDLabel->setVisible(true);
-            m_fields->sizeIdLabel->removeFromParent();
-            m_fields->sizeIdLabel = nullptr;
-        }
     }
 
     void onDelete(CCObject* obj) {
@@ -336,42 +331,21 @@ class $modify(JBSongWidget, CustomSongWidget) {
         int songID = NongManager::get().adjustSongID(nongs->songID(), m_isRobtopSong);
 
         if (!activePathOpt) {
-            if (m_fields->sizeIdLabel != nullptr) {
-                m_fields->sizeIdLabel->removeFromParent();
-                m_fields->sizeIdLabel = nullptr;
-            }
-
-            if (m_songIDLabel) {
-                m_songIDLabel->setVisible(true);
-            }
-
             return;
         }
 
         std::filesystem::path activePath = activePathOpt.value();
 
+        std::string sizeText;
+        if (std::filesystem::exists(activePath)) {
+            sizeText = NongManager::get().getFormattedSize(activePath);
+        } else if (m_songInfoObject) {
+            sizeText = fmt::format("{:.2f}MB", m_songInfoObject->m_fileSize);
+        } else {
+            sizeText = "N/A";
+        }
+
         if (m_songs.size() == 0 && m_sfx.size() == 0 && !m_isMusicLibrary) {
-            if (m_fields->sizeIdLabel != nullptr) {
-                m_fields->sizeIdLabel->removeFromParent();
-                m_fields->sizeIdLabel = nullptr;
-            }
-
-            if (nongs->isDefaultActive()) {
-                if (m_songIDLabel) {
-                    m_songIDLabel->setVisible(true);
-                }
-                geode::cocos::handleTouchPriority(this);
-                return;
-            } else if (m_songIDLabel) {
-                m_songIDLabel->setVisible(false);
-            }
-
-            std::string sizeText;
-            if (std::filesystem::exists(activePath)) {
-                sizeText = NongManager::get().getFormattedSize(activePath);
-            } else {
-                sizeText = "NA";
-            }
             std::string labelText;
             if (nongs->isDefaultActive()) {
                 std::stringstream ss;
@@ -390,39 +364,12 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 labelText = "SongID: " + display + "  Size: " + sizeText;
             }
 
-            auto label =
-                CCLabelBMFont::create(labelText.c_str(), "bigFont.fnt");
-            label->setID("id-and-size-label"_spr);
-            label->setPosition(ccp(-139.f, -31.f));
-            label->setAnchorPoint({0, 0.5f});
-            label->setScale(0.4f);
-            this->addChild(label);
-            m_fields->sizeIdLabel = label;
+            if (m_songIDLabel) {
+                m_songIDLabel->setString(labelText.c_str());
+            }
             geode::cocos::handleTouchPriority(this);
         } else if (m_isMusicLibrary) {
-            if (m_fields->sizeIdLabel != nullptr) {
-                m_fields->sizeIdLabel->removeFromParent();
-                m_fields->sizeIdLabel = nullptr;
-            }
-
-            if (nongs->isDefaultActive()) {
-                if (m_songIDLabel) {
-                    m_songIDLabel->setVisible(true);
-                }
-                geode::cocos::handleTouchPriority(this);
-                return;
-            } else if (m_songIDLabel) {
-                m_songIDLabel->setVisible(false);
-            }
-
             std::string labelText;
-            std::string sizeText;
-
-            if (std::filesystem::exists(activePath)) {
-                sizeText = NongManager::get().getFormattedSize(activePath);
-            } else {
-                sizeText = "NA";
-            }
 
             if (nongs->isDefaultActive()) {
                 labelText = fmt::format("ID: {}  Size: {}", songID, sizeText);
@@ -430,23 +377,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 labelText = fmt::format("ID: NONG  Size: {}", sizeText);
             }
 
-            auto label =
-                CCLabelBMFont::create(labelText.c_str(), "chatFont.fnt");
-            label->setID("id-and-size-label"_spr);
-            label->setPosition(ccp(-149.f, -9.f));
-            label->setAnchorPoint({0, 0.5f});
-            label->setScale(0.6f);
-            label->setColor(ccc3(0, 0, 0));
-            label->setOpacity(200);
-            this->addChild(label);
-            m_fields->sizeIdLabel = label;
-        } else {
-            if (m_fields->sizeIdLabel != nullptr) {
-                m_fields->sizeIdLabel->removeFromParent();
-                m_fields->sizeIdLabel = nullptr;
+            if (m_songIDLabel) {
+                m_songIDLabel->setString(labelText.c_str());
             }
-            m_songIDLabel->setVisible(true);
-            geode::cocos::handleTouchPriority(this);
         }
     }
 
