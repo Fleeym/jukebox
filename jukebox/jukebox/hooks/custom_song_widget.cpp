@@ -333,7 +333,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
     void updateIdAndSizeLabel(Nongs* nongs) {
         Song* active = nongs->active();
         std::optional<std::filesystem::path> activePathOpt = active->path();
-        int songID = NongManager::get().adjustSongID(songID, m_isRobtopSong);
+        int songID = NongManager::get().adjustSongID(nongs->songID(), m_isRobtopSong);
 
         if (!activePathOpt) {
             if (m_fields->sizeIdLabel != nullptr) {
