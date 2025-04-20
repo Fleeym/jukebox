@@ -10,6 +10,7 @@
 
 #include <fmt/chrono.h>
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
@@ -117,9 +118,7 @@ std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
         return "N/A";
     }
     double toMegabytes = size / 1024.f / 1024.f;
-    std::stringstream ss;
-    ss << std::setprecision(3) << toMegabytes << "MB";
-    return ss.str();
+    return fmt::format("{:.2f}MB", toMegabytes);
 }
 
 NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(
@@ -172,9 +171,7 @@ NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(
             }
 
             double toMegabytes = sum / 1024.f / 1024.f;
-            std::stringstream ss;
-            ss << std::setprecision(3) << toMegabytes << "MB";
-            return ss.str();
+            return fmt::format("{:.2f}MB", toMegabytes);
         },
         "Multiasset calculation");
 }
