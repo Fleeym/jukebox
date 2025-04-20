@@ -356,10 +356,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 m_fields->sizeIdLabel = nullptr;
             }
 
-            // TODO this might be fuckery
-            if (!std::filesystem::exists(activePath) &&
-                nongs->isDefaultActive()) {
-                m_songIDLabel->setVisible(true);
+            if (nongs->isDefaultActive()) {
+                if (m_songIDLabel) {
+                    m_songIDLabel->setVisible(true);
+                }
                 geode::cocos::handleTouchPriority(this);
                 return;
             } else if (m_songIDLabel) {
@@ -405,10 +405,13 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 m_fields->sizeIdLabel = nullptr;
             }
 
-            if (!std::filesystem::exists(activePath) &&
-                nongs->isDefaultActive()) {
-                m_songIDLabel->setVisible(true);
-            } else {
+            if (nongs->isDefaultActive()) {
+                if (m_songIDLabel) {
+                    m_songIDLabel->setVisible(true);
+                }
+                geode::cocos::handleTouchPriority(this);
+                return;
+            } else if (m_songIDLabel) {
                 m_songIDLabel->setVisible(false);
             }
 
@@ -438,8 +441,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
             this->addChild(label);
             m_fields->sizeIdLabel = label;
         } else {
-            if (m_fields->sizeIdLabel) {
-                m_fields->sizeIdLabel->setVisible(false);
+            if (m_fields->sizeIdLabel != nullptr) {
+                m_fields->sizeIdLabel->removeFromParent();
+                m_fields->sizeIdLabel = nullptr;
             }
             m_songIDLabel->setVisible(true);
             geode::cocos::handleTouchPriority(this);
