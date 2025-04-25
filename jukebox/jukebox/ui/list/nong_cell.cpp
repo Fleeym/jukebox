@@ -92,11 +92,6 @@ bool NongCell::initLocal() {
 
     Song* songInfo = songInfoOpt.value();
 
-    std::vector<std::string> verifiedNongs = m_levelID.has_value() ? NongManager::get().getVerifiedNongsForLevel(
-        m_levelID.value(),
-        {m_songID}
-    ) : std::vector<std::string>{};
-
     std::vector<std::string> metadataList = {};
 
     switch (songInfo->type()) {
@@ -137,7 +132,9 @@ bool NongCell::initLocal() {
     }
     m_nongCell->m_metadata = oss.str();
 
-    m_isVerified = std::find(verifiedNongs.begin(), verifiedNongs.end(), m_uniqueID) != verifiedNongs.end();
+    m_isVerified = m_levelID.has_value()
+                   ? NongManager::get().isNongVerifiedForLevelSong(m_levelID.value(), m_songID, m_uniqueID)
+                   : false;
     m_isDefault = nongs.value()->defaultSong()->metadata()->uniqueID == m_uniqueID;
     m_isActive = nongs.value()->active()->metadata()->uniqueID == m_uniqueID;
     m_isDownloaded = songInfo->path().has_value() &&

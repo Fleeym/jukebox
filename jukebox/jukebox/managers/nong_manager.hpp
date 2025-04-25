@@ -107,6 +107,16 @@ public:
     std::vector<std::string> getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs);
 
     /**
+     * Returns whether the nong is verified for the a song in a level
+     *
+     * @param levelID the id of the level
+     * @param songID the id of a song in the level
+     * @param uniqueID the id of the nong
+     * @return Boolean for whether the nong is verified 
+     */
+    bool isNongVerifiedForLevelSong(int levelID, int songID, const std::string& uniqueID);
+
+    /**
      * Checks if the given level has a verified song for any of the given song IDs
      *
      * @param levelID the id of the level

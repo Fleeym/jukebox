@@ -38,6 +38,15 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     return m_manifest.m_nongs[songID].get();
 }
 
+bool NongManager::isNongVerifiedForLevelSong(int levelID, int songID, const std::string& uniqueID) {
+    // List the verified nongs for the given level and song
+    std::vector<std::string> verifiedNongs = NongManager::get().getVerifiedNongsForLevel(
+        levelID,
+        {songID}
+    );
+    return std::find(verifiedNongs.begin(), verifiedNongs.end(), uniqueID) != verifiedNongs.end();
+}
+
 std::vector<std::string> NongManager::getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs) {
     std::vector<std::string> verifiedNongs;
 
