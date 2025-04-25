@@ -61,7 +61,7 @@ void NongCellUI::build() {
     if (m_isVerified) {
         // Create the "Verified For Level" text
         CCLabelBMFont* verifiedLabel = CCLabelBMFont::create("Verified For Level", "goldFont.fnt");
-        verifiedLabel->setScale(0.3f);
+        verifiedLabel->setScale(0.35f);
 
         // Create outline shape
         CCScale9Sprite* outlineStencil = CCScale9Sprite::create("square02b_001.png");
@@ -114,7 +114,7 @@ void NongCellUI::build() {
         this->addChildAtPosition(clipNode, Anchor::Center);
 
         // Add the verified label on the text's background
-        this->addChildAtPosition(verifiedLabel, Anchor::Center, textBgStencil->getPosition() + CCPoint(0.f, 6.f));
+        this->addChildAtPosition(verifiedLabel, Anchor::Center, textBgStencil->getPosition() + CCPoint(0.f, 7.f));
     }
 
     CCScale9Sprite* bg = CCScale9Sprite::create("square02b_001.png");
