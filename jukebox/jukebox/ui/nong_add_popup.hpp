@@ -41,6 +41,7 @@ protected:
     std::vector<std::string> m_publishableIndexes;
 
     std::string m_memoizedLocalInput;
+    std::string m_memoizedYoutubeInput;
     std::string m_memoizedHostedInput;
 
     std::optional<std::filesystem::path> m_localPath = std::nullopt;
@@ -79,7 +80,7 @@ protected:
     void addPathLabel(std::string const& path);
     void onFileOpen(
         geode::Task<geode::Result<std::filesystem::path>>::Event* event);
-    void setSongType(SongType type);
+    void setSongType(SongType type, bool memorizePrevious);
     void onSwitchToLocal(cocos2d::CCObject*);
     void onSwitchToYT(cocos2d::CCObject*);
     void onSwitchToHosted(cocos2d::CCObject*);

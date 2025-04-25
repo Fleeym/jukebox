@@ -290,16 +290,16 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
 
     switch (edit->type()) {
         case NongType::LOCAL:
-            m_specialInput->setString(edit->path().value().string());
-            this->setSongType(SongType::LOCAL);
+            m_memoizedLocalInput = edit->path().value().string();
+            this->setSongType(SongType::LOCAL, false);
             break;
         case NongType::YOUTUBE:
-            m_specialInput->setString(static_cast<YTSong*>(edit)->youtubeID());
-            this->setSongType(SongType::YOUTUBE);
+            m_memoizedYoutubeInput = static_cast<YTSong*>(edit)->youtubeID();
+            this->setSongType(SongType::YOUTUBE, false);
             break;
         case NongType::HOSTED:
-            m_specialInput->setString(static_cast<HostedSong*>(edit)->url());
-            this->setSongType(SongType::HOSTED);
+            m_memoizedHostedInput = static_cast<HostedSong*>(edit)->url();
+            this->setSongType(SongType::HOSTED, false);
             break;
     }
 
@@ -317,17 +317,17 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
 
         switch (m_replacedNong.value()->type()) {
             case NongType::LOCAL:
-                this->setSongType(SongType::LOCAL);
+                this->setSongType(SongType::LOCAL, true);
                 shouldSubmit = submit.m_supportedSongTypes.at(
                     IndexMetadata::Features::SupportedSongType::LOCAL);
                 break;
             case NongType::YOUTUBE:
-                this->setSongType(SongType::YOUTUBE);
+                this->setSongType(SongType::YOUTUBE, true);
                 shouldSubmit = submit.m_supportedSongTypes.at(
                     IndexMetadata::Features::SupportedSongType::YOUTUBE);
                 break;
             case NongType::HOSTED:
-                this->setSongType(SongType::HOSTED);
+                this->setSongType(SongType::HOSTED, true);
                 shouldSubmit = submit.m_supportedSongTypes.at(
                     IndexMetadata::Features::SupportedSongType::HOSTED);
                 break;
@@ -461,9 +461,19 @@ void NongAddPopup::onFileOpen(
     }
 }
 
-void NongAddPopup::setSongType(SongType type) {
-    if (m_songType == type) {
-        return;
+void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
+    if (memorizePrevious) {
+        switch (m_songType) {
+            case SongType::LOCAL:
+                m_memoizedLocalInput = m_specialInput->getString();
+                break;
+            case SongType::HOSTED:
+                m_memoizedHostedInput = m_specialInput->getString();
+                break;
+            case SongType::YOUTUBE:
+                m_memoizedYoutubeInput = m_specialInput->getString();
+                break;
+        }
     }
 
     m_songType = type;
@@ -473,10 +483,10 @@ void NongAddPopup::setSongType(SongType type) {
 
     m_switchLocalSpr->updateBGImage(type == SongType::LOCAL ? on : off);
     m_switchHostedSpr->updateBGImage(type == SongType::HOSTED ? on : off);
+    m_switchYTSpr->updateBGImage(type == SongType::YOUTUBE ? on : off);
 
     switch (type) {
         case SongType::LOCAL: {
-            m_memoizedHostedInput = m_specialInput->getString();
             m_specialInput->setString("");
             m_localSongMenu->setVisible(true);
             m_specialInfoNode->updateLayout();
@@ -488,7 +498,6 @@ void NongAddPopup::setSongType(SongType type) {
             break;
         }
         case SongType::HOSTED: {
-            m_memoizedLocalInput = m_specialInput->getString();
             m_specialInput->setString("");
             m_localSongMenu->setVisible(false);
             m_specialInfoNode->updateLayout();
@@ -506,7 +515,7 @@ void NongAddPopup::setSongType(SongType type) {
 }
 
 void NongAddPopup::onSwitchToLocal(CCObject*) {
-    this->setSongType(SongType::LOCAL);
+    this->setSongType(SongType::LOCAL, true);
 }
 
 void NongAddPopup::onSwitchToYT(CCObject*) {
@@ -515,11 +524,11 @@ void NongAddPopup::onSwitchToYT(CCObject*) {
                          "They will be enabled in a future <cb>update</c> :)",
                          "Ok")
         ->show();
-    /*this->setSongType(SongType::YOUTUBE);*/
+    /*this->setSongType(SongType::YOUTUBE, true);*/
 }
 
 void NongAddPopup::onSwitchToHosted(CCObject*) {
-    this->setSongType(SongType::HOSTED);
+    this->setSongType(SongType::HOSTED, true);
 }
 
 void NongAddPopup::onPublish(CCObject* target) {
