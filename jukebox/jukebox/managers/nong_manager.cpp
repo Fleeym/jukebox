@@ -38,6 +38,29 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     return m_manifest.m_nongs[songID].get();
 }
 
+std::vector<std::string> NongManager::getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs) {
+    std::vector<std::string> verifiedNongs;
+
+    for (const int songID : songIDs) {
+        auto nongs = getNongs(songID);
+
+        if (!nongs.has_value()) {
+            continue;
+        }
+        
+        // For each indexSong, check if it contains the given levelID in its verifiedLevelIDs field.
+        for (auto indexSong : nongs.value()->indexSongs()) {
+            auto& ids = indexSong->verifiedLevelIDs;
+
+            if (std::find(ids.begin(), ids.end(), levelID) != ids.end()) {
+                verifiedNongs.push_back(indexSong->uniqueID);
+            }
+        }
+    }
+
+    return verifiedNongs;
+}
+
 int NongManager::getCurrentManifestVersion() { return m_manifest.m_version; }
 
 int NongManager::getStoredIDCount() { return m_manifest.m_nongs.size(); }

@@ -254,6 +254,17 @@ struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
             songs.push_back(i.asInt().unwrap());
         }
 
+        const std::vector<matjson::Value>& jsonVerifiedLevels =
+            value["verifiedLevelIDs"].asArray().unwrap();
+        std::vector<int> verifiedLevelIDs;
+        songs.reserve(jsonVerifiedLevels.size());
+        for (const matjson::Value& i : jsonVerifiedLevels) {
+            if (!i.isNumber()) {
+                continue;
+            }
+            verifiedLevelIDs.push_back(i.asInt().unwrap());
+        }
+
         return geode::Ok(jukebox::index::IndexSongMetadata{
             .uniqueID = "",
             .name = value["name"].asString().unwrap(),
@@ -267,6 +278,7 @@ struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
                         .map([](auto i) { return std::optional(i); })
                         .unwrapOr(std::nullopt),
             .songIDs = std::move(songs),
+            .verifiedLevelIDs = std::move(verifiedLevelIDs),
             .startOffset =
                 static_cast<int>(value["startOffset"].asInt().unwrapOr(0)),
             .parentID = nullptr});

@@ -34,7 +34,7 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
-                              int defaultSongID) {
+                              int defaultSongID, std::optional<int> levelID) {
     m_songIDS = ids;
     m_parentWidget = parent;
     m_defaultSongID = defaultSongID;
@@ -42,6 +42,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     if (ids.size() == 1) {
         m_currentSongID = ids[0];
     }
+    m_levelID = levelID;
 
     CCSize contentSize = m_mainLayer->getContentSize();
 
@@ -205,28 +206,7 @@ void NongDropdownLayer::createList() {
     if (!m_list) {
         m_list = NongList::create(
             m_songIDS, CCSize{this->getCellSize().width, 220.f},
-            [this](int gdSongID, const std::string& uniqueID) {
-                this->setActiveSong(gdSongID, uniqueID);
-            },
-            [this](int gdSongID, const std::string& uniqueID, bool onlyAudio,
-                   bool confirm) {
-                this->deleteSong(gdSongID, uniqueID, onlyAudio, confirm);
-            },
-            [this](int gdSongID, const std::string& uniqueID) {
-                this->downloadSong(gdSongID, uniqueID);
-            },
-            [this](int gdSongID, const std::string& uniqueID) {
-                std::optional<Nongs*> nongs =
-                    NongManager::get().getNongs(gdSongID);
-                if (!nongs.has_value()) {
-                    FLAlertLayer::create("Error", "Song is not initialized",
-                                         "Ok")
-                        ->show();
-                    return;
-                }
-                std::optional<Song*> nong = nongs.value()->findSong(uniqueID);
-                NongAddPopup::create(gdSongID, nong)->show();
-            },
+            m_levelID,
             [this](std::optional<int> currentSongID) {
                 m_currentSongID = currentSongID;
                 bool multiple = !currentSongID.has_value();
@@ -252,18 +232,6 @@ void NongDropdownLayer::createList() {
 
 CCSize NongDropdownLayer::getCellSize() const { return {320.f, 60.f}; }
 
-void NongDropdownLayer::setActiveSong(int gdSongID,
-                                      const std::string& uniqueID) {
-    if (auto err = NongManager::get().setActiveSong(gdSongID, uniqueID);
-        err.isErr()) {
-        FLAlertLayer::create(
-            "Failed", fmt::format("Failed to set song: {}", err.unwrapErr()),
-            "Ok")
-            ->show();
-        return;
-    }
-}
-
 void NongDropdownLayer::onDiscord(CCObject* target) {
     geode::createQuickPopup("Discord",
                             "Do you want to <cb>join the Song File Hub discord "
@@ -275,65 +243,6 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
                                         "https://discord.gg/maSgd4zpEF");
                                 }
                             });
-}
-
-void NongDropdownLayer::deleteSong(int gdSongID, const std::string& uniqueID,
-                                   bool onlyAudio, bool confirm) {
-    auto func = [gdSongID, uniqueID, onlyAudio, confirm]() {
-        if (onlyAudio) {
-            if (auto err =
-                    NongManager::get().deleteSongAudio(gdSongID, uniqueID);
-                err.isErr()) {
-                log::error("Failed to delete audio for {}: {}", uniqueID,
-                           err.unwrapErr());
-            }
-        } else {
-            if (auto err = NongManager::get().deleteSong(gdSongID, uniqueID);
-                err.isErr()) {
-                FLAlertLayer::create(
-                    "Failed",
-                    fmt::format("Failed to delete song: {}", err.unwrapErr()),
-                    "Ok")
-                    ->show();
-                return;
-            }
-        }
-
-        if (confirm) {
-            FLAlertLayer::create("Success", "The song was deleted!", "Ok")
-                ->show();
-        }
-    };
-
-    if (!confirm) {
-        func();
-        return;
-    }
-
-    createQuickPopup(
-        "Are you sure?",
-        fmt::format(
-            "Are you sure you want to delete the song from your NONGs?"),
-        "No", "Yes", [this, func](FLAlertLayer* self, bool btn2) {
-            if (!btn2) {
-                return;
-            }
-            func();
-        });
-}
-
-void NongDropdownLayer::downloadSong(int gdSongID,
-                                     const std::string& uniqueID) {
-    if (auto err = IndexManager::get().downloadSong(gdSongID, uniqueID);
-        err.isErr()) {
-        FLAlertLayer::create(
-            "Failed",
-            fmt::format("Failed to start/stop downloading song: {}",
-                        err.unwrapErr()),
-            "Ok")
-            ->show();
-        return;
-    }
 }
 
 void NongDropdownLayer::addSong(Nongs&& song, bool popup) {

@@ -98,6 +98,24 @@ public:
     std::optional<Nongs*> getNongs(int songID);
 
     /**
+     * Returns all the uniqueIDs of nongs that are verified for the given level ID
+     *
+     * @param levelID the id of the level
+     * @param songIDs list of all the song ids to check their nongs
+     * @return List of all uniqueIDs of nongs that are verified for the given level ID
+     */
+    std::vector<std::string> getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs);
+
+    /**
+     * Checks if the given level has a verified song for any of the given song IDs
+     *
+     * @param levelID the id of the level
+     * @param songIDs list of all the song ids to check
+     * @return Whether one of the songs has a verified nong for the level
+     */
+    bool isNongVerified(int levelID, std::vector<int> songIDs);
+
+    /**
      * Formats a size in bytes to a x.xxMB string
      *
      * @param path the path to calculate the filesize of

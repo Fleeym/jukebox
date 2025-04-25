@@ -48,7 +48,16 @@ class $modify(JBSongWidget, CustomSongWidget) {
         std::unique_ptr<
             EventListener<EventFilter<jukebox::event::SongStateChanged>>>
             m_songStateListener;
+        std::optional<int> levelID = std::nullopt;
     };
+
+    std::optional<int> getLevelID() {
+        return this->m_fields->levelID;
+    }
+    
+    void setLevelID(int levelID) {
+        this->m_fields->levelID = levelID;
+    }
 
     bool init(SongInfoObject* songInfo, CustomSongDelegate* songDelegate,
               bool showSongSelect, bool showPlayMusic, bool showDownload,
@@ -554,7 +563,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         } else {
             ids.push_back(id);
         }
-        auto layer = NongDropdownLayer::create(ids, this, id);
+        auto layer = NongDropdownLayer::create(ids, this, id, getLevelID());
         // based robtroll
         layer->setZOrder(106);
         layer->show();
@@ -578,6 +587,7 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
             popup->m_scene = this;
             popup->show();
         }
+        static_cast<JBSongWidget*>(this->m_songWidget)->setLevelID(this->m_level->m_levelID);
         return true;
     }
 };

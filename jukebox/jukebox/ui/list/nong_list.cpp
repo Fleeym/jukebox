@@ -23,7 +23,6 @@
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/index.hpp>
 #include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/list/index_song_cell.hpp>
 #include <jukebox/ui/list/nong_cell.hpp>
 #include <jukebox/ui/list/song_cell.hpp>
 
@@ -33,21 +32,15 @@ namespace jukebox {
 
 bool NongList::init(
     std::vector<int>& songIds, const cocos2d::CCSize& size,
-    std::function<void(int, const std::string&)> onSetActive,
-    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
-        onDelete,
-    std::function<void(int, const std::string&)> onDownload,
-    std::function<void(int, const std::string&)> onEdit,
-    std::function<void(std::optional<int>)> onListTypeChange) {
+    std::optional<int> levelID,
+    std::function<void(std::optional<int>)> onListTypeChange
+) {
     if (!CCNode::init()) {
         return false;
     }
 
     m_songIds = songIds;
-    m_onSetActive = onSetActive;
-    m_onDelete = onDelete;
-    m_onDownload = onDownload;
-    m_onEdit = onEdit;
+    m_levelID = levelID;
     m_onListTypeChange = onListTypeChange;
 
     if (m_songIds.size() == 1) {
@@ -77,12 +70,13 @@ bool NongList::init(
     this->addChildAtPosition(menu, Anchor::Left, CCPoint{-10.0f, 0.0f});
 
     m_list =
-        ScrollLayer::create({size.width - s_padding, size.height - s_padding});
+        ScrollLayer::create({size.width, size.height - s_padding});
     m_list->m_contentLayer->setLayout(ColumnLayout::create()
                                           ->setAxisReverse(true)
                                           ->setAxisAlignment(AxisAlignment::End)
                                           ->setAutoGrowAxis(size.height)
                                           ->setGap(s_padding / 2));
+    m_list->m_contentLayer->setPositionX(s_padding / 2.f);
 
     this->addChildAtPosition(m_list, Anchor::Center,
                              -m_list->getScaledContentSize() / 2);
@@ -104,7 +98,7 @@ void NongList::build() {
         return;
     }
 
-    CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
+    CCSize itemSize = {m_list->getScaledContentSize().width - s_padding, s_itemSize};
 
     if (m_onListTypeChange) {
         m_onListTypeChange(m_currentSong);
@@ -139,12 +133,12 @@ void NongList::build() {
         Song* active = nongs->active();
 
         m_list->m_contentLayer->addChild(NongCell::create(
-            id, defaultSong, true,
-            defaultSong->metadata()->uniqueID == active->metadata()->uniqueID,
-            itemSize, [this, id, defaultID]() { m_onSetActive(id, defaultID); },
-            [this, id, defaultID]() { m_onDelete(id, defaultID, true, true); },
-            [this, id, defaultID]() { m_onDownload(id, defaultID); },
-            [this, id, defaultID]() { m_onEdit(id, defaultID); }));
+            id,
+            defaultID,
+            itemSize,
+            m_levelID,
+            std::nullopt
+        ));
 
         CCLabelBMFont* localSongs =
             CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
@@ -214,7 +208,7 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     Song* defaultSong = parent->defaultSong();
     Song* active = parent->active();
 
-    CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
+    CCSize itemSize = {m_list->getScaledContentSize().width - s_padding, s_itemSize};
 
     std::string uniqueID = nong->metadata()->uniqueID;
     std::optional<std::filesystem::path> path = nong->path();
@@ -222,12 +216,12 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     bool isDownloaded =
         path.has_value() && std::filesystem::exists(path.value());
     NongCell* cell = NongCell::create(
-        id, nong, uniqueID == defaultSong->metadata()->uniqueID,
-        uniqueID == active->metadata()->uniqueID, itemSize,
-        [this, id, uniqueID]() { m_onSetActive(id, uniqueID); },
-        [this, id, uniqueID]() { m_onDelete(id, uniqueID, false, true); },
-        [this, id, uniqueID]() { m_onDownload(id, uniqueID); },
-        [this, id, uniqueID]() { m_onEdit(id, uniqueID); });
+        id,
+        uniqueID,
+        itemSize,
+        m_levelID,
+        std::nullopt
+    );
     cell->setID(uniqueID);
 
     if (!liveInsert) {
@@ -247,9 +241,14 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
 
 void NongList::addIndexSongToList(index::IndexSongMetadata* song,
                                   Nongs* parent) {
-    const CCSize itemSize = {m_list->getScaledContentSize().width, s_itemSize};
-    IndexSongCell* cell =
-        IndexSongCell::create(song, m_currentSong.value(), itemSize);
+    const CCSize itemSize = {m_list->getScaledContentSize().width - s_padding, s_itemSize};
+    NongCell* cell = NongCell::create(
+        m_currentSong.value(),
+        song->uniqueID,
+        itemSize,
+        m_levelID,
+        song
+    );
     cell->setID(fmt::format("{}-{}", song->parentID->m_id, song->uniqueID));
     m_list->m_contentLayer->addChild(cell);
 }
@@ -415,15 +414,10 @@ ListenerResult NongList::onSongAdded(event::ManualSongAdded* e) {
 
 NongList* NongList::create(
     std::vector<int>& songIds, const cocos2d::CCSize& size,
-    std::function<void(int, const std::string&)> onSetActive,
-    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
-        onDelete,
-    std::function<void(int, const std::string&)> onDownload,
-    std::function<void(int, const std::string&)> onEdit,
+    std::optional<int> levelID,
     std::function<void(std::optional<int>)> onListTypeChange) {
     auto ret = new NongList();
-    if (!ret->init(songIds, size, onSetActive, onDelete, onDownload, onEdit,
-                   onListTypeChange)) {
+    if (!ret->init(songIds, size, levelID, onListTypeChange)) {
         CC_SAFE_DELETE(ret);
         return nullptr;
     }

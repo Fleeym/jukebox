@@ -22,13 +22,14 @@
 namespace jukebox {
 
 class NongDropdownLayer
-    : public geode::Popup<std::vector<int>, CustomSongWidget*, int> {
+    : public geode::Popup<std::vector<int>, CustomSongWidget*, int, std::optional<int>> {
 protected:
     std::vector<int> m_songIDS;
     std::optional<int> m_currentSongID = std::nullopt;
     int m_defaultSongID;
     geode::Ref<CustomSongWidget> m_parentWidget;
     NongList* m_list = nullptr;
+    std::optional<int> m_levelID;
 
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_discordBtn = nullptr;
@@ -44,7 +45,7 @@ protected:
     bool m_fetching = false;
 
     bool setup(std::vector<int> ids, CustomSongWidget* parent,
-               int defaultSongID) override;
+               int defaultSongID, std::optional<int> levelID) override;
     void createList();
     cocos2d::CCSize getCellSize() const;
     void deleteAllNongs(cocos2d::CCObject*);
@@ -55,19 +56,16 @@ protected:
 public:
     void onSelectSong(int songID);
     void onDiscord(cocos2d::CCObject*);
-    void setActiveSong(int gdSongID, const std::string& uniqueID);
-    void deleteSong(int gdSongID, const std::string& uniqueID, bool onlyAudio,
-                    bool confirm);
-    void downloadSong(int gdSongID, const std::string& uniqueID);
     void addSong(Nongs&& song, bool popup = true);
     void updateParentWidget(SongMetadata const& song);
 
     static NongDropdownLayer* create(std::vector<int> ids,
                                      CustomSongWidget* parent,
-                                     int defaultSongID) {
+                                     int defaultSongID,
+                                     std::optional<int> levelID) {
         auto ret = new NongDropdownLayer;
         if (ret && ret->initAnchored(420.f, 280.f, ids, parent, defaultSongID,
-                                     "GJ_square01.png")) {
+                                     levelID, "GJ_square01.png")) {
             ret->autorelease();
             return ret;
         }

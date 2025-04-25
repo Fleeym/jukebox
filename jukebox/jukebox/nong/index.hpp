@@ -88,6 +88,7 @@ struct IndexSongMetadata final {
     std::optional<std::string> url;
     std::optional<std::string> ytId;
     std::vector<int> songIDs;
+    std::vector<int> verifiedLevelIDs;
     int startOffset = 0;
     IndexMetadata* parentID;
 };

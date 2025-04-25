@@ -8,11 +8,11 @@ namespace jukebox {
 
 namespace event {
 
-StartDownload::StartDownload(IndexSongMetadata* song, int gdId)
-    : m_song(song), m_gdId(gdId) {}
+StartDownload::StartDownload(int gdSongID, std::string uniqueID)
+    : m_gdSongID(gdSongID), m_uniqueID(uniqueID) {}
 
-IndexSongMetadata* StartDownload::song() { return m_song; }
-int StartDownload::gdId() { return m_gdId; }
+int StartDownload::gdSongID() { return m_gdSongID; }
+std::string StartDownload::uniqueID() { return m_uniqueID; }
 
 }  // namespace event
 
