@@ -60,6 +60,15 @@ class $modify(JBSongWidget, CustomSongWidget) {
     void setLevelID(int levelID) {
         m_fields->levelID = levelID;
 
+        setVerifiedUI();
+    }
+
+    // Set the disc to show the song is verified.
+    // The function only works if there is a verified song.
+    void setVerifiedUI() {
+        if (!m_fields->levelID.has_value()) {
+            return;
+        }
         std::vector<int> songIDs;
         for (auto const& kv : m_songs) {
             songIDs.push_back(kv.first);
@@ -72,13 +81,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
         songIDs.push_back(id);
 
-        bool isVerified = !NongManager::get().getVerifiedNongsForLevel(levelID, songIDs).empty();
-        if (isVerified) {
-            setVerifiedUI();
+        bool isVerified = !NongManager::get().getVerifiedNongsForLevel(m_fields->levelID.value(), songIDs).empty();
+        if (!isVerified) {
+            return;
         }
-    }
 
-    void setVerifiedUI() {
         if (m_fields->sprRays) {
             m_fields->sprRays->setVisible(true);
         }
@@ -589,6 +596,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             m_fields->pinMenu->setPosition(pos);
             this->addChild(m_fields->pinMenu);
+
+            setVerifiedUI();
         }
     }
 
