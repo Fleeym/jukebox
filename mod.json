@@ -1,11 +1,12 @@
 {
-	"geode": "4.3.1",
+	"geode": "4.4.0",
 	"version": "3.2.0",
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
 		"win": "2.2074",
 		"mac": "2.2074",
+		"ios": "2.2074",
 		"android": "2.2074"
 	},
 	"developers": [
