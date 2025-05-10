@@ -490,7 +490,7 @@ void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
             m_specialInput->setString("");
             m_localSongMenu->setVisible(true);
             m_specialInfoNode->updateLayout();
-            m_specialInput->getInputNode()->getPlaceholderLabel()->setString(
+            m_specialInput->getInputNode()->getTextLabel()->setString(
                 "Select a file");
             if (!m_memoizedLocalInput.empty()) {
                 m_specialInput->setString(m_memoizedLocalInput);
@@ -501,7 +501,7 @@ void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
             m_specialInput->setString("");
             m_localSongMenu->setVisible(false);
             m_specialInfoNode->updateLayout();
-            m_specialInput->getInputNode()->getPlaceholderLabel()->setString(
+            m_specialInput->getInputNode()->getTextLabel()->setString(
                 "Enter a song URL");
             if (!m_memoizedHostedInput.empty()) {
                 m_specialInput->setString(m_memoizedHostedInput);

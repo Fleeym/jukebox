@@ -14,6 +14,7 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
@@ -29,6 +30,7 @@
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/nong_dropdown_layer.hpp>
+#include "Geode/cocos/actions/CCActionInterval.h"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -53,14 +55,12 @@ class $modify(JBSongWidget, CustomSongWidget) {
         std::optional<int> levelID = std::nullopt;
     };
 
-    std::optional<int> getLevelID() {
-        return m_fields->levelID;
-    }
-    
+    std::optional<int> getLevelID() { return m_fields->levelID; }
+
     void setLevelID(int levelID) {
         m_fields->levelID = levelID;
 
-        setVerifiedUI();
+        this->setVerifiedUI();
     }
 
     // Set the disc to show the song is verified.
@@ -70,6 +70,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
         std::vector<int> songIDs;
+        // m_songs size + SongInfoObject id
+        songIDs.reserve(m_songs.size() + 1);
         for (auto const& kv : m_songs) {
             songIDs.push_back(kv.first);
         }
@@ -81,7 +83,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
         songIDs.push_back(id);
 
-        bool isVerified = !NongManager::get().getVerifiedNongsForLevel(m_fields->levelID.value(), songIDs).empty();
+        bool isVerified =
+            !NongManager::get()
+                 .getVerifiedNongsForLevel(m_fields->levelID.value(), songIDs)
+                 .empty();
         if (!isVerified) {
             return;
         }
@@ -90,7 +95,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->sprRays->setVisible(true);
         }
         if (m_fields->btnDisc) {
-
             CCSprite* sprDiscGold =
                 CCSprite::createWithSpriteFrameName("JB_PinDiscGold.png"_spr);
             if (m_isMusicLibrary) {
@@ -159,7 +163,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         std::optional optPath = nongs->active()->path();
 
-        if (auto found = m_songs.find(nongs->songID()); found != m_songs.end()) {
+        if (auto found = m_songs.find(nongs->songID());
+            found != m_songs.end()) {
             if (!optPath) {
                 found->second = false;
             } else {
@@ -562,10 +567,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
             if (m_isMusicLibrary) {
                 sprDisc->setScale(0.5f);
-                sprRays->setScale(0.5f*1.15);
+                sprRays->setScale(0.5f * 1.15f);
             } else {
                 sprDisc->setScale(0.7f);
-                sprRays->setScale(0.7f*1.15);
+                sprRays->setScale(0.7f * 1.15f);
             }
             sprDisc->setID("nong-pin"_spr);
 
@@ -583,10 +588,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             m_fields->pinMenu->addChildAtPosition(sprRays, Anchor::Center);
 
-            float rotationDuration = 80.0f;
-            auto rotate = CCRotateBy::create(rotationDuration, 360);
-            auto repeatRotate = CCRepeatForever::create(rotate);
-            sprRays->runAction(repeatRotate);
+            static constexpr float rotationDuration = 80.0f;
+            CCRepeatForever* rotateAction = CCRepeatForever::create(
+                CCRotateBy::create(rotationDuration, 360));
+            sprRays->runAction(rotateAction);
 
             m_fields->pinMenu->setAnchorPoint({0.5f, 0.5f});
             m_fields->pinMenu->ignoreAnchorPointForPosition(false);
@@ -597,7 +602,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->pinMenu->setPosition(pos);
             this->addChild(m_fields->pinMenu);
 
-            setVerifiedUI();
+            this->setVerifiedUI();
         }
     }
 
@@ -627,7 +632,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
         } else {
             ids.push_back(id);
         }
-        auto layer = NongDropdownLayer::create(ids, this, id, getLevelID());
+        auto layer =
+            NongDropdownLayer::create(ids, this, id, this->getLevelID());
         // based robtroll
         layer->setZOrder(106);
         layer->show();
@@ -651,7 +657,8 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
             popup->m_scene = this;
             popup->show();
         }
-        static_cast<JBSongWidget*>(this->m_songWidget)->setLevelID(this->m_level->m_levelID);
+        static_cast<JBSongWidget*>(this->m_songWidget)
+            ->setLevelID(m_level->m_levelID.value());
         return true;
     }
 };

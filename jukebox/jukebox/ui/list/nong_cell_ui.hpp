@@ -18,7 +18,8 @@ namespace jukebox {
 
 class NongDropdownLayer;
 
-// Fields are public because they are meant to be changed and then UI will update when build() is called.
+// Fields are public because they are meant to be changed and then UI will
+// update when build() is called.
 class NongCellUI : public cocos2d::CCNode {
 protected:
     cocos2d::CCLabelBMFont* m_songNameLabel = nullptr;
@@ -37,13 +38,9 @@ protected:
     cocos2d::CCMenu* m_downloadProgressContainer = nullptr;
     cocos2d::CCProgressTimer* m_downloadProgressTimer = nullptr;
 
-    bool init(
-            const cocos2d::CCSize& size,
-            std::function<void()> onSelect,
-            std::function<void()> onTrash,
-            std::function<void()> onFixDefault,
-            std::function<void()> onDownload,
-            std::function<void()> onEdit);
+    bool init(const cocos2d::CCSize& size, std::function<void()> onSelect,
+              std::function<void()> onTrash, std::function<void()> onFixDefault,
+              std::function<void()> onDownload, std::function<void()> onEdit);
 
 public:
     std::string m_songName = "None";
@@ -70,13 +67,12 @@ public:
     bool m_isDownloading = 0;
     float m_downloadProgress = 0;
 
-    static NongCellUI* create(
-                            const cocos2d::CCSize& size,
-                            std::function<void()> onSelect,
-                            std::function<void()> onTrash,
-                            std::function<void()> onFixDefault,
-                            std::function<void()> onDownload,
-                            std::function<void()> onEdit);
+    static NongCellUI* create(const cocos2d::CCSize& size,
+                              std::function<void()> onSelect,
+                              std::function<void()> onTrash,
+                              std::function<void()> onFixDefault,
+                              std::function<void()> onDownload,
+                              std::function<void()> onEdit);
 
     void build();
     void buildOnlyDownloadProgress();
@@ -89,4 +85,3 @@ public:
 };
 
 }  // namespace jukebox
-

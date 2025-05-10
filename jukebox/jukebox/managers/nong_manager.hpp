@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <string_view>
 
 #include <Geode/Result.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
@@ -114,7 +115,7 @@ public:
      * @param uniqueID the id of the nong
      * @return Boolean for whether the nong is verified 
      */
-    bool isNongVerifiedForLevelSong(int levelID, int songID, const std::string& uniqueID);
+    bool isNongVerifiedForLevelSong(int levelID, int songID, std::string_view uniqueID);
 
     /**
      * Checks if the given level has a verified song for any of the given song IDs

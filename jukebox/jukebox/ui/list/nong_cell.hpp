@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
@@ -10,10 +12,9 @@
 #include <jukebox/events/song_download_finished.hpp>
 #include <jukebox/events/song_download_progress.hpp>
 #include <jukebox/events/song_state_changed.hpp>
-#include <jukebox/ui/list/nong_cell_ui.hpp>
+#include <jukebox/nong/index.hpp>
 #include <jukebox/nong/nong.hpp>
-#include <optional>
-#include "jukebox/nong/index.hpp"
+#include <jukebox/ui/list/nong_cell_ui.hpp>
 
 namespace jukebox {
 
@@ -47,13 +48,9 @@ protected:
     geode::EventListener<geode::EventFilter<event::SongStateChanged>>
         m_stateListener{this, &NongCell::onStateChange};
 
-    bool init(
-        int gdSongID,
-        const std::string& uniqueID,
-        const cocos2d::CCSize& size,
-        std::optional<int> levelID,
-        std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
-    );
+    bool init(int gdSongID, const std::string& uniqueID,
+              const cocos2d::CCSize& size, std::optional<int> levelID,
+              std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
 
     geode::ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
     geode::ListenerResult onGetSongInfo(event::GetSongInfo* e);
@@ -76,13 +73,9 @@ protected:
 
 public:
     static NongCell* create(
-        int gdSongID,
-        const std::string& uniqueID,
-        const cocos2d::CCSize& size,
+        int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
         std::optional<int> levelID,
-        std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
-    );
+        std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
 };
 
 }  // namespace jukebox
-

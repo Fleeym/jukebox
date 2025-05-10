@@ -30,11 +30,9 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool NongList::init(
-    std::vector<int>& songIds, const cocos2d::CCSize& size,
-    std::optional<int> levelID,
-    std::function<void(std::optional<int>)> onListTypeChange
-) {
+bool NongList::init(std::vector<int>& songIds, const cocos2d::CCSize& size,
+                    std::optional<int> levelID,
+                    std::function<void(std::optional<int>)> onListTypeChange) {
     if (!CCNode::init()) {
         return false;
     }
@@ -69,8 +67,7 @@ bool NongList::init(
     menu->setZOrder(1);
     this->addChildAtPosition(menu, Anchor::Left, CCPoint{-10.0f, 0.0f});
 
-    m_list =
-        ScrollLayer::create({size.width, size.height - s_padding});
+    m_list = ScrollLayer::create({size.width, size.height - s_padding});
     m_list->m_contentLayer->setLayout(ColumnLayout::create()
                                           ->setAxisReverse(true)
                                           ->setAxisAlignment(AxisAlignment::End)
@@ -98,7 +95,8 @@ void NongList::build() {
         return;
     }
 
-    CCSize itemSize = {m_list->getScaledContentSize().width - s_padding, s_itemSize};
+    CCSize itemSize = {m_list->getScaledContentSize().width - s_padding,
+                       s_itemSize};
 
     if (m_onListTypeChange) {
         m_onListTypeChange(m_currentSong);
@@ -132,13 +130,8 @@ void NongList::build() {
         std::string defaultID = defaultSong->metadata()->uniqueID;
         Song* active = nongs->active();
 
-        m_list->m_contentLayer->addChild(NongCell::create(
-            id,
-            defaultID,
-            itemSize,
-            m_levelID,
-            std::nullopt
-        ));
+        m_list->m_contentLayer->addChild(
+            NongCell::create(id, defaultID, itemSize, m_levelID, std::nullopt));
 
         CCLabelBMFont* localSongs =
             CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
@@ -156,6 +149,8 @@ void NongList::build() {
         }
 
         std::vector<Song*> allLocalNongs;
+        allLocalNongs.reserve(nongs->locals().size() + nongs->youtube().size() +
+                              nongs->hosted().size());
 
         for (std::unique_ptr<LocalSong>& nong : nongs->locals()) {
             allLocalNongs.push_back(nong.get());
@@ -177,38 +172,50 @@ void NongList::build() {
             }
         }
 
-        
-        std::vector<std::string> verifiedNongs = m_levelID.has_value()
-                                                    ? NongManager::get().getVerifiedNongsForLevel(
-                                                        m_levelID.value(),
-                                                        {m_currentSong.value()}
-                                                    )
-                                                    : std::vector<std::string>{};
+        std::vector<std::string> verifiedNongs =
+            m_levelID.has_value()
+                ? NongManager::get().getVerifiedNongsForLevel(
+                      m_levelID.value(), {m_currentSong.value()})
+                : std::vector<std::string>{};
 
-        std::sort(allLocalNongs.begin(), allLocalNongs.end(), [verifiedNongs](Song* a, Song* b) {
-            auto sourcePriority = [](Song* s) {
-                if (dynamic_cast<LocalSong*>(s)) return 0;
-                if (dynamic_cast<HostedSong*>(s)) return 1;
-                if (dynamic_cast<YTSong*>(s)) return 2;
-                return 3;
-            };
+        std::sort(
+            allLocalNongs.begin(), allLocalNongs.end(),
+            [verifiedNongs](Song* a, Song* b) {
+                auto sourcePriority = [](Song* s) {
+                    if (typeinfo_cast<LocalSong*>(s)) {
+                        return 0;
+                    }
+                    if (typeinfo_cast<HostedSong*>(s)) {
+                        return 1;
+                    }
+                    if (typeinfo_cast<YTSong*>(s)) {
+                        return 2;
+                    }
+                    return 3;
+                };
 
-            bool aVerified = std::find(verifiedNongs.begin(), verifiedNongs.end(), a->metadata()->uniqueID) != verifiedNongs.end();
-            bool bVerified = std::find(verifiedNongs.begin(), verifiedNongs.end(), b->metadata()->uniqueID) != verifiedNongs.end();
+                bool aVerified =
+                    std::find(verifiedNongs.begin(), verifiedNongs.end(),
+                              a->metadata()->uniqueID) != verifiedNongs.end();
+                bool bVerified =
+                    std::find(verifiedNongs.begin(), verifiedNongs.end(),
+                              b->metadata()->uniqueID) != verifiedNongs.end();
 
-            // Sort by Verified
-            if (aVerified != bVerified)
-                return aVerified;
+                // Sort by Verified
+                if (aVerified != bVerified) {
+                    return aVerified;
+                }
 
-            // Then by source priority
-            int sourceA = sourcePriority(a);
-            int sourceB = sourcePriority(b);
-            if (sourceA != sourceB)
-                return sourceA < sourceB;
+                // Then by source priority
+                int sourceA = sourcePriority(a);
+                int sourceB = sourcePriority(b);
+                if (sourceA != sourceB) {
+                    return sourceA < sourceB;
+                }
 
-            // Then by name 
-            return a->metadata()->name < b->metadata()->name;
-        });
+                // Then by name
+                return a->metadata()->name < b->metadata()->name;
+            });
 
         for (Song* nong : allLocalNongs) {
             this->addSongToList(nong, nongs);
@@ -224,6 +231,8 @@ void NongList::build() {
         }
 
         std::vector<index::IndexSongMetadata*> allIndexNongs;
+        // Might reserve more than needed, still fine imo
+        allIndexNongs.reserve(nongs->indexSongs().size());
 
         for (index::IndexSongMetadata* index : nongs->indexSongs()) {
             const std::string id =
@@ -240,32 +249,47 @@ void NongList::build() {
             allIndexNongs.push_back(index);
         }
 
-        std::sort(allIndexNongs.begin(), allIndexNongs.end(), [this](
-                  index::IndexSongMetadata* a,
-                  index::IndexSongMetadata* b) {
-            auto sourcePriority = [](index::IndexSongMetadata* s) {
-                if (s->url.has_value()) return 0;
-                if (s->ytId.has_value()) return 1;
-                return 2;
-            };
+        std::sort(
+            allIndexNongs.begin(), allIndexNongs.end(),
+            [this](index::IndexSongMetadata* a, index::IndexSongMetadata* b) {
+                auto sourcePriority = [](index::IndexSongMetadata* s) {
+                    if (s->url.has_value()) {
+                        return 0;
+                    }
+                    if (s->ytId.has_value()) {
+                        return 1;
+                    }
+                    return 2;
+                };
 
-            bool aVerified = m_levelID.has_value() ? std::find(a->verifiedLevelIDs.begin(), a->verifiedLevelIDs.end(), m_levelID.value()) != a->verifiedLevelIDs.end() : false;
-            bool bVerified = m_levelID.has_value() ? std::find(b->verifiedLevelIDs.begin(), b->verifiedLevelIDs.end(), m_levelID.value()) != b->verifiedLevelIDs.end() : false;
+                bool aVerified = m_levelID.has_value()
+                                     ? std::find(a->verifiedLevelIDs.begin(),
+                                                 a->verifiedLevelIDs.end(),
+                                                 m_levelID.value()) !=
+                                           a->verifiedLevelIDs.end()
+                                     : false;
+                bool bVerified = m_levelID.has_value()
+                                     ? std::find(b->verifiedLevelIDs.begin(),
+                                                 b->verifiedLevelIDs.end(),
+                                                 m_levelID.value()) !=
+                                           b->verifiedLevelIDs.end()
+                                     : false;
 
-            // Sort by Verified
-            if (aVerified != bVerified)
-                return aVerified;
+                // Sort by Verified
+                if (aVerified != bVerified) {
+                    return aVerified;
+                }
 
-            // Then by source priority
-            int sourceA = sourcePriority(a);
-            int sourceB = sourcePriority(b);
-            if (sourceA != sourceB)
-                return sourceA < sourceB;
+                // Then by source priority
+                int sourceA = sourcePriority(a);
+                int sourceB = sourcePriority(b);
+                if (sourceA != sourceB) {
+                    return sourceA < sourceB;
+                }
 
-            // Then by name 
-            return a->name < b->name;
-            
-        });
+                // Then by name
+                return a->name < b->name;
+            });
 
         for (index::IndexSongMetadata* indexNong : allIndexNongs) {
             this->addIndexSongToList(indexNong, nongs);
@@ -280,20 +304,16 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     Song* defaultSong = parent->defaultSong();
     Song* active = parent->active();
 
-    CCSize itemSize = {m_list->getScaledContentSize().width - s_padding, s_itemSize};
+    CCSize itemSize = {m_list->getScaledContentSize().width - s_padding,
+                       s_itemSize};
 
     std::string uniqueID = nong->metadata()->uniqueID;
     std::optional<std::filesystem::path> path = nong->path();
     bool isFromIndex = nong->indexID().has_value();
     bool isDownloaded =
         path.has_value() && std::filesystem::exists(path.value());
-    NongCell* cell = NongCell::create(
-        id,
-        uniqueID,
-        itemSize,
-        m_levelID,
-        std::nullopt
-    );
+    NongCell* cell =
+        NongCell::create(id, uniqueID, itemSize, m_levelID, std::nullopt);
     cell->setID(uniqueID);
 
     if (!liveInsert) {
@@ -313,14 +333,10 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
 
 void NongList::addIndexSongToList(index::IndexSongMetadata* song,
                                   Nongs* parent) {
-    const CCSize itemSize = {m_list->getScaledContentSize().width - s_padding, s_itemSize};
-    NongCell* cell = NongCell::create(
-        m_currentSong.value(),
-        song->uniqueID,
-        itemSize,
-        m_levelID,
-        song
-    );
+    const CCSize itemSize = {m_list->getScaledContentSize().width - s_padding,
+                             s_itemSize};
+    NongCell* cell = NongCell::create(m_currentSong.value(), song->uniqueID,
+                                      itemSize, m_levelID, song);
     cell->setID(fmt::format("{}-{}", song->parentID->m_id, song->uniqueID));
     m_list->m_contentLayer->addChild(cell);
 }

@@ -19,11 +19,11 @@
 #include <jukebox/events/song_download_failed.hpp>
 #include <jukebox/events/song_download_finished.hpp>
 #include <jukebox/events/song_state_changed.hpp>
+#include <jukebox/events/start_download.hpp>
 #include <jukebox/managers/index_manager.hpp>
 #include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/nong.hpp>
 #include <jukebox/nong/index.hpp>
-#include <jukebox/events/start_download.hpp>
+#include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/list/nong_cell_ui.hpp>
 #include <jukebox/ui/nong_add_popup.hpp>
 #include <jukebox/utils/get_domain_from_url.hpp>
@@ -33,12 +33,9 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool NongCell::init(
-    int gdSongID,
-    const std::string& uniqueID,
-    const cocos2d::CCSize& size,
+    int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
     std::optional<int> levelID,
-    std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
-) {
+    std::optional<index::IndexSongMetadata*> indexSongMetadataOpt) {
     if (!CCNode::init()) {
         return false;
     }
@@ -49,27 +46,23 @@ bool NongCell::init(
     m_indexSongMetadataOpt = indexSongMetadataOpt;
 
     m_nongCell = NongCellUI::create(
-        size,
-        [this]{ this->onSelect(); },
-        [this]{ this->onTrash(); },
-        [this]{ this->onFixDefault(); },
-        [this]{ this->onDownload(); },
-        [this]{ this->onEdit(); }
-    );
+        size, [this] { this->onSelect(); }, [this] { this->onTrash(); },
+        [this] { this->onFixDefault(); }, [this] { this->onDownload(); },
+        [this] { this->onEdit(); });
 
-    if (isIndex()) {
-        bool success = initIndex();
+    if (this->isIndex()) {
+        bool success = this->initIndex();
         if (!success) {
             return false;
         }
     } else {
-        bool success = initLocal();
+        bool success = this->initLocal();
         if (!success) {
             return false;
         }
     }
 
-    build();
+    this->build();
 
     this->setContentSize(m_nongCell->getContentSize());
     this->addChildAtPosition(m_nongCell, Anchor::Center);
@@ -80,19 +73,21 @@ bool NongCell::init(
 bool NongCell::initLocal() {
     auto nongs = NongManager::get().getNongs(m_songID);
     if (!nongs.has_value()) {
-        log::error("Failed to create Nong cell for {}.", m_uniqueID);
+        log::error("Failed to create NongCell for {}. No NONGs found.",
+                   m_uniqueID);
         return false;
     }
 
     std::optional<Song*> songInfoOpt = nongs.value()->findSong(m_uniqueID);
     if (!songInfoOpt.has_value()) {
-        log::error("Failed to create Nong cell for {}.", m_uniqueID);
+        log::error("Failed to create NongCell for {}. Song not found.",
+                   m_uniqueID);
         return false;
     }
 
     Song* songInfo = songInfoOpt.value();
 
-    std::vector<std::string> metadataList = {};
+    std::vector<std::string> metadataList;
 
     switch (songInfo->type()) {
         case NongType::YOUTUBE:
@@ -109,7 +104,7 @@ bool NongCell::initLocal() {
         auto indexID = songInfo->indexID().value();
         auto indexName = IndexManager::get().getIndexName(indexID);
         metadataList.push_back(indexName.has_value() ? indexName.value()
-                                                          : indexID);
+                                                     : indexID);
     } else if (songInfo->type() == NongType::HOSTED) {
         std::string url = (static_cast<HostedSong*>(songInfo))->url();
         metadataList.push_back(getDomainFromUrl(url).value_or(url));
@@ -127,27 +122,33 @@ bool NongCell::initLocal() {
 
     std::ostringstream oss;
     for (size_t i = 0; i + 1 < metadataList.size(); i += 2) {
-        if (i > 0) oss << " | ";
+        if (i > 0) {
+            oss << " | ";
+        }
         oss << metadataList[i] << ": " << metadataList[i + 1];
     }
     m_nongCell->m_metadata = oss.str();
 
     m_isVerified = m_levelID.has_value()
-                   ? NongManager::get().isNongVerifiedForLevelSong(m_levelID.value(), m_songID, m_uniqueID)
-                   : false;
-    m_isDefault = nongs.value()->defaultSong()->metadata()->uniqueID == m_uniqueID;
+                       ? NongManager::get().isNongVerifiedForLevelSong(
+                             m_levelID.value(), m_songID, m_uniqueID)
+                       : false;
+    m_isDefault =
+        nongs.value()->defaultSong()->metadata()->uniqueID == m_uniqueID;
     m_isActive = nongs.value()->active()->metadata()->uniqueID == m_uniqueID;
     m_isDownloaded = songInfo->path().has_value() &&
                      std::filesystem::exists(songInfo->path().value());
     m_isDownloadable = songInfo->type() != NongType::LOCAL;
     m_isDownloading = false;
-    m_nongCell->m_showEditButton = !m_isDefault && !songInfo->indexID().has_value();
+    m_nongCell->m_showEditButton =
+        !m_isDefault && !songInfo->indexID().has_value();
 
     return true;
 }
 
 bool NongCell::initIndex() {
-    index::IndexSongMetadata* indexSongMetadata = m_indexSongMetadataOpt.value();
+    index::IndexSongMetadata* indexSongMetadata =
+        m_indexSongMetadataOpt.value();
 
     std::vector<std::string> metadataList = {};
 
@@ -156,7 +157,8 @@ bool NongCell::initIndex() {
     } else if (indexSongMetadata->url.has_value()) {
         metadataList.push_back("hosted");
     } else {
-        log::error("Couldn't figure out index song type of {}", indexSongMetadata->uniqueID);
+        log::error("Couldn't figure out index song type of {}",
+                   indexSongMetadata->uniqueID);
         return false;
     }
 
@@ -164,7 +166,9 @@ bool NongCell::initIndex() {
 
     std::ostringstream oss;
     for (size_t i = 0; i + 1 < metadataList.size(); i += 2) {
-        if (i > 0) oss << " | ";
+        if (i > 0) {
+            oss << " | ";
+        }
         oss << metadataList[i] << ": " << metadataList[i + 1];
     }
     m_nongCell->m_metadata = oss.str();
@@ -173,9 +177,11 @@ bool NongCell::initIndex() {
     m_nongCell->m_authorName = indexSongMetadata->artist;
 
     auto& verifiedLevelIDs = indexSongMetadata->verifiedLevelIDs;
-    m_isVerified = m_levelID.has_value()
-                   ? std::find(verifiedLevelIDs.begin(), verifiedLevelIDs.end(), m_levelID.value()) != verifiedLevelIDs.end()
-                   : false;
+    m_isVerified =
+        m_levelID.has_value()
+            ? std::find(verifiedLevelIDs.begin(), verifiedLevelIDs.end(),
+                        m_levelID.value()) != verifiedLevelIDs.end()
+            : false;
     m_isDefault = false;
     m_isActive = false;
     m_isDownloaded = false;
@@ -195,7 +201,7 @@ void NongCell::build() {
     m_nongCell->m_showDownloadButton = m_isDownloadable && !m_isDownloaded;
     m_nongCell->m_showFixDefaultButton = m_isDefault;
     m_nongCell->m_showSelectButton = m_isDownloaded || m_isDefault;
-    m_nongCell->m_showTrashButton = !m_isDefault && !isIndex();
+    m_nongCell->m_showTrashButton = !m_isDefault && !this->isIndex();
 
     m_nongCell->build();
 }
@@ -211,9 +217,7 @@ void NongCell::onSelect() {
     }
 }
 
-void NongCell::onTrash() {
-    deleteSong(false);
-}
+void NongCell::onTrash() { deleteSong(false); }
 
 void NongCell::onDownload() {
     if (m_nongCell->m_isDownloading) {
@@ -310,7 +314,6 @@ ListenerResult NongCell::onStateChange(event::SongStateChanged* e) {
 
     build();
 
-
     return ListenerResult::Propagate;
 }
 
@@ -330,17 +333,15 @@ ListenerResult NongCell::onGetSongInfo(event::GetSongInfo* e) {
 void NongCell::deleteSong(bool onlyAudio) {
     auto func = [this, onlyAudio]() {
         if (onlyAudio) {
-            if (auto err =
-                    NongManager::get().deleteSongAudio(this->m_songID, this->m_uniqueID);
+            if (auto err = NongManager::get().deleteSongAudio(this->m_songID,
+                                                              this->m_uniqueID);
                 err.isErr()) {
-                log::error("Failed to delete audio for {}: {}", this->m_uniqueID,
-                           err.unwrapErr());
+                log::error("Failed to delete audio for {}: {}",
+                           this->m_uniqueID, err.unwrapErr());
             }
         } else {
-            if (auto err = NongManager::get().deleteSong(
-                                                            this->m_songID,
-                                                            this->m_uniqueID
-                                                            );
+            if (auto err = NongManager::get().deleteSong(this->m_songID,
+                                                         this->m_uniqueID);
                 err.isErr()) {
                 FLAlertLayer::create(
                     "Failed",
@@ -351,8 +352,7 @@ void NongCell::deleteSong(bool onlyAudio) {
             }
         }
 
-        FLAlertLayer::create("Success", "The song was deleted!", "Ok")
-            ->show();
+        FLAlertLayer::create("Success", "The song was deleted!", "Ok")->show();
     };
 
     createQuickPopup(
@@ -364,28 +364,22 @@ void NongCell::deleteSong(bool onlyAudio) {
                 return;
             }
             func();
-    });
-
+        });
 }
 
 NongCell* NongCell::create(
-    int gdSongID,
-    const std::string& uniqueID,
-    const cocos2d::CCSize& size,
+    int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
     std::optional<int> levelID,
-    std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
-) {
+    std::optional<index::IndexSongMetadata*> indexSongMetadataOpt) {
     auto ret = new NongCell();
-    if (ret && ret->init(gdSongID, uniqueID, size, levelID, indexSongMetadataOpt)) {
+    if (ret &&
+        ret->init(gdSongID, uniqueID, size, levelID, indexSongMetadataOpt)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);
     return nullptr;
 }
 
-bool NongCell::isIndex() {
-    return m_indexSongMetadataOpt.has_value();
-}
+bool NongCell::isIndex() { return m_indexSongMetadataOpt.has_value(); }
 
-
-}
+}  // namespace jukebox

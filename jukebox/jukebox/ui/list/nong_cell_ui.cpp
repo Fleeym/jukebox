@@ -21,13 +21,12 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool NongCellUI::init(
-                        const cocos2d::CCSize& size,
-                        std::function<void()> onSelect,
-                        std::function<void()> onTrash,
-                        std::function<void()> onFixDefault,
-                        std::function<void()> onDownload,
-                        std::function<void()> onEdit) {
+bool NongCellUI::init(const cocos2d::CCSize& size,
+                      std::function<void()> onSelect,
+                      std::function<void()> onTrash,
+                      std::function<void()> onFixDefault,
+                      std::function<void()> onDownload,
+                      std::function<void()> onEdit) {
     if (!CCNode::init()) {
         return false;
     }
@@ -60,37 +59,36 @@ void NongCellUI::build() {
     // Create outline around the song if it's verified
     if (m_isVerified) {
         // Create the "Verified For Level" text
-        CCLabelBMFont* verifiedLabel = CCLabelBMFont::create("Verified For Level", "goldFont.fnt");
+        CCLabelBMFont* verifiedLabel =
+            CCLabelBMFont::create("Verified For Level", "goldFont.fnt");
         verifiedLabel->setScale(0.35f);
 
         // Create outline shape
-        CCScale9Sprite* outlineStencil = CCScale9Sprite::create("square02b_001.png");
+        CCScale9Sprite* outlineStencil =
+            CCScale9Sprite::create("square02b_001.png");
         outlineStencil->setScale(0.4f);
         outlineStencil->setContentSize(
-            (m_size + CCPoint(OUTLINE_SIZE, OUTLINE_SIZE)) / outlineStencil->getScale()
-        );
+            (m_size + CCPoint(OUTLINE_SIZE, OUTLINE_SIZE)) /
+            outlineStencil->getScale());
 
         // Create text background shape
-        CCScale9Sprite* textBgStencil = CCScale9Sprite::create("square02b_001.png");
+        CCScale9Sprite* textBgStencil =
+            CCScale9Sprite::create("square02b_001.png");
         textBgStencil->setScale(0.4f);
         textBgStencil->setContentSize(
-            (CCPoint(
-                    verifiedLabel->getScaledContentWidth() + 5,
-                    verifiedLabel->getScaledContentHeight() * 2 + 4
-            )) / textBgStencil->getScale()
-        );
+            (CCPoint(verifiedLabel->getScaledContentWidth() + 5,
+                     verifiedLabel->getScaledContentHeight() * 2 + 4)) /
+            textBgStencil->getScale());
 
         // Combine the shapes into a single stencil node
         CCNode* stencilNode = CCNode::create();
         stencilNode->addChildAtPosition(outlineStencil, Anchor::Center);
         stencilNode->addChildAtPosition(
-            textBgStencil,
-            Anchor::TopRight,
-            {
-                (m_size.width + OUTLINE_SIZE - textBgStencil->getScaledContentWidth()) / 2.f, 
-                m_size.height / 2.f
-            }
-        );
+            textBgStencil, Anchor::TopRight,
+            {(m_size.width + OUTLINE_SIZE -
+              textBgStencil->getScaledContentWidth()) /
+                 2.f,
+             m_size.height / 2.f});
 
         // Create the clip node based on the sprite
         CCClippingNode* clipNode = CCClippingNode::create(stencilNode);
@@ -98,23 +96,21 @@ void NongCellUI::build() {
         clipNode->setInverted(false);
 
         // Draw a gradient that will be clipped by the clip node
-        CCLayerGradient* gradientLayer = CCLayerGradient::create(
-            {253, 166, 16, 255},
-            {253, 225, 71, 255}
-        );
+        CCLayerGradient* gradientLayer =
+            CCLayerGradient::create({253, 166, 16, 255}, {253, 225, 71, 255});
 
-        // The size of the gradient will be larger that this because of the scale, but it's fine.
+        // The size of the gradient will be larger that this because of the
+        // scale, but it's fine.
         gradientLayer->setContentSize(outlineStencil->getContentSize());
 
-        clipNode->addChildAtPosition(
-            gradientLayer,
-            Anchor::BottomLeft,
-            outlineStencil->getContentSize() / -2.f
-        );
+        clipNode->addChildAtPosition(gradientLayer, Anchor::BottomLeft,
+                                     outlineStencil->getContentSize() / -2.f);
         this->addChildAtPosition(clipNode, Anchor::Center);
 
         // Add the verified label on the text's background
-        this->addChildAtPosition(verifiedLabel, Anchor::Center, textBgStencil->getPosition() + CCPoint(0.f, 7.f));
+        this->addChildAtPosition(
+            verifiedLabel, Anchor::Center,
+            textBgStencil->getPosition() + CCPoint(0.f, 7.f));
     }
 
     CCScale9Sprite* bg = CCScale9Sprite::create("square02b_001.png");
@@ -143,8 +139,7 @@ void NongCellUI::build() {
     m_authorNameLabel->limitLabelWidth(songInfoWidth, 0.5f, 0.1f);
     m_authorNameLabel->setID("artist-label");
 
-    m_metadataLabel =
-        CCLabelBMFont::create(m_metadata.c_str(), "bigFont.fnt");
+    m_metadataLabel = CCLabelBMFont::create(m_metadata.c_str(), "bigFont.fnt");
     m_metadataLabel->setAnchorPoint({0.0f, 0.5f});
     m_metadataLabel->limitLabelWidth(songInfoWidth, 0.4f, 0.1f);
     m_metadataLabel->setColor({.r = 162, .g = 191, .b = 255});
@@ -171,13 +166,14 @@ void NongCellUI::build() {
     m_buttonsMenu->setID("buttons-menu");
     m_buttonsMenu->setAnchorPoint({1.0f, 0.5f});
     m_buttonsMenu->setContentSize({buttonsWidth, maxSize.height});
-    AxisLayout* buttonsMenuLayout =
+    auto buttonsMenuLayout =
         RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::End);
     buttonsMenuLayout->ignoreInvisibleChildren(true);
     m_buttonsMenu->setLayout(buttonsMenuLayout);
 
     // Edit button
-    CCSprite* editSprite = CCSprite::createWithSpriteFrameName("JB_Edit.png"_spr);
+    CCSprite* editSprite =
+        CCSprite::createWithSpriteFrameName("JB_Edit.png"_spr);
     editSprite->setScale(0.7f);
     m_editButton = CCMenuItemSpriteExtra::create(
         editSprite, this, menu_selector(NongCellUI::onEdit));
@@ -189,7 +185,8 @@ void NongCellUI::build() {
     const char* selectSpriteName =
         m_isSelected ? "GJ_checkOn_001.png" : "GJ_checkOff_001.png";
 
-    CCSprite* selectSprite = CCSprite::createWithSpriteFrameName(selectSpriteName);
+    CCSprite* selectSprite =
+        CCSprite::createWithSpriteFrameName(selectSpriteName);
     selectSprite->setScale(0.7f);
 
     m_selectButton = CCMenuItemSpriteExtra::create(
@@ -223,10 +220,8 @@ void NongCellUI::build() {
     downloadSprite->setScale(0.7f);
     downloadCancelSprite->setScale(0.7f);
     m_downloadButton = CCMenuItemSpriteExtra::create(
-        m_isDownloading ? downloadCancelSprite : downloadSprite,
-        this,
-        menu_selector(NongCellUI::onDownload)
-     );
+        m_isDownloading ? downloadCancelSprite : downloadSprite, this,
+        menu_selector(NongCellUI::onDownload));
     m_downloadButton->setID("download-button");
     m_downloadButton->setVisible(!m_isDownloaded);
     m_buttonsMenu->addChild(m_downloadButton);
@@ -236,8 +231,7 @@ void NongCellUI::build() {
     progressBarBack->setColor({50, 50, 50});
     progressBarBack->setScale(0.62f);
 
-    CCSprite* spr =
-        CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
+    CCSprite* spr = CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
     spr->setColor({0, 255, 0});
 
     m_downloadProgressTimer = CCProgressTimer::create(spr);
@@ -258,7 +252,7 @@ void NongCellUI::build() {
     m_downloadProgressContainer->setVisible(false);
 
     m_downloadButton->addChildAtPosition(m_downloadProgressContainer,
-                                            Anchor::Center);
+                                         Anchor::Center);
 
     // Trash button
     CCSprite* trashSprite =
@@ -302,22 +296,15 @@ void NongCellUI::onFixDefault(CCObject*) { m_onFixDefault(); }
 void NongCellUI::onDownload(CCObject*) { m_onDownload(); }
 void NongCellUI::onEdit(CCObject*) { m_onEdit(); }
 
-NongCellUI* NongCellUI::create(
-                            const cocos2d::CCSize& size,
-                            std::function<void()> onSelect,
-                            std::function<void()> onTrash,
-                            std::function<void()> onFixDefault,
-                            std::function<void()> onDownload,
-                            std::function<void()> onEdit) {
+NongCellUI* NongCellUI::create(const cocos2d::CCSize& size,
+                               std::function<void()> onSelect,
+                               std::function<void()> onTrash,
+                               std::function<void()> onFixDefault,
+                               std::function<void()> onDownload,
+                               std::function<void()> onEdit) {
     auto ret = new NongCellUI();
-    if (ret && ret->init(
-        size,
-        onSelect,
-        onTrash,
-        onFixDefault,
-        onDownload,
-        onEdit
-    )) {
+    if (ret &&
+        ret->init(size, onSelect, onTrash, onFixDefault, onDownload, onEdit)) {
         return ret;
     }
     CC_SAFE_DELETE(ret);
