@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.2.1
+
+ * Experimental iOS support!
+
 ## v3.2.0
 
  * Remove all usage of std::stoi, fixing some crashes in the process
