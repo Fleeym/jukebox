@@ -12,25 +12,12 @@ template <>
 struct matjson::Serialize<
     jukebox::index::IndexMetadata::Features::RequestParams> {
     static geode::Result<jukebox::index::IndexMetadata::Features::RequestParams>
-    fromJson(matjson::Value const& value, int manifest) {
-        if (manifest != 1) {
-            return geode::Err("Using unsupported manifest version: " +
-                              std::to_string(manifest));
-        }
-
-        if (!value.isObject()) {
-            return geode::Err("Expected object in requestParams");
-        }
-        if (!value.contains("url") || !value["url"].isString()) {
-            return geode::Err("Expected url in requestParams");
-        }
-        if (!value.contains("params") || !value["params"].isBool()) {
-            return geode::Err("Expected params in requestParams");
-        }
+    fromJson(matjson::Value const& value) {
+        GEODE_UNWRAP_INTO(std::string url, value["url"].asString());
+        GEODE_UNWRAP_INTO(bool params, value["params"].asBool());
 
         return geode::Ok(jukebox::index::IndexMetadata::Features::RequestParams{
-            .m_url = value["url"].asString().unwrap(),
-            .m_params = value["params"].asBool().unwrap()});
+            .m_url = url, .m_params = params});
     }
 };
 
@@ -57,99 +44,54 @@ protected:
 
 public:
     static geode::Result<jukebox::index::IndexMetadata::Features> fromJson(
-        matjson::Value const& value, int manifest) {
-        if (manifest != 1) {
-            return geode::Err("Using unsupported manifest version: " +
-                              std::to_string(manifest));
-        }
-
-        if (!value.isObject()) {
-            return geode::Err("Expected object in features");
-        }
-
+        matjson::Value const& value) {
         jukebox::index::IndexMetadata::Features features;
 
-        const auto& featuresObj = value;
+        if (value.contains("submit")) {
+            const auto& submitObj = value["submit"];
 
-        if (featuresObj.contains("submit")) {
-            if (!featuresObj["submit"].isObject()) {
-                return geode::Err(
-                    "Expected submit to be an object in features");
-            }
-            const auto& submitObj = featuresObj["submit"];
-
-            features.m_submit =
-                jukebox::index::IndexMetadata::Features::Submit{};
+            jukebox::index::IndexMetadata::Features::Submit submit;
 
             if (submitObj.contains("preSubmitMessage")) {
-                if (!submitObj["preSubmitMessage"].isString()) {
-                    return geode::Err(
-                        "Expected preSubmitMessage to be a string in submit");
-                }
-                features.m_submit.value().m_preSubmitMessage =
-                    submitObj["preSubmitMessage"].asString().unwrap();
+                GEODE_UNWRAP_INTO(submit.m_preSubmitMessage,
+                                  submitObj["preSubmitMessage"].asString());
             }
 
             if (submitObj.contains("supportedSongTypes")) {
-                if (!submitObj["supportedSongTypes"].isArray()) {
-                    return geode::Err(
-                        "Expected supportedSongTypes to be an array in submit");
-                }
-                for (const auto& songType :
-                     submitObj["supportedSongTypes"].asArray().unwrap()) {
-                    if (!songType.isString()) {
-                        return geode::Err(
-                            "Expected supportedSongTypes to be an array of "
-                            "strings in submit");
-                    }
-                    geode::Result<jukebox::index::IndexMetadata::Features::
-                                      SupportedSongType>
-                        supportedSongType = getSupportedSongTypeFromString(
-                            songType.asString().unwrap());
-                    if (supportedSongType.isErr()) {
-                        return geode::Err(supportedSongType.unwrapErr());
-                    }
-                    features.m_submit.value()
-                        .m_supportedSongTypes[supportedSongType.unwrap()] =
-                        true;
+                for (const auto& songType : submitObj["supportedSongTypes"]) {
+                    GEODE_UNWRAP_INTO(std::string str, songType.asString());
+                    GEODE_UNWRAP_INTO(auto supportedSongType,
+                                      getSupportedSongTypeFromString(str));
+                    submit.m_supportedSongTypes[supportedSongType] = true;
                 }
             }
 
             if (submitObj.contains("requestParams")) {
-                auto requestParams = matjson::Serialize<
-                    jukebox::index::IndexMetadata::Features::RequestParams>::
-                    fromJson(submitObj["requestParams"], manifest);
-                if (requestParams.isErr()) {
-                    return geode::Err(requestParams.unwrapErr());
-                }
-                features.m_submit.value().m_requestParams =
-                    requestParams.unwrap();
+                GEODE_UNWRAP_INTO(submit.m_requestParams,
+                                  submitObj["requestParams"]
+                                      .as<jukebox::index::IndexMetadata::
+                                              Features::RequestParams>());
             }
+
+            features.m_submit = std::move(submit);
         }
 
-        if (featuresObj.contains("report")) {
-            if (!featuresObj["report"].isObject()) {
-                return geode::Err(
-                    "Expected search to be an object in features");
-            }
-            const matjson::Value& searchObj = featuresObj["report"];
+        if (value.contains("report")) {
+            const matjson::Value& searchObj = value["report"];
 
-            features.m_report =
-                jukebox::index::IndexMetadata::Features::Report{};
+            jukebox::index::IndexMetadata::Features::Report report;
 
             if (searchObj.contains("requestParams")) {
-                auto requestParams = matjson::Serialize<
-                    jukebox::index::IndexMetadata::Features::RequestParams>::
-                    fromJson(searchObj["requestParams"], manifest);
-                if (requestParams.isErr()) {
-                    return geode::Err(requestParams.unwrapErr());
-                }
-                features.m_report.value().m_requestParams =
-                    requestParams.unwrap();
+                GEODE_UNWRAP_INTO(report.m_requestParams,
+                                  searchObj["requestParams"]
+                                      .as<jukebox::index::IndexMetadata::
+                                              Features::RequestParams>());
             }
+
+            features.m_report = std::move(report);
         }
 
-        return geode::Ok(features);
+        return geode::Ok(std::move(features));
     };
 };
 
@@ -157,74 +99,51 @@ template <>
 struct matjson::Serialize<jukebox::index::IndexMetadata> {
     static geode::Result<jukebox::index::IndexMetadata> fromJson(
         matjson::Value const& value) {
-        if (!value.isObject()) {
-            return geode::Err("Expected object");
+        GEODE_UNWRAP_INTO(int manifestVersion, value["manifest"].asInt());
+        if (manifestVersion != 1) {
+            return geode::Err(
+                fmt::format("Invalid manifest version: {}", manifestVersion));
         }
 
-        if (!value.contains("manifest") || !value["manifest"].isNumber()) {
-            return geode::Err("Expected manifest version");
-        }
-        const int manifestVersion = value["manifest"].asInt().unwrap();
-
-        if (manifestVersion == 1) {
-            // Links
-            jukebox::index::IndexMetadata::Links links;
-            if (value.contains("links") && value["links"].isObject()) {
-                const auto& linksObj = value["links"];
-                if (linksObj.contains("discord")) {
-                    if (!linksObj["discord"].isString()) {
-                        return geode::Err(
-                            "Expected discord to be a string in links");
-                    }
-                }
-                links.m_discord = linksObj["discord"].asString().unwrap();
+        // Links
+        jukebox::index::IndexMetadata::Links links;
+        if (value.contains("links")) {
+            if (value["links"].contains("discord")) {
+                GEODE_UNWRAP_INTO(links.m_discord,
+                                  value["links"]["discord"].asString());
             }
-
-            // Features
-            geode::Result<jukebox::index::IndexMetadata::Features>
-                featuresResult =
-                    value.contains("features")
-                        ? matjson::Serialize<
-                              jukebox::index::IndexMetadata::Features>::
-                              fromJson(value["features"], manifestVersion)
-                        : geode::Ok(jukebox::index::IndexMetadata::Features());
-            if (featuresResult.isErr()) {
-                return geode::Err(featuresResult.unwrapErr());
-            }
-
-            // Validate fields
-            if (!value.contains("name") || !value["name"].isString()) {
-                return geode::Err("Expected name");
-            }
-            if (!value.contains("id") || !value["id"].isString()) {
-                return geode::Err("Expected id");
-            }
-            if (value.contains("description") &&
-                !value["description"].isString()) {
-                return geode::Err("Description must be a string");
-            }
-
-            return geode::Ok(jukebox::index::IndexMetadata{
-                .m_manifest = manifestVersion,
-                .m_url = value["url"].asString().unwrap(),
-                .m_id = value["id"].asString().unwrap(),
-                .m_name = value["name"].asString().unwrap(),
-                .m_description =
-                    value["description"]
-                        .asString()
-                        .map([](auto i) { return std::optional(i); })
-                        .unwrapOr(std::nullopt),
-                .m_lastUpdate =
-                    value["lastUpdate"]
-                        .asInt()
-                        .map([](auto i) { return std::optional(i); })
-                        .unwrapOr(std::nullopt),
-                .m_links = links,
-                .m_features = featuresResult.unwrap()});
         }
 
-        return geode::Err("Using unsupported manifest version: " +
-                          std::to_string(manifestVersion));
+        // Features
+        jukebox::index::IndexMetadata::Features features;
+        if (value.contains("features")) {
+            GEODE_UNWRAP_INTO(
+                features, value["features"]
+                              .as<jukebox::index::IndexMetadata::Features>());
+        }
+
+        // Validate fields
+        GEODE_UNWRAP_INTO(std::string name, value["name"].asString());
+        GEODE_UNWRAP_INTO(std::string id, value["id"].asString());
+        GEODE_UNWRAP_INTO(std::string url, value["url"].asString());
+        GEODE_UNWRAP_INTO(std::string description,
+                          value["description"].asString());
+
+        return geode::Ok(jukebox::index::IndexMetadata{
+            .m_manifest = manifestVersion,
+            .m_url = std::move(url),
+            .m_id = std::move(id),
+            .m_name = std::move(name),
+            .m_description = value["description"]
+                                 .asString()
+                                 .map([](auto i) { return std::optional(i); })
+                                 .unwrapOr(std::nullopt),
+            .m_lastUpdate = value["lastUpdate"]
+                                .asInt()
+                                .map([](auto i) { return std::optional(i); })
+                                .unwrapOr(std::nullopt),
+            .m_links = std::move(links),
+            .m_features = std::move(features)});
     }
 };
 
@@ -284,15 +203,13 @@ template <>
 struct matjson::Serialize<jukebox::index::IndexSource> {
     static geode::Result<jukebox::index::IndexSource> fromJson(
         matjson::Value const& value) {
-        if (!value["url"].isString() || !value["userAdded"].isBool() ||
-            !value["enabled"].isBool()) {
-            return geode::Err("Invalid JSON");
-        }
+        GEODE_UNWRAP_INTO(std::string url, value["url"].asString());
+        GEODE_UNWRAP_INTO(bool userAdded, value["userAdded"].asBool());
+        GEODE_UNWRAP_INTO(bool enabled, value["userAdded"].asBool());
 
-        return geode::Ok(jukebox::index::IndexSource{
-            .m_url = value["url"].asString().unwrap(),
-            .m_userAdded = value["userAdded"].asBool().unwrap(),
-            .m_enabled = value["enabled"].asBool().unwrap()});
+        return geode::Ok(jukebox::index::IndexSource{.m_url = std::move(url),
+                                                     .m_userAdded = userAdded,
+                                                     .m_enabled = enabled});
     }
 
     static matjson::Value toJson(jukebox::index::IndexSource const& value) {
