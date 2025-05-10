@@ -66,11 +66,9 @@ struct matjson::Serialize<jukebox::Indexes> {
         jukebox::Indexes ret;
 
         for (const matjson::Value& elem : value) {
-            GEODE_UNWRAP_INTO(
-                jukebox::IndexSource source,
-                matjson::Serialize<jukebox::IndexSource>::fromJson(elem));
-            ret.indexes.push_back(source);
+            GEODE_UNWRAP_INTO(auto source, elem.as<jukebox::IndexSource>());
+            ret.indexes.push_back(std::move(source));
         }
-        return geode::Ok(ret);
+        return geode::Ok(std::move(ret));
     }
 };

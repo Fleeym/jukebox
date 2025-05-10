@@ -205,7 +205,7 @@ struct matjson::Serialize<jukebox::index::IndexSource> {
         matjson::Value const& value) {
         GEODE_UNWRAP_INTO(std::string url, value["url"].asString());
         GEODE_UNWRAP_INTO(bool userAdded, value["userAdded"].asBool());
-        GEODE_UNWRAP_INTO(bool enabled, value["userAdded"].asBool());
+        GEODE_UNWRAP_INTO(bool enabled, value["enabled"].asBool());
 
         return geode::Ok(jukebox::index::IndexSource{.m_url = std::move(url),
                                                      .m_userAdded = userAdded,

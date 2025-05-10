@@ -87,8 +87,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
 }
 
 Result<> IndexManager::loadIndex(matjson::Value&& jsonObj) {
-    GEODE_UNWRAP_INTO(IndexMetadata indexMeta,
-                      matjson::Serialize<IndexMetadata>::fromJson(jsonObj));
+    GEODE_UNWRAP_INTO(auto indexMeta, jsonObj.as<IndexMetadata>());
     std::unique_ptr<IndexMetadata> index =
         std::make_unique<IndexMetadata>(std::move(indexMeta));
 
@@ -138,18 +137,15 @@ Result<> IndexManager::loadIndex(matjson::Value&& jsonObj) {
     /*}*/
 
     for (const auto& [key, hostedNong] : jsonObj["nongs"]["hosted"]) {
-        Result<IndexSongMetadata> r =
-            matjson::Serialize<IndexSongMetadata>::fromJson(hostedNong);
-        if (r.isErr()) {
-            event::SongError(
-                false,
-                fmt::format("Failed to parse index song: {}", r.unwrapErr()))
+        GEODE_UNWRAP_OR_ELSE(r, err, hostedNong.as<IndexSongMetadata>()) {
+            event::SongError(false,
+                             fmt::format("Failed to parse index song: {}", err))
                 .post();
             continue;
         }
 
         std::unique_ptr<IndexSongMetadata> song =
-            std::make_unique<IndexSongMetadata>(r.unwrap());
+            std::make_unique<IndexSongMetadata>(std::move(r));
 
         song->uniqueID = key;
         song->parentID = index.get();
@@ -167,11 +163,10 @@ Result<> IndexManager::loadIndex(matjson::Value&& jsonObj) {
 
             Nongs* nongs = opt.value();
 
-            if (geode::Result<> r = nongs->registerIndexSong(song.get());
-                r.isErr()) {
+            if (GEODE_UNWRAP_IF_ERR(err, nongs->registerIndexSong(song.get()))) {
                 event::SongError(
-                    false, fmt::format("Failed to register index song: {}",
-                                       r.unwrapErr()))
+                    false,
+                    fmt::format("Failed to register index song: {}", err))
                     .post();
             }
         }
@@ -194,7 +189,14 @@ Result<> IndexManager::fetchIndexes() {
 
     for (const IndexSource& index : indexes) {
         if (!index.m_enabled || index.m_url.size() < 3) {
-            log::info("Skipping index {}, as it is disabled", index.m_url);
+            if (!index.m_userAdded) {
+                log::warn(
+                    "Skipping default index {} provided by Jukebox, as it is "
+                    "disabled",
+                    index.m_url);
+            } else {
+                log::info("Skipping index {}, as it is disabled", index.m_url);
+            }
             continue;
         }
 
@@ -256,7 +258,6 @@ void IndexManager::onIndexFetched(const std::string& url,
 
     const std::filesystem::path filepath =
         this->baseIndexesPath() / fmt::format("{0:x}.json", hashValue);
-    log::info("{}", filepath);
 
     log::info("Fetched index: {}", url);
 
@@ -266,11 +267,11 @@ void IndexManager::onIndexFetched(const std::string& url,
         out.write(str.data(), str.length());
         log::info("Cached index: {}", url);
     } else {
-        log::info("Failed to cache index: {}", url);
+        log::error("Failed to cache index: {}", url);
     }
 
     this->loadIndex(std::move(json)).inspectErr([url](const std::string& err) {
-        log::info("Failed to load index {}: {}", url, err);
+        log::error("Failed to load index {}: {}", url, err);
     });
 }
 
@@ -366,8 +367,9 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
     // If not uniqueID not found in local songs, search in indexes
     if (!found) {
         if (!m_nongsForId.contains(gdSongID)) {
-            return Err("Can't download nong for id {}. No local or index songs found.",
-                    gdSongID);
+            return Err(
+                "Can't download nong for id {}. No local or index songs found.",
+                gdSongID);
         }
 
         std::vector<IndexSongMetadata*> songs = m_nongsForId[gdSongID];
@@ -546,8 +548,7 @@ void IndexManager::onDownloadFinish(
 ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
     Result<> res = this->downloadSong(e->gdSongID(), e->uniqueID());
     if (res.isErr()) {
-        event::SongDownloadFailed(e->gdSongID(), e->uniqueID(),
-                                  res.unwrapErr())
+        event::SongDownloadFailed(e->gdSongID(), e->uniqueID(), res.unwrapErr())
             .post();
     }
     return ListenerResult::Propagate;
