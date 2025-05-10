@@ -243,7 +243,7 @@ struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
         std::vector<int> songs;
         songs.reserve(value["songs"].size());
         for (const matjson::Value& i : value["songs"]) {
-            geode::Result<int64_t> id = i.asInt();
+            geode::Result<std::intmax_t> id = i.asInt();
             if (!id) {
                 continue;
             }
@@ -253,7 +253,7 @@ struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
         std::vector<int> verifiedLevelIDs;
         verifiedLevelIDs.reserve(value["verifiedLevelIDs"].size());
         for (const matjson::Value& i : value["verifiedLevelIDs"]) {
-            geode::Result<int64_t> res = i.asInt();
+            geode::Result<std::intmax_t> res = i.asInt();
             if (!res) {
                 continue;
             }
