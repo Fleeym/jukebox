@@ -20,6 +20,7 @@
 #include <Geode/ui/GeodeUI.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/utils/web.hpp>
 
 #include <jukebox/events/get_song_info.hpp>
@@ -58,25 +59,21 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     manifestLabel->setID("manifest-label");
     m_mainLayer->addChild(manifestLabel);
 
-    CCMenu* menu = CCMenu::create();
-    menu->setID("bottom-right-menu");
+    m_bottomRightMenu = CCMenu::create();
+    m_bottomRightMenu->setID("bottom-right-menu");
     CCSprite* spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
     spr->setScale(0.7f);
-    CCMenuItemSpriteExtra* addBtn = CCMenuItemSpriteExtra::create(
+    m_addBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::openAddPopup));
-    m_addBtn = addBtn;
 
     spr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
-    CCMenuItemSpriteExtra* discordBtn = CCMenuItemSpriteExtra::create(
+    m_discordBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::onDiscord));
-    discordBtn->setID("discord-button");
-    m_discordBtn = discordBtn;
+    m_discordBtn->setID("discord-button");
 
     spr = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
-    spr->setScale(0.7f);
-    CCMenuItemSpriteExtra* removeBtn = CCMenuItemSpriteExtra::create(
+    m_deleteBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongDropdownLayer::deleteAllNongs));
-    m_deleteBtn = removeBtn;
 
     if (isMultiple) {
         m_addBtn->setVisible(false);
@@ -85,36 +82,42 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
         m_addBtn->setVisible(true);
         m_deleteBtn->setVisible(true);
     }
-    menu->addChild(addBtn);
-    menu->addChild(discordBtn);
-    menu->addChild(removeBtn);
-    ColumnLayout* layout = ColumnLayout::create();
-    layout->setAxisAlignment(AxisAlignment::Start);
-    menu->setContentSize({addBtn->getScaledContentSize().width, 200.f});
-    menu->setAnchorPoint(ccp(1.0f, 0.0f));
-    menu->setLayout(layout);
-    menu->setPosition(contentSize.width - 7.f, 7.f);
-    menu->setZOrder(2);
-    m_mainLayer->addChild(menu);
+    m_bottomRightMenu->addChild(m_addBtn);
+    m_bottomRightMenu->addChild(m_discordBtn);
+    m_bottomRightMenu->addChild(m_deleteBtn);
+    SimpleAxisLayout* layout =
+        SimpleColumnLayout::create()
+            ->setMainAxisAlignment(MainAxisAlignment::Start)
+            ->setMainAxisDirection(AxisDirection::BottomToTop)
+            ->setMainAxisScaling(AxisScaling::ScaleDown)
+            ->setCrossAxisScaling(AxisScaling::ScaleDown)
+            ->setGap(5.0f);
+    layout->ignoreInvisibleChildren(true);
+    m_bottomRightMenu->setContentSize(
+        {40.0f, m_mainLayer->getContentHeight() / 2 - 5.0f});
+    m_bottomRightMenu->setAnchorPoint({1.0f, 0.0f});
+    m_bottomRightMenu->setLayout(layout);
+    m_bottomRightMenu->setZOrder(2);
+    m_mainLayer->addChildAtPosition(m_bottomRightMenu, Anchor::BottomRight,
+                                    CCPoint{-5.0f, 5.0f});
 
-    menu = CCMenu::create();
-    menu->setID("settings-menu");
+    CCMenu* settingsMenu = CCMenu::create();
+    settingsMenu->setID("settings-menu");
     CCSprite* sprite =
         CCSprite::createWithSpriteFrameName("GJ_optionsBtn_001.png");
     sprite->setScale(0.8f);
     CCMenuItemSpriteExtra* settingsButton = CCMenuItemSpriteExtra::create(
         sprite, this, menu_selector(NongDropdownLayer::onSettings));
     settingsButton->setID("settings-button");
-    menu->addChild(settingsButton);
-    menu->setAnchorPoint({0.5f, 1.0f});
-    menu->setContentSize(settingsButton->getScaledContentSize());
-    ColumnLayout* settingsLayout = ColumnLayout::create();
-    settingsLayout->setAxisAlignment(AxisAlignment::End);
-    settingsLayout->setAxisReverse(true);
-    menu->setLayout(settingsLayout);
-    menu->setZOrder(1);
-    m_mainLayer->addChildAtPosition(menu, Anchor::TopRight,
-                                    CCPoint{-25.0f, -5.0f});
+    settingsMenu->addChild(settingsButton);
+    settingsMenu->setAnchorPoint({1.0f, 1.0f});
+    settingsMenu->setLayout(SimpleColumnLayout::create()
+                                ->setMainAxisAlignment(MainAxisAlignment::Start)
+                                ->setMainAxisScaling(AxisScaling::Fit)
+                                ->setCrossAxisScaling(AxisScaling::Fit));
+    settingsMenu->setZOrder(1);
+    m_mainLayer->addChildAtPosition(settingsMenu, Anchor::TopRight,
+                                    CCPoint{-5.0f, -5.0f});
 
     CCSprite* bottomLeftArt =
         CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
@@ -205,17 +208,18 @@ void NongDropdownLayer::openAddPopup(CCObject* target) {
 void NongDropdownLayer::createList() {
     if (!m_list) {
         m_list = NongList::create(
-            m_songIDS, CCSize{this->getCellSize().width, 220.f},
-            m_levelID,
+            m_songIDS, CCSize{this->getCellSize().width, 220.f}, m_levelID,
             [this](std::optional<int> currentSongID) {
                 m_currentSongID = currentSongID;
                 bool multiple = !currentSongID.has_value();
                 if (multiple) {
                     m_addBtn->setVisible(false);
                     m_deleteBtn->setVisible(false);
+                    m_bottomRightMenu->updateLayout();
                 } else {
                     m_addBtn->setVisible(true);
                     m_deleteBtn->setVisible(true);
+                    m_bottomRightMenu->updateLayout();
                 }
             });
         m_mainLayer->addChildAtPosition(m_list, Anchor::Center);

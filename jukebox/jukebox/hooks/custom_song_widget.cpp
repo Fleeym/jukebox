@@ -4,6 +4,7 @@
 #include <optional>
 #include <sstream>
 
+#include <Geode/cocos/actions/CCActionInterval.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
@@ -24,13 +25,13 @@
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
 #include <Geode/ui/GeodeUI.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/utils/cocos.hpp>
 
 #include <jukebox/events/song_state_changed.hpp>
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/nong_dropdown_layer.hpp>
-#include "Geode/cocos/actions/CCActionInterval.h"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -533,14 +534,13 @@ class $modify(JBSongWidget, CustomSongWidget) {
             float labelScale = label->getScale();
             m_fields->labelMenu->addChild(btn);
             m_fields->labelMenu->setAnchorPoint(m_songLabel->getAnchorPoint());
-            m_fields->labelMenu->setContentSize(
-                m_songLabel->getScaledContentSize());
+            m_fields->labelMenu->setContentSize(m_songLabel->getContentSize());
+            m_fields->labelMenu->setScale(m_songLabel->getScale());
             m_fields->labelMenu->setPosition(m_songLabel->getPosition());
             m_fields->labelMenu->setLayout(
-                RowLayout::create()
-                    ->setDefaultScaleLimits(0.1f, 1.0f)
-                    ->setAxisAlignment(AxisAlignment::Start));
-            m_fields->labelMenu->updateLayout();
+                SimpleRowLayout::create()
+                    ->setMainAxisScaling(AxisScaling::Scale)
+                    ->setCrossAxisScaling(AxisScaling::Scale));
             m_songLabel->setVisible(false);
             this->addChild(m_fields->labelMenu);
         } else {

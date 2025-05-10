@@ -16,6 +16,7 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/utils/cocos.hpp>
 
 #include <jukebox/events/nong_deleted.hpp>
@@ -47,12 +48,14 @@ bool NongList::init(std::vector<int>& songIds, const cocos2d::CCSize& size,
 
     this->setContentSize(size);
     this->setAnchorPoint({0.5f, 0.5f});
+    this->setID("NongList");
 
     m_bg = CCScale9Sprite::create("square02b_001.png");
     m_bg->setColor({0, 0, 0});
     m_bg->setOpacity(75);
     m_bg->setScale(0.3f);
     m_bg->setContentSize(size / m_bg->getScale());
+    m_bg->setID("background");
     this->addChildAtPosition(m_bg, Anchor::Center);
 
     CCMenu* menu = CCMenu::create();
@@ -60,20 +63,25 @@ bool NongList::init(std::vector<int>& songIds, const cocos2d::CCSize& size,
     auto backBtn = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongList::onBack));
     m_backBtn = backBtn;
+    m_backBtn->setID("back-btn");
     m_backBtn->setVisible(false);
     menu->addChild(backBtn);
-    menu->setLayout(ColumnLayout::create());
-    menu->updateLayout();
+    menu->setContentHeight(size.height);
+    menu->setLayout(
+        SimpleColumnLayout::create()->setGap(1.0f)->setMainAxisScaling(
+            AxisScaling::ScaleDown));
     menu->setZOrder(1);
+    menu->setID("back-menu");
     this->addChildAtPosition(menu, Anchor::Left, CCPoint{-10.0f, 0.0f});
 
     m_list = ScrollLayer::create({size.width, size.height - s_padding});
-    m_list->m_contentLayer->setLayout(ColumnLayout::create()
-                                          ->setAxisReverse(true)
-                                          ->setAxisAlignment(AxisAlignment::End)
-                                          ->setAutoGrowAxis(size.height)
-                                          ->setGap(s_padding / 2));
-    m_list->m_contentLayer->setPositionX(s_padding / 2.f);
+    m_list->m_contentLayer->setLayout(
+        SimpleColumnLayout::create()
+            ->setMainAxisDirection(AxisDirection::TopToBottom)
+            ->setMainAxisAlignment(MainAxisAlignment::Start)
+            ->setMainAxisScaling(AxisScaling::Grow)
+            ->setGap(s_padding / 2));
+    m_list->setID("list");
 
     this->addChildAtPosition(m_list, Anchor::Center,
                              -m_list->getScaledContentSize() / 2);
@@ -136,8 +144,7 @@ void NongList::build() {
         CCLabelBMFont* localSongs =
             CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
         localSongs->setID("local-section");
-        localSongs->setLayoutOptions(
-            AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+        localSongs->setScale(0.5f);
         m_list->m_contentLayer->addChild(localSongs);
 
         std::unordered_set<std::string> localYt;
@@ -225,8 +232,7 @@ void NongList::build() {
             CCLabelBMFont* indexLabel =
                 CCLabelBMFont::create("Download nongs", "goldFont.fnt");
             indexLabel->setID("index-section");
-            indexLabel->setLayoutOptions(
-                AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+            indexLabel->setScale(0.5f);
             m_list->m_contentLayer->addChild(indexLabel);
         }
 
@@ -345,7 +351,6 @@ void NongList::addNoLocalSongsNotice(bool liveInsert) {
     CCLabelBMFont* label =
         CCLabelBMFont::create("You have no stored nongs :(", "bigFont.fnt");
     label->setID("no-local-songs");
-    label->setLayoutOptions(AxisLayoutOptions::create()->setAutoScale(false));
     label->limitLabelWidth(150.0f, 0.7f, 0.1f);
 
     if (!liveInsert) {
@@ -471,8 +476,7 @@ ListenerResult NongList::onNongDeleted(event::NongDeleted* e) {
             CCLabelBMFont* indexLabel =
                 CCLabelBMFont::create("Download nongs", "goldFont.fnt");
             indexLabel->setID("index-section");
-            indexLabel->setLayoutOptions(
-                AxisLayoutOptions::create()->setScaleLimits(0.2f, 0.6f));
+            indexLabel->setScale(0.5f);
             m_list->m_contentLayer->addChild(indexLabel);
         }
 

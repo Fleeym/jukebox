@@ -8,6 +8,7 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
 
 #include <jukebox/nong/index.hpp>
@@ -50,7 +51,8 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
     float m_buttonsSize = 0.f;
 
     m_toggleButton = CCMenuItemToggler::createWithStandardSprites(
-        this, menu_selector(IndexCell::onToggle), .6f);
+        this, menu_selector(IndexCell::onToggle), 1.0f);
+    m_toggleButton->setScale(0.7f);
     m_toggleButton->setAnchorPoint(ccp(0.5f, 0.5f));
 
     m_buttonsSize += m_toggleButton->getContentSize().width;
@@ -63,24 +65,25 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
     if (m_index->m_userAdded) {
         auto sprite =
             CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
-        sprite->setScale(0.7f);
         auto deleteButton = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(IndexCell::onDelete));
         deleteButton->setID("delete-button");
+        deleteButton->setScale(0.7f);
         buttonsMenu->addChild(deleteButton);
-        m_buttonsSize += deleteButton->getContentSize().width;
+        m_buttonsSize += deleteButton->getScaledContentWidth();
     }
 
-    buttonsMenu->setLayout(RowLayout::create()->setGap(5.f)->setAxisAlignment(
-        AxisAlignment::Even));
-    buttonsMenu->updateLayout();
+    buttonsMenu->setLayout(SimpleRowLayout::create()
+                               ->setGap(5.0f)
+                               ->setMainAxisAlignment(MainAxisAlignment::Even)
+                               ->setMainAxisScaling(AxisScaling::ScaleDown)
+                               ->setCrossAxisScaling(AxisScaling::ScaleDown));
     buttonsMenu->setID("button-menu");
 
-    auto inputNode =
-        TextInput::create(size.width - HORIZONTAL_PADDING * 2 - m_buttonsSize,
-                          "Index url", "chatFont.fnt");
+    auto inputNode = TextInput::create(
+        size.width - HORIZONTAL_PADDING * 2 - buttonsMenu->getContentWidth(),
+        "Index url", "chatFont.fnt");
     inputNode->setScale(1.f);
-    // inputNode->setPosition(size.width / 2 - 15.f, size.height / 2);
     inputNode->setCommonFilter(CommonFilter::Any);
     inputNode->setMaxCharCount(300);
     inputNode->setString(m_index->m_url, false);
@@ -92,8 +95,10 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
     menu->addChild(inputNode);
     menu->addChild(buttonsMenu);
 
-    menu->setLayout(RowLayout::create()->setGap(5.f)->setAxisAlignment(
-        AxisAlignment::Between));
+    menu->setLayout(SimpleRowLayout::create()
+                        ->setGap(5.0f)
+                        ->setMainAxisAlignment(MainAxisAlignment::Between)
+                        ->setMainAxisScaling(AxisScaling::Scale));
     menu->setID("menu");
     menu->setAnchorPoint(CCPoint{0.5f, 0.5f});
     menu->setContentSize(

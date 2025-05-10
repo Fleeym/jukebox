@@ -11,6 +11,7 @@
 #include <ccTypes.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 
 #include <jukebox/events/song_download_failed.hpp>
 #include <jukebox/events/song_download_progress.hpp>
@@ -62,13 +63,14 @@ void NongCellUI::build() {
         CCLabelBMFont* verifiedLabel =
             CCLabelBMFont::create("Verified For Level", "goldFont.fnt");
         verifiedLabel->setScale(0.35f);
+        verifiedLabel->setID("verified-label");
 
         // Create outline shape
         CCScale9Sprite* outlineStencil =
             CCScale9Sprite::create("square02b_001.png");
         outlineStencil->setScale(0.4f);
         outlineStencil->setContentSize(
-            (m_size + CCPoint(OUTLINE_SIZE, OUTLINE_SIZE)) /
+            (m_size + CCPoint{OUTLINE_SIZE, OUTLINE_SIZE}) /
             outlineStencil->getScale());
 
         // Create text background shape
@@ -76,8 +78,8 @@ void NongCellUI::build() {
             CCScale9Sprite::create("square02b_001.png");
         textBgStencil->setScale(0.4f);
         textBgStencil->setContentSize(
-            (CCPoint(verifiedLabel->getScaledContentWidth() + 5,
-                     verifiedLabel->getScaledContentHeight() * 2 + 4)) /
+            (CCPoint{verifiedLabel->getScaledContentWidth() + 5,
+                     verifiedLabel->getScaledContentHeight() * 2 + 4}) /
             textBgStencil->getScale());
 
         // Combine the shapes into a single stencil node
@@ -94,10 +96,12 @@ void NongCellUI::build() {
         CCClippingNode* clipNode = CCClippingNode::create(stencilNode);
         clipNode->setAlphaThreshold(0.05f);
         clipNode->setInverted(false);
+        clipNode->setID("gradient-clipping-node");
 
         // Draw a gradient that will be clipped by the clip node
         CCLayerGradient* gradientLayer =
             CCLayerGradient::create({253, 166, 16, 255}, {253, 225, 71, 255});
+        gradientLayer->setID("gradient");
 
         // The size of the gradient will be larger that this because of the
         // scale, but it's fine.
@@ -117,6 +121,7 @@ void NongCellUI::build() {
     bg->setColor({76, 42, 25});
     bg->setScale(0.3f);
     bg->setContentSize(m_size / bg->getScale());
+    bg->setID("background");
     this->addChildAtPosition(bg, Anchor::Center);
 
     m_songInfoNode = CCNode::create();
@@ -126,7 +131,7 @@ void NongCellUI::build() {
 
     m_songNameLabel = CCLabelBMFont::create(m_songName.c_str(), "bigFont.fnt");
     m_songNameLabel->setAnchorPoint({0.0f, 0.5f});
-    m_songNameLabel->limitLabelWidth(songInfoWidth, 0.56f, 0.1f);
+    m_songNameLabel->setScale(0.6f);
     m_songNameLabel->setID("song-info-label");
 
     if (m_isSelected) {
@@ -136,13 +141,13 @@ void NongCellUI::build() {
     m_authorNameLabel =
         CCLabelBMFont::create(m_authorName.c_str(), "goldFont.fnt");
     m_authorNameLabel->setAnchorPoint({0.0f, 0.5f});
-    m_authorNameLabel->limitLabelWidth(songInfoWidth, 0.5f, 0.1f);
+    m_authorNameLabel->setScale(0.5f);
     m_authorNameLabel->setID("artist-label");
 
     m_metadataLabel = CCLabelBMFont::create(m_metadata.c_str(), "bigFont.fnt");
     m_metadataLabel->setAnchorPoint({0.0f, 0.5f});
-    m_metadataLabel->limitLabelWidth(songInfoWidth, 0.4f, 0.1f);
     m_metadataLabel->setColor({.r = 162, .g = 191, .b = 255});
+    m_metadataLabel->setScale(0.4f);
     m_metadataLabel->setID("metadata-label");
 
     m_songInfoNode->addChild(m_songNameLabel);
@@ -151,14 +156,12 @@ void NongCellUI::build() {
         m_songInfoNode->addChild(m_metadataLabel);
     }
     m_songInfoNode->setLayout(
-        ColumnLayout::create()
-            ->setAutoScale(false)
-            ->setAxisReverse(true)
-            ->setCrossAxisOverflow(false)
-            ->setAxisAlignment(AxisAlignment::Even)
-            ->setCrossAxisAlignment(AxisAlignment::Start)
-            ->setCrossAxisOverflow(true)
-            ->setCrossAxisLineAlignment(AxisAlignment::Start));
+        SimpleColumnLayout::create()
+            ->setMainAxisAlignment(MainAxisAlignment::Even)
+            ->setCrossAxisAlignment(CrossAxisAlignment::Start)
+            ->setMainAxisScaling(AxisScaling::ScaleDown)
+            ->setCrossAxisScaling(AxisScaling::ScaleDown)
+            ->setMinRelativeScale(0.1f));
     this->addChildAtPosition(m_songInfoNode, Anchor::Left, {PADDING_X, 0.0f});
 
     // Buttons menu
@@ -167,7 +170,8 @@ void NongCellUI::build() {
     m_buttonsMenu->setAnchorPoint({1.0f, 0.5f});
     m_buttonsMenu->setContentSize({buttonsWidth, maxSize.height});
     auto buttonsMenuLayout =
-        RowLayout::create()->setGap(5.f)->setAxisAlignment(AxisAlignment::End);
+        SimpleRowLayout::create()->setGap(5.0f)->setMainAxisAlignment(
+            MainAxisAlignment::End);
     buttonsMenuLayout->ignoreInvisibleChildren(true);
     m_buttonsMenu->setLayout(buttonsMenuLayout);
 

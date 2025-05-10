@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CustomSongWidget.hpp>
@@ -22,7 +23,8 @@
 namespace jukebox {
 
 class NongDropdownLayer
-    : public geode::Popup<std::vector<int>, CustomSongWidget*, int, std::optional<int>> {
+    : public geode::Popup<std::vector<int>, CustomSongWidget*, int,
+                          std::optional<int>> {
 protected:
     std::vector<int> m_songIDS;
     std::optional<int> m_currentSongID = std::nullopt;
@@ -34,6 +36,7 @@ protected:
     CCMenuItemSpriteExtra* m_addBtn = nullptr;
     CCMenuItemSpriteExtra* m_discordBtn = nullptr;
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
+    cocos2d::CCMenu* m_bottomRightMenu = nullptr;
 
     geode::EventListener<geode::EventFilter<jukebox::event::SongError>>
         m_songErrorListener;

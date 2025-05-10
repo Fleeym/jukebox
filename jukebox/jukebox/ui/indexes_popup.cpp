@@ -1,7 +1,6 @@
 #include <jukebox/ui/indexes_popup.hpp>
 
 #include <functional>
-#include <optional>
 #include <vector>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
@@ -9,6 +8,7 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 
 #include <jukebox/nong/index.hpp>
 #include <jukebox/ui/list/index_cell.hpp>
@@ -75,21 +75,15 @@ CCSize IndexesPopup::getPopupSize() { return {320.f, 240.f}; }
 void IndexesPopup::createList() {
     auto size = this->m_mainLayer->getContentSize();
 
-    constexpr float HORIZONTAL_PADDING = 5.f;
+    constexpr static float s_padding = 5.f;
 
     if (m_list) {
         m_list->removeFromParent();
     }
 
-    m_list = ScrollLayer::create({size.width - HORIZONTAL_PADDING * 2,
-                                  size.height - HORIZONTAL_PADDING * 2 - 4.f});
-    m_list->m_contentLayer->setLayout(
-        ColumnLayout::create()
-            ->setAxisReverse(true)
-            ->setAxisAlignment(AxisAlignment::End)
-            ->setAutoGrowAxis(size.height - HORIZONTAL_PADDING * 2 - 4.f)
-            ->setGap(HORIZONTAL_PADDING / 2));
-    m_list->setPosition({HORIZONTAL_PADDING, HORIZONTAL_PADDING + 2.f});
+    m_list = ScrollLayer::create(
+        {size.width - s_padding * 2, size.height - s_padding * 2 - 4.f});
+    m_list->setPosition({s_padding, s_padding + 2.f});
 
     for (int i = 0; i < m_indexes.size(); i++) {
         auto cell = IndexCell::create(
@@ -98,15 +92,20 @@ void IndexesPopup::createList() {
                 m_indexes.erase(m_indexes.begin() + i);
                 this->createList();
             },
-            CCSize{this->getPopupSize().width - HORIZONTAL_PADDING * 2, 35.f});
+            CCSize{this->getPopupSize().width - s_padding * 2, 35.f});
         cell->setAnchorPoint({0.f, 0.f});
         m_list->m_contentLayer->addChild(cell);
     }
     auto menu = CCMenu::create();
     menu->setContentSize({0.f, 36.f});
     m_list->m_contentLayer->addChild(menu);
+    m_list->m_contentLayer->setLayout(
+        SimpleColumnLayout::create()
+            ->setMainAxisDirection(AxisDirection::TopToBottom)
+            ->setMainAxisAlignment(MainAxisAlignment::Start)
+            ->setMainAxisScaling(AxisScaling::Grow)
+            ->setGap(s_padding / 2));
 
-    m_list->m_contentLayer->updateLayout();
     this->m_mainLayer->addChild(m_list);
     handleTouchPriority(this);
 }
