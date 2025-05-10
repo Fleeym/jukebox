@@ -363,13 +363,13 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string& uniqueID) {
         }
     }
 
-    // Look in indexes otherwise
-    if (!m_nongsForId.contains(gdSongID)) {
-        return Err("Can't download nong for id {}. No index songs found.",
-                   gdSongID);
-    }
-
+    // If not uniqueID not found in local songs, search in indexes
     if (!found) {
+        if (!m_nongsForId.contains(gdSongID)) {
+            return Err("Can't download nong for id {}. No local or index songs found.",
+                    gdSongID);
+        }
+
         std::vector<IndexSongMetadata*> songs = m_nongsForId[gdSongID];
         for (IndexSongMetadata* s : songs) {
             if (s->uniqueID != uniqueID) {
@@ -544,9 +544,9 @@ void IndexManager::onDownloadFinish(
 }
 
 ListenerResult IndexManager::onDownloadStart(event::StartDownload* e) {
-    Result<> res = this->downloadSong(e->gdId(), e->song()->uniqueID);
+    Result<> res = this->downloadSong(e->gdSongID(), e->uniqueID());
     if (res.isErr()) {
-        event::SongDownloadFailed(e->gdId(), e->song()->uniqueID,
+        event::SongDownloadFailed(e->gdSongID(), e->uniqueID(),
                                   res.unwrapErr())
             .post();
     }

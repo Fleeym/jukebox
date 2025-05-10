@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 
 #include <Geode/Result.hpp>
@@ -231,33 +232,38 @@ template <>
 struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
     static geode::Result<jukebox::index::IndexSongMetadata> fromJson(
         const matjson::Value& value) {
-        if (!value.contains("name")) {
-            return geode::Err("Song is missing \"name\" key");
+        GEODE_UNWRAP_INTO(std::string name, value["name"].asString());
+        GEODE_UNWRAP_INTO(std::string artist, value["artist"].asString());
+
+        if (value.contains("verifiedLevelIDs") &&
+            !value["verifiedLevelIDs"].isArray()) {
+            return geode::Err("Invalid \"verifiedLevelIDs\" key");
         }
 
-        if (!value.contains("artist")) {
-            return geode::Err("Song is missing \"artist\" key");
-        }
-
-        if (!value.contains("songs") || !value["songs"].isArray()) {
-            return geode::Err("Song is missing \"songs\" key");
-        }
-
-        const std::vector<matjson::Value>& jsonSongs =
-            value["songs"].asArray().unwrap();
         std::vector<int> songs;
-        songs.reserve(jsonSongs.size());
-        for (const matjson::Value& i : jsonSongs) {
-            if (!i.isNumber()) {
+        songs.reserve(value["songs"].size());
+        for (const matjson::Value& i : value["songs"]) {
+            geode::Result<std::intmax_t> id = i.asInt();
+            if (!id) {
                 continue;
             }
-            songs.push_back(i.asInt().unwrap());
+            songs.push_back(id.unwrap());
+        }
+
+        std::vector<int> verifiedLevelIDs;
+        verifiedLevelIDs.reserve(value["verifiedLevelIDs"].size());
+        for (const matjson::Value& i : value["verifiedLevelIDs"]) {
+            geode::Result<std::intmax_t> res = i.asInt();
+            if (!res) {
+                continue;
+            }
+            verifiedLevelIDs.push_back(res.unwrap());
         }
 
         return geode::Ok(jukebox::index::IndexSongMetadata{
             .uniqueID = "",
-            .name = value["name"].asString().unwrap(),
-            .artist = value["artist"].asString().unwrap(),
+            .name = name,
+            .artist = artist,
             .url = value["url"]
                        .asString()
                        .map([](auto i) { return std::optional(i); })
@@ -267,6 +273,7 @@ struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
                         .map([](auto i) { return std::optional(i); })
                         .unwrapOr(std::nullopt),
             .songIDs = std::move(songs),
+            .verifiedLevelIDs = std::move(verifiedLevelIDs),
             .startOffset =
                 static_cast<int>(value["startOffset"].asInt().unwrapOr(0)),
             .parentID = nullptr});

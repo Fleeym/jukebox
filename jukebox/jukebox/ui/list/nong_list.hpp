@@ -16,7 +16,6 @@
 #include <jukebox/events/nong_deleted.hpp>
 #include <jukebox/events/song_download_finished.hpp>
 #include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/list/index_song_cell.hpp>
 #include <jukebox/ui/list/nong_cell.hpp>
 
 namespace jukebox {
@@ -30,17 +29,11 @@ protected:
     geode::ScrollLayer* m_list;
     cocos2d::extension::CCScale9Sprite* m_bg;
     std::optional<int> m_currentSong = std::nullopt;
+    std::optional<int> m_levelID;
 
     CCMenuItemSpriteExtra* m_backBtn = nullptr;
 
-    std::function<void(int, const std::string&)> m_onSetActive;
-    std::function<void(int, const std::string&, bool onlyAudio, bool confirm)>
-        m_onDelete;
-    std::function<void(int, const std::string&)> m_onDownload;
-    std::function<void(int, const std::string&)> m_onEdit;
     std::function<void(std::optional<int>)> m_onListTypeChange;
-
-    std::vector<NongCell*> listedNongCells;
 
     geode::EventListener<geode::EventFilter<event::SongDownloadFinished>>
         m_downloadFinishedListener = {this, &NongList::onDownloadFinish};
@@ -69,22 +62,12 @@ public:
 
     static NongList* create(
         std::vector<int>& songIds, const cocos2d::CCSize& size,
-        std::function<void(int, const std::string&)> onSetActive,
-        std::function<void(int, const std::string&, bool onlyAudio,
-                           bool confirm)>
-            onDelete,
-        std::function<void(int, const std::string&)> onDownload,
-        std::function<void(int, const std::string&)> onEdit,
+        std::optional<int> levelID,
         std::function<void(std::optional<int>)> onListTypeChange = {});
 
 protected:
     bool init(std::vector<int>& songIds, const cocos2d::CCSize& size,
-              std::function<void(int, const std::string&)> onSetActive,
-              std::function<void(int, const std::string&, bool onlyAudio,
-                                 bool confirm)>
-                  onDelete,
-              std::function<void(int, const std::string&)> onDownload,
-              std::function<void(int, const std::string&)> onEdit,
+              std::optional<int> levelID,
               std::function<void(std::optional<int>)> onListTypeChange = {});
 };
 

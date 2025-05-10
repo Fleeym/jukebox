@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <unordered_map>
 #include <utility>
@@ -36,6 +37,38 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     }
 
     return m_manifest.m_nongs[songID].get();
+}
+
+bool NongManager::isNongVerifiedForLevelSong(int levelID, int songID, std::string_view uniqueID) {
+    // List the verified nongs for the given level and song
+    std::vector<std::string> verifiedNongs = NongManager::get().getVerifiedNongsForLevel(
+        levelID,
+        {songID}
+    );
+    return std::find(verifiedNongs.begin(), verifiedNongs.end(), uniqueID) != verifiedNongs.end();
+}
+
+std::vector<std::string> NongManager::getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs) {
+    std::vector<std::string> verifiedNongs;
+
+    for (const int songID : songIDs) {
+        auto nongs = this->getNongs(songID);
+
+        if (!nongs.has_value()) {
+            continue;
+        }
+        
+        // For each indexSong, check if it contains the given levelID in its verifiedLevelIDs field.
+        for (auto indexSong : nongs.value()->indexSongs()) {
+            auto& ids = indexSong->verifiedLevelIDs;
+
+            if (std::find(ids.begin(), ids.end(), levelID) != ids.end()) {
+                verifiedNongs.push_back(indexSong->uniqueID);
+            }
+        }
+    }
+
+    return verifiedNongs;
 }
 
 int NongManager::getCurrentManifestVersion() { return m_manifest.m_version; }

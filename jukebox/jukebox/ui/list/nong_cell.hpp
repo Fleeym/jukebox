@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <optional>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
@@ -12,7 +12,9 @@
 #include <jukebox/events/song_download_finished.hpp>
 #include <jukebox/events/song_download_progress.hpp>
 #include <jukebox/events/song_state_changed.hpp>
+#include <jukebox/nong/index.hpp>
 #include <jukebox/nong/nong.hpp>
+#include <jukebox/ui/list/nong_cell_ui.hpp>
 
 namespace jukebox {
 
@@ -22,28 +24,18 @@ class NongCell : public cocos2d::CCNode {
 protected:
     int m_songID;
     std::string m_uniqueID;
-    cocos2d::CCLabelBMFont* m_songNameLabel = nullptr;
-    cocos2d::CCLabelBMFont* m_authorNameLabel = nullptr;
-    cocos2d::CCLabelBMFont* m_metadataLabel = nullptr;
+    std::optional<int> m_levelID;
 
-    cocos2d::CCNode* m_songInfoNode = nullptr;
+    std::optional<index::IndexSongMetadata*> m_indexSongMetadataOpt;
 
-    std::function<void()> m_onSelect;
-    std::function<void()> m_onDelete;
-    std::function<void()> m_onDownload;
-    std::function<void()> m_onEdit;
+    NongCellUI* m_nongCell;
 
     bool m_isDefault;
     bool m_isActive;
     bool m_isDownloaded;
     bool m_isDownloadable;
-
-    cocos2d::CCMenu* m_buttonMenu = nullptr;
-    CCMenuItemSpriteExtra* m_fixButton = nullptr;
-    CCMenuItemSpriteExtra* m_downloadButton = nullptr;
-    CCMenuItemSpriteExtra* m_selectButton = nullptr;
-    cocos2d::CCMenu* m_downloadProgressContainer = nullptr;
-    cocos2d::CCProgressTimer* m_downloadProgress = nullptr;
+    bool m_isDownloading;
+    bool m_isVerified;
 
     geode::EventListener<geode::EventFilter<event::SongDownloadProgress>>
         m_progressListener{this, &NongCell::onDownloadProgress};
@@ -56,10 +48,9 @@ protected:
     geode::EventListener<geode::EventFilter<event::SongStateChanged>>
         m_stateListener{this, &NongCell::onStateChange};
 
-    bool init(int songID, Song*, bool isDefault, bool selected,
-              const cocos2d::CCSize& size, std::function<void()> onSelect,
-              std::function<void()> onDelete, std::function<void()> onDownload,
-              std::function<void()> onEdit);
+    bool init(int gdSongID, const std::string& uniqueID,
+              const cocos2d::CCSize& size, std::optional<int> levelID,
+              std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
 
     geode::ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
     geode::ListenerResult onGetSongInfo(event::GetSongInfo* e);
@@ -67,20 +58,24 @@ protected:
     geode::ListenerResult onDownloadFinish(event::SongDownloadFinished* e);
     geode::ListenerResult onStateChange(event::SongStateChanged* e);
 
-public:
-    Song* m_songInfo = nullptr;
-    static NongCell* create(int songID, Song* song, bool isDefault,
-                            bool selected, const cocos2d::CCSize& size,
-                            std::function<void()> onSelect,
-                            std::function<void()> onDelete,
-                            std::function<void()> onDownload,
-                            std::function<void()> onEdit);
+    bool initLocal();
+    bool initIndex();
+    void build();
 
-    void onSet(CCObject*);
-    void onDelete(CCObject*);
-    void onFixDefault(CCObject*);
-    void onDownload(CCObject*);
-    void onEdit(CCObject*);
+    void onSelect();
+    void onTrash();
+    void onFixDefault();
+    void onDownload();
+    void onEdit();
+
+    void deleteSong(bool onlyAudio);
+    bool isIndex();
+
+public:
+    static NongCell* create(
+        int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
+        std::optional<int> levelID,
+        std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
 };
 
 }  // namespace jukebox

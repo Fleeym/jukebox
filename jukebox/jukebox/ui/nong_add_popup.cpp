@@ -29,6 +29,7 @@
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/Task.hpp>
 #include <Geode/utils/file.hpp>
@@ -147,7 +148,11 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
     m_switchMenu->addChild(m_switchHostedButton);
     m_switchMenu->addChild(m_switchYTButton);
     m_switchMenu->setLayout(
-        RowLayout::create()->setAxisAlignment(AxisAlignment::Center));
+        SimpleRowLayout::create()
+            ->setMainAxisAlignment(MainAxisAlignment::Center)
+            ->setMainAxisScaling(AxisScaling::ScaleDown)
+            ->setCrossAxisScaling(AxisScaling::ScaleDown)
+            ->setGap(5.0f));
 
     m_container->addChild(m_switchMenu);
 
@@ -226,15 +231,19 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
     spr->setScale(0.7f);
     m_localSongButton = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongAddPopup::openFile));
-    m_localSongMenu->setContentSize(m_localSongButton->getScaledContentSize());
     m_localSongMenu->addChild(m_localSongButton);
-    m_localSongMenu->setLayout(RowLayout::create());
+    m_localSongMenu->setLayout(SimpleRowLayout::create()
+                                   ->setMainAxisScaling(AxisScaling::Fit)
+                                   ->setCrossAxisScaling(AxisScaling::Fit));
 
     m_specialInfoNode->addChild(m_specialInput);
     m_specialInfoNode->addChild(m_localSongMenu);
-    AxisLayout* specialNodeLayout = RowLayout::create();
-    specialNodeLayout->ignoreInvisibleChildren(true);
-    m_specialInfoNode->setLayout(specialNodeLayout);
+    auto specialInfoLayout = SimpleRowLayout::create()
+                                 ->setGap(5.0f)
+                                 ->setMainAxisScaling(AxisScaling::ScaleDown)
+                                 ->setCrossAxisScaling(AxisScaling::Fit);
+    specialInfoLayout->ignoreInvisibleChildren(true);
+    m_specialInfoNode->setLayout(specialInfoLayout);
 
     m_container->addChild(m_specialInfoNode);
 
@@ -259,9 +268,12 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
     m_addSongMenu->addChild(m_addSongButton);
     m_addSongMenu->setAnchorPoint({0.5f, 0.5f});
     m_addSongMenu->setContentSize({m_size.width, 20.0f});
-    AxisLayout* layout = RowLayout::create();
-    layout->ignoreInvisibleChildren(true);
-    m_addSongMenu->setLayout(layout);
+    auto bottomLayout = SimpleRowLayout::create()
+                            ->setMainAxisAlignment(MainAxisAlignment::Center)
+                            ->setCrossAxisScaling(AxisScaling::Fit)
+                            ->setGap(5.0f);
+    bottomLayout->ignoreInvisibleChildren(true);
+    m_addSongMenu->setLayout(bottomLayout);
 
     m_container->addChild(m_addSongMenu);
 
@@ -269,7 +281,9 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
 
     m_container->setContentSize(usefulSize);
     m_container->setAnchorPoint({0.5f, 1.0f});
-    m_container->setLayout(ColumnLayout::create()->setAxisReverse(true));
+    m_container->setLayout(
+        SimpleColumnLayout::create()->setGap(5.0f)->setMainAxisScaling(
+            AxisScaling::ScaleDown));
     m_mainLayer->addChildAtPosition(m_container, Anchor::Top, {0.0f, -40.f});
 
     if (!m_replacedNong.has_value()) {
@@ -290,16 +304,16 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
 
     switch (edit->type()) {
         case NongType::LOCAL:
-            m_specialInput->setString(edit->path().value().string());
-            this->setSongType(SongType::LOCAL);
+            m_memoizedLocalInput = edit->path().value().string();
+            this->setSongType(SongType::LOCAL, false);
             break;
         case NongType::YOUTUBE:
-            m_specialInput->setString(static_cast<YTSong*>(edit)->youtubeID());
-            this->setSongType(SongType::YOUTUBE);
+            m_memoizedYoutubeInput = static_cast<YTSong*>(edit)->youtubeID();
+            this->setSongType(SongType::YOUTUBE, false);
             break;
         case NongType::HOSTED:
-            m_specialInput->setString(static_cast<HostedSong*>(edit)->url());
-            this->setSongType(SongType::HOSTED);
+            m_memoizedHostedInput = static_cast<HostedSong*>(edit)->url();
+            this->setSongType(SongType::HOSTED, false);
             break;
     }
 
@@ -317,17 +331,17 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
 
         switch (m_replacedNong.value()->type()) {
             case NongType::LOCAL:
-                this->setSongType(SongType::LOCAL);
+                this->setSongType(SongType::LOCAL, true);
                 shouldSubmit = submit.m_supportedSongTypes.at(
                     IndexMetadata::Features::SupportedSongType::LOCAL);
                 break;
             case NongType::YOUTUBE:
-                this->setSongType(SongType::YOUTUBE);
+                this->setSongType(SongType::YOUTUBE, true);
                 shouldSubmit = submit.m_supportedSongTypes.at(
                     IndexMetadata::Features::SupportedSongType::YOUTUBE);
                 break;
             case NongType::HOSTED:
-                this->setSongType(SongType::HOSTED);
+                this->setSongType(SongType::HOSTED, true);
                 shouldSubmit = submit.m_supportedSongTypes.at(
                     IndexMetadata::Features::SupportedSongType::HOSTED);
                 break;
@@ -461,9 +475,19 @@ void NongAddPopup::onFileOpen(
     }
 }
 
-void NongAddPopup::setSongType(SongType type) {
-    if (m_songType == type) {
-        return;
+void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
+    if (memorizePrevious) {
+        switch (m_songType) {
+            case SongType::LOCAL:
+                m_memoizedLocalInput = m_specialInput->getString();
+                break;
+            case SongType::HOSTED:
+                m_memoizedHostedInput = m_specialInput->getString();
+                break;
+            case SongType::YOUTUBE:
+                m_memoizedYoutubeInput = m_specialInput->getString();
+                break;
+        }
     }
 
     m_songType = type;
@@ -473,14 +497,14 @@ void NongAddPopup::setSongType(SongType type) {
 
     m_switchLocalSpr->updateBGImage(type == SongType::LOCAL ? on : off);
     m_switchHostedSpr->updateBGImage(type == SongType::HOSTED ? on : off);
+    m_switchYTSpr->updateBGImage(type == SongType::YOUTUBE ? on : off);
 
     switch (type) {
         case SongType::LOCAL: {
-            m_memoizedHostedInput = m_specialInput->getString();
             m_specialInput->setString("");
             m_localSongMenu->setVisible(true);
             m_specialInfoNode->updateLayout();
-            m_specialInput->getInputNode()->getPlaceholderLabel()->setString(
+            m_specialInput->getInputNode()->getTextLabel()->setString(
                 "Select a file");
             if (!m_memoizedLocalInput.empty()) {
                 m_specialInput->setString(m_memoizedLocalInput);
@@ -488,11 +512,10 @@ void NongAddPopup::setSongType(SongType type) {
             break;
         }
         case SongType::HOSTED: {
-            m_memoizedLocalInput = m_specialInput->getString();
             m_specialInput->setString("");
             m_localSongMenu->setVisible(false);
             m_specialInfoNode->updateLayout();
-            m_specialInput->getInputNode()->getPlaceholderLabel()->setString(
+            m_specialInput->getInputNode()->getTextLabel()->setString(
                 "Enter a song URL");
             if (!m_memoizedHostedInput.empty()) {
                 m_specialInput->setString(m_memoizedHostedInput);
@@ -506,7 +529,7 @@ void NongAddPopup::setSongType(SongType type) {
 }
 
 void NongAddPopup::onSwitchToLocal(CCObject*) {
-    this->setSongType(SongType::LOCAL);
+    this->setSongType(SongType::LOCAL, true);
 }
 
 void NongAddPopup::onSwitchToYT(CCObject*) {
@@ -515,11 +538,11 @@ void NongAddPopup::onSwitchToYT(CCObject*) {
                          "They will be enabled in a future <cb>update</c> :)",
                          "Ok")
         ->show();
-    /*this->setSongType(SongType::YOUTUBE);*/
+    /*this->setSongType(SongType::YOUTUBE, true);*/
 }
 
 void NongAddPopup::onSwitchToHosted(CCObject*) {
-    this->setSongType(SongType::HOSTED);
+    this->setSongType(SongType::HOSTED, true);
 }
 
 void NongAddPopup::onPublish(CCObject* target) {
@@ -596,7 +619,8 @@ void NongAddPopup::addSong(CCObject* target) {
     int startOffset = 0;
 
     if (startOffsetStr != "") {
-        Result<int> startOffsetRes = geode::utils::numFromString<int>(startOffsetStr);
+        Result<int> startOffsetRes =
+            geode::utils::numFromString<int>(startOffsetStr);
         if (startOffsetRes.isOk()) {
             startOffset = startOffsetRes.unwrap();
         }

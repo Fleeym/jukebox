@@ -4,6 +4,7 @@
 #include <optional>
 #include <sstream>
 
+#include <Geode/cocos/actions/CCActionInterval.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
@@ -14,6 +15,7 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
@@ -23,6 +25,7 @@
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
 #include <Geode/ui/GeodeUI.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/utils/cocos.hpp>
 
 #include <jukebox/events/song_state_changed.hpp>
@@ -43,12 +46,66 @@ class $modify(JBSongWidget, CustomSongWidget) {
         std::string sfxIds = "";
         bool firstRun = true;
         bool searching = false;
+        CCSprite* sprRays = nullptr;
+        CCMenuItemSpriteExtra* btnDisc = nullptr;
         std::unordered_map<int, Nongs*> assetNongData;
         EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
         std::unique_ptr<
             EventListener<EventFilter<jukebox::event::SongStateChanged>>>
             m_songStateListener;
+        std::optional<int> levelID = std::nullopt;
     };
+
+    std::optional<int> getLevelID() { return m_fields->levelID; }
+
+    void setLevelID(int levelID) {
+        m_fields->levelID = levelID;
+
+        this->setVerifiedUI();
+    }
+
+    // Set the disc to show the song is verified.
+    // The function only works if there is a verified song.
+    void setVerifiedUI() {
+        if (!m_fields->levelID.has_value()) {
+            return;
+        }
+        std::vector<int> songIDs;
+        // m_songs size + SongInfoObject id
+        songIDs.reserve(m_songs.size() + 1);
+        for (auto const& kv : m_songs) {
+            songIDs.push_back(kv.first);
+        }
+
+        int id = m_songInfoObject->m_songID;
+        if (m_isRobtopSong) {
+            id++;
+            id = -id;
+        }
+        songIDs.push_back(id);
+
+        bool isVerified =
+            !NongManager::get()
+                 .getVerifiedNongsForLevel(m_fields->levelID.value(), songIDs)
+                 .empty();
+        if (!isVerified) {
+            return;
+        }
+
+        if (m_fields->sprRays) {
+            m_fields->sprRays->setVisible(true);
+        }
+        if (m_fields->btnDisc) {
+            CCSprite* sprDiscGold =
+                CCSprite::createWithSpriteFrameName("JB_PinDiscGold.png"_spr);
+            if (m_isMusicLibrary) {
+                sprDiscGold->setScale(0.5f);
+            } else {
+                sprDiscGold->setScale(0.7f);
+            }
+            m_fields->btnDisc->setSprite(sprDiscGold);
+        }
+    }
 
     bool init(SongInfoObject* songInfo, CustomSongDelegate* songDelegate,
               bool showSongSelect, bool showPlayMusic, bool showDownload,
@@ -107,7 +164,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         std::optional optPath = nongs->active()->path();
 
-        if (auto found = m_songs.find(nongs->songID()); found != m_songs.end()) {
+        if (auto found = m_songs.find(nongs->songID());
+            found != m_songs.end()) {
             if (!optPath) {
                 found->second = false;
             } else {
@@ -476,14 +534,13 @@ class $modify(JBSongWidget, CustomSongWidget) {
             float labelScale = label->getScale();
             m_fields->labelMenu->addChild(btn);
             m_fields->labelMenu->setAnchorPoint(m_songLabel->getAnchorPoint());
-            m_fields->labelMenu->setContentSize(
-                m_songLabel->getScaledContentSize());
+            m_fields->labelMenu->setContentSize(m_songLabel->getContentSize());
+            m_fields->labelMenu->setScale(m_songLabel->getScale());
             m_fields->labelMenu->setPosition(m_songLabel->getPosition());
             m_fields->labelMenu->setLayout(
-                RowLayout::create()
-                    ->setDefaultScaleLimits(0.1f, 1.0f)
-                    ->setAxisAlignment(AxisAlignment::Start));
-            m_fields->labelMenu->updateLayout();
+                SimpleRowLayout::create()
+                    ->setMainAxisScaling(AxisScaling::Scale)
+                    ->setCrossAxisScaling(AxisScaling::Scale));
             m_songLabel->setVisible(false);
             this->addChild(m_fields->labelMenu);
         } else {
@@ -504,27 +561,48 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->pinMenu = CCMenu::create();
             m_fields->pinMenu->setID("nong-menu"_spr);
 
-            CCSprite* spr =
+            CCSprite* sprRays =
+                CCSprite::createWithSpriteFrameName("JB_PinDiscRays.png"_spr);
+            CCSprite* sprDisc =
                 CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
             if (m_isMusicLibrary) {
-                spr->setScale(0.5f);
+                sprDisc->setScale(0.5f);
+                sprRays->setScale(0.5f * 1.15f);
             } else {
-                spr->setScale(0.7f);
+                sprDisc->setScale(0.7f);
+                sprRays->setScale(0.7f * 1.15f);
             }
-            spr->setID("nong-pin"_spr);
+            sprDisc->setID("nong-pin"_spr);
 
-            CCMenuItemSpriteExtra* btn = CCMenuItemSpriteExtra::create(
-                spr, this, menu_selector(JBSongWidget::addNongLayer));
-            btn->setID("nong-button"_spr);
+            CCMenuItemSpriteExtra* btnDisc = CCMenuItemSpriteExtra::create(
+                sprDisc, this, menu_selector(JBSongWidget::addNongLayer));
+            btnDisc->setID("nong-button"_spr);
+
+            sprRays->setID("nong-pin-rays"_spr);
+            sprRays->setZOrder(-1);
+            sprRays->setAnchorPoint({0.5f, 0.5f});
+            sprRays->setVisible(false);
+
+            m_fields->sprRays = sprRays;
+            m_fields->btnDisc = btnDisc;
+
+            m_fields->pinMenu->addChildAtPosition(sprRays, Anchor::Center);
+
+            static constexpr float rotationDuration = 80.0f;
+            CCRepeatForever* rotateAction = CCRepeatForever::create(
+                CCRotateBy::create(rotationDuration, 360));
+            sprRays->runAction(rotateAction);
 
             m_fields->pinMenu->setAnchorPoint({0.5f, 0.5f});
             m_fields->pinMenu->ignoreAnchorPointForPosition(false);
-            m_fields->pinMenu->addChild(btn);
-            m_fields->pinMenu->setContentSize(btn->getScaledContentSize());
-            m_fields->pinMenu->setLayout(RowLayout::create());
+            m_fields->pinMenu->addChildAtPosition(btnDisc, Anchor::Center);
+            m_fields->pinMenu->setContentSize(btnDisc->getScaledContentSize());
+            m_fields->pinMenu->setLayout(AnchorLayout::create());
 
             m_fields->pinMenu->setPosition(pos);
             this->addChild(m_fields->pinMenu);
+
+            this->setVerifiedUI();
         }
     }
 
@@ -554,7 +632,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
         } else {
             ids.push_back(id);
         }
-        auto layer = NongDropdownLayer::create(ids, this, id);
+        auto layer =
+            NongDropdownLayer::create(ids, this, id, this->getLevelID());
         // based robtroll
         layer->setZOrder(106);
         layer->show();
@@ -578,6 +657,8 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
             popup->m_scene = this;
             popup->show();
         }
+        static_cast<JBSongWidget*>(this->m_songWidget)
+            ->setLevelID(m_level->m_levelID.value());
         return true;
     }
 };

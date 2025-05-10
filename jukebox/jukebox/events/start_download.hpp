@@ -10,14 +10,14 @@ namespace event {
 
 class StartDownload final : public geode::Event {
 protected:
-    index::IndexSongMetadata* m_song = nullptr;
-    int m_gdId;
+    int m_gdSongID;
+    std::string m_uniqueID;
 
 public:
-    StartDownload(index::IndexSongMetadata* song, int gdId);
+    StartDownload(int gdSongID, std::string uniqueID);
 
-    index::IndexSongMetadata* song();
-    int gdId();
+    int gdSongID();
+    std::string uniqueID();
 };
 
 }  // namespace event
