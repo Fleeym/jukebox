@@ -305,6 +305,7 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
     switch (edit->type()) {
         case NongType::LOCAL:
             m_memoizedLocalInput = edit->path().value().string();
+            m_localPath = edit->path();
             this->setSongType(SongType::LOCAL, false);
             break;
         case NongType::YOUTUBE:
