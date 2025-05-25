@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.3.0
+
+ * Implement a "verified" song system, helping with finding which NONG is needed for a certain level
+ * Use the more performant `SimpleAxisLayout` for the interface
+ * Rewrite index JSON storage
+ * Log a warning when default indexes provided by Jukebox are disabled
+
 ## v3.2.1
 
  * Experimental iOS support!
