@@ -563,10 +563,10 @@ void NongAddPopup::onPublish(CCObject* target) {
                 Song* replacedNong = m_replacedNong.value();
 
                 std::string songSpecificParams = "";
+                const auto pathStr = geode::utils::string::pathToString(
+                    replacedNong->path().value());
                 switch (replacedNong->type()) {
                     case NongType::LOCAL:
-                        const auto pathStr = geode::utils::string::pathToString(
-                            replacedNong->path().value());
                         songSpecificParams =
                             fmt::format("&path={}&source=local", pathStr);
                         break;
