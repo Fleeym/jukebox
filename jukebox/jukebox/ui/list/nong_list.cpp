@@ -92,8 +92,6 @@ bool NongList::init(std::vector<int>& songIds, const cocos2d::CCSize& size,
     return true;
 }
 
-void NongList::setDownloadProgress(std::string uniqueID, float progress) {}
-
 void NongList::build() {
     if (m_list->m_contentLayer->getChildrenCount() > 0) {
         m_list->m_contentLayer->removeAllChildrenWithCleanup(true);
@@ -426,12 +424,6 @@ ListenerResult NongList::onDownloadFinish(event::SongDownloadFinished* e) {
     if (CCNode* i = m_list->m_contentLayer->getChildByID(
             fmt::format("{}-{}", meta->parentID->m_id, meta->uniqueID))) {
         i->removeFromParentAndCleanup(true);
-    }
-
-    auto res = nongs->setActive(e->destination()->metadata()->uniqueID);
-    if (!res) {
-        log::error("Failed to set newly downloaded song {} as active: {}",
-                   e->destination()->metadata()->uniqueID, res.unwrapErr());
     }
 
     this->addSongToList(e->destination(), nongs, true);
