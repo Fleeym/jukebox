@@ -12,6 +12,7 @@
 #include <Geode/utils/Task.hpp>
 
 #include <jukebox/events/get_song_info.hpp>
+#include <jukebox/events/song_download_finished.hpp>
 #include <jukebox/events/song_error.hpp>
 #include <jukebox/nong/nong.hpp>
 
@@ -37,13 +38,16 @@ protected:
     }
 
     geode::Result<> saveNongs(std::optional<int> saveId = std::nullopt);
-    geode::EventListener<geode::EventFilter<jukebox::event::SongError>>
+    geode::EventListener<geode::EventFilter<event::SongError>>
         m_songErrorListener;
-    geode::EventListener<geode::EventFilter<jukebox::event::GetSongInfo>>
+    geode::EventListener<geode::EventFilter<event::GetSongInfo>>
         m_songInfoListener;
+    geode::EventListener<geode::EventFilter<event::SongDownloadFinished>>
+        m_downloadFinishedListener = {this, &NongManager::onDownloadFinished};
     geode::Result<std::unique_ptr<Nongs>> loadNongsFromPath(
         const std::filesystem::path& path);
 
+    geode::ListenerResult onDownloadFinished(event::SongDownloadFinished* e);
     geode::Result<> migrateV2();
 
 public:
@@ -99,13 +103,16 @@ public:
     std::optional<Nongs*> getNongs(int songID);
 
     /**
-     * Returns all the uniqueIDs of nongs that are verified for the given level ID
+     * Returns all the uniqueIDs of nongs that are verified for the given level
+     * ID
      *
      * @param levelID the id of the level
      * @param songIDs list of all the song ids to check their nongs
-     * @return List of all uniqueIDs of nongs that are verified for the given level ID
+     * @return List of all uniqueIDs of nongs that are verified for the given
+     * level ID
      */
-    std::vector<std::string> getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs);
+    std::vector<std::string> getVerifiedNongsForLevel(int levelID,
+                                                      std::vector<int> songIDs);
 
     /**
      * Returns whether the nong is verified for the a song in a level
@@ -113,12 +120,14 @@ public:
      * @param levelID the id of the level
      * @param songID the id of a song in the level
      * @param uniqueID the id of the nong
-     * @return Boolean for whether the nong is verified 
+     * @return Boolean for whether the nong is verified
      */
-    bool isNongVerifiedForLevelSong(int levelID, int songID, std::string_view uniqueID);
+    bool isNongVerifiedForLevelSong(int levelID, int songID,
+                                    std::string_view uniqueID);
 
     /**
-     * Checks if the given level has a verified song for any of the given song IDs
+     * Checks if the given level has a verified song for any of the given song
+     * IDs
      *
      * @param levelID the id of the level
      * @param songIDs list of all the song ids to check

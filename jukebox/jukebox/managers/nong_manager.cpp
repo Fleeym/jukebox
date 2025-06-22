@@ -9,8 +9,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include <fmt/chrono.h>
-#include <fmt/core.h>
 #include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/LevelTools.hpp>
@@ -22,6 +20,7 @@
 
 #include <jukebox/compat/compat.hpp>
 #include <jukebox/compat/v2.hpp>
+#include <jukebox/events/song_download_finished.hpp>
 #include <jukebox/managers/index_manager.hpp>
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/nong/nong_serialize.hpp>
@@ -39,16 +38,17 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     return m_manifest.m_nongs[songID].get();
 }
 
-bool NongManager::isNongVerifiedForLevelSong(int levelID, int songID, std::string_view uniqueID) {
+bool NongManager::isNongVerifiedForLevelSong(int levelID, int songID,
+                                             std::string_view uniqueID) {
     // List the verified nongs for the given level and song
-    std::vector<std::string> verifiedNongs = NongManager::get().getVerifiedNongsForLevel(
-        levelID,
-        {songID}
-    );
-    return std::find(verifiedNongs.begin(), verifiedNongs.end(), uniqueID) != verifiedNongs.end();
+    std::vector<std::string> verifiedNongs =
+        NongManager::get().getVerifiedNongsForLevel(levelID, {songID});
+    return std::find(verifiedNongs.begin(), verifiedNongs.end(), uniqueID) !=
+           verifiedNongs.end();
 }
 
-std::vector<std::string> NongManager::getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs) {
+std::vector<std::string> NongManager::getVerifiedNongsForLevel(
+    int levelID, std::vector<int> songIDs) {
     std::vector<std::string> verifiedNongs;
 
     for (const int songID : songIDs) {
@@ -57,8 +57,9 @@ std::vector<std::string> NongManager::getVerifiedNongsForLevel(int levelID, std:
         if (!nongs.has_value()) {
             continue;
         }
-        
-        // For each indexSong, check if it contains the given levelID in its verifiedLevelIDs field.
+
+        // For each indexSong, check if it contains the given levelID in its
+        // verifiedLevelIDs field.
         for (auto indexSong : nongs.value()->indexSongs()) {
             auto& ids = indexSong->verifiedLevelIDs;
 
@@ -478,6 +479,24 @@ std::filesystem::path NongManager::generateSongFilePath(
     unique += extension;
     destination = destination / unique;
     return destination;
+}
+
+ListenerResult NongManager::onDownloadFinished(event::SongDownloadFinished* e) {
+    const auto nongsOpt = this->getNongs(e->destination()->metadata()->gdID);
+
+    if (!nongsOpt) {
+        return ListenerResult::Propagate;
+    }
+
+    Nongs* nongs = nongsOpt.value();
+
+    if (GEODE_UNWRAP_IF_ERR(
+            err, nongs->setActive(e->destination()->metadata()->uniqueID))) {
+        log::error("Failed to set newly downloaded song {} as active: {}",
+                   e->destination()->metadata()->uniqueID, err);
+    }
+
+    return ListenerResult::Propagate;
 }
 
 };  // namespace jukebox

@@ -20,14 +20,14 @@
 
 namespace jukebox {
 
-class NongList : public cocos2d::CCNode {
+class NongList final : public cocos2d::CCNode {
 public:
     enum class ListType { Single = 0, Multiple = 1 };
 
 protected:
     std::vector<int> m_songIds;
-    geode::ScrollLayer* m_list;
-    cocos2d::extension::CCScale9Sprite* m_bg;
+    geode::ScrollLayer* m_list = nullptr;
+    cocos2d::extension::CCScale9Sprite* m_bg = nullptr;
     std::optional<int> m_currentSong = std::nullopt;
     std::optional<int> m_levelID;
 
@@ -58,7 +58,6 @@ public:
     void build();
     void onBack(cocos2d::CCObject*);
     void onSelectSong(int songId);
-    void setDownloadProgress(std::string uniqueID, float progress);
 
     static NongList* create(
         std::vector<int>& songIds, const cocos2d::CCSize& size,
