@@ -7,6 +7,7 @@
  * Rewrite index JSON storage
  * Log a warning when default indexes provided by Jukebox are disabled
  * Fix `NongAddPopup` not checking file extension as lowercase
+ * Fix path not being set when editing a NONG
 
 ## v3.2.1
 
