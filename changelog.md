@@ -6,6 +6,7 @@
  * Use the more performant `SimpleAxisLayout` for the interface
  * Rewrite index JSON storage
  * Log a warning when default indexes provided by Jukebox are disabled
+ * Fix `NongAddPopup` not checking file extension as lowercase
 
 ## v3.2.1
 

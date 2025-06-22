@@ -10,7 +10,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 
-project(jukebox VERSION 3.2.1)
+project(jukebox VERSION 3.3.0)
 
 file(GLOB SOURCES
     jukebox/jukebox/ui/*.cpp
