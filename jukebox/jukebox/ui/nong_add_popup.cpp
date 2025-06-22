@@ -304,7 +304,8 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
 
     switch (edit->type()) {
         case NongType::LOCAL:
-            m_memoizedLocalInput = edit->path().value().string();
+            m_memoizedLocalInput =
+                geode::utils::string::pathToString(edit->path().value());
             m_localPath = edit->path();
             this->setSongType(SongType::LOCAL, false);
             break;
@@ -564,9 +565,10 @@ void NongAddPopup::onPublish(CCObject* target) {
                 std::string songSpecificParams = "";
                 switch (replacedNong->type()) {
                     case NongType::LOCAL:
+                        const auto pathStr = geode::utils::string::pathToString(
+                            replacedNong->path().value());
                         songSpecificParams =
-                            fmt::format("&path={}&source=local",
-                                        replacedNong->path().value());
+                            fmt::format("&path={}&source=local", pathStr);
                         break;
                     case NongType::YOUTUBE:
                         songSpecificParams = fmt::format(
