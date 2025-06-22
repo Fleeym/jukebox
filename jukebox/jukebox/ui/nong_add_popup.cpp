@@ -407,13 +407,11 @@ void NongAddPopup::onFileOpen(
             return;
         }
         auto path = result->unwrap();
-#ifdef GEODE_IS_WINDOWS
-        auto strPath = geode::utils::string::wideToUtf8(path.c_str());
-#else
-        std::string strPath = path.c_str();
-#endif
-
+        std::string strPath = geode::utils::string::pathToString(path);
         std::string extension = path.extension().string();
+        std::ranges::transform(
+            extension, extension.begin(),
+            [](const unsigned char c) { return std::tolower(c); });
 
         if (extension != ".mp3" && extension != ".ogg" && extension != ".wav" &&
             extension != ".flac") {
@@ -596,12 +594,14 @@ void NongAddPopup::onPublish(CCObject* target) {
         };
 
         if (submit.m_preSubmitMessage.has_value()) {
-            auto popup = IndexDisclaimerPopup::create(
+            const auto popup = IndexDisclaimerPopup::create(
                 fmt::format("{} Disclaimer", name).c_str(),
                 submit.m_preSubmitMessage.value(), "Back", "Continue", 420.f,
                 submitFunc);
-            popup->m_scene = this;
-            popup->show();
+            if (popup) {
+                popup->m_scene = this;
+                popup->show();
+            }
         } else {
             submitFunc(nullptr, true);
         }
@@ -910,8 +910,8 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(
 
     FMOD_TAG nameTag = {};
     FMOD_TAG artistTag = {};
-    FMOD_RESULT nameResult;
-    FMOD_RESULT artistResult;
+    FMOD_RESULT nameResult = FMOD_OK;
+    FMOD_RESULT artistResult = FMOD_OK;
 
     const std::string extension = path.extension().string();
     if (extension == ".mp3") {
