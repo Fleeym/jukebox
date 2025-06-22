@@ -29,6 +29,10 @@
 		"utility",
 		"interface"
 	],
+	"dependencies": {
+		"jouca.badgesapi": ">=1.2.3",
+		"geode.node-ids": ">=1.20.1"
+	},
 	"settings": {
 		"downloads": {
 			"name": "Downloads",
