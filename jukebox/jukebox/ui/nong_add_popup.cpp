@@ -421,12 +421,12 @@ void NongAddPopup::onFileOpen(
         }
 
         if (Mod::get()->getSettingValue<bool>("autocomplete-metadata")) {
-            auto meta = this->tryParseMetadata(path);
-            if (meta && (meta->artist.has_value() || meta->name.has_value())) {
+            if (auto meta = this->tryParseMetadata(path);
+                meta && (meta->artist.has_value() || meta->name.has_value())) {
                 auto artistName = m_artistNameInput->getString();
                 auto songName = m_songNameInput->getString();
 
-                if (artistName.size() > 0 || songName.size() > 0) {
+                if (!artistName.empty() || !songName.empty()) {
                     // We should ask before replacing stuff
                     std::stringstream ss;
 
@@ -656,6 +656,14 @@ void NongAddPopup::addSong(CCObject* target) {
 geode::Result<> NongAddPopup::addLocalSong(
     const std::string& songName, const std::string& artistName,
     const std::optional<std::string> levelName, int offset) {
+
+    if (!m_localPath.has_value()) {
+        std::filesystem::path path = m_specialInput->getString();
+        if (std::filesystem::exists(path)) {
+            m_localPath = path;
+        }
+    }
+
     if (!m_localPath.has_value()) {
         return Err("No file selected.");
     }
