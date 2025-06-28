@@ -377,13 +377,8 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
 CCSize NongAddPopup::getPopupSize() { return {320.f, 240.f}; }
 
 void NongAddPopup::openFile(CCObject* target) {
-#ifdef GEODE_IS_WINDOWS
     file::FilePickOptions::Filter filter = {
         .description = "Songs", .files = {"*.mp3", "*.flac", "*.wav", "*.ogg"}};
-#else
-    file::FilePickOptions::Filter filter = {
-        .description = "Songs", .files = {"*.mp3", "*.flac", "*.wav", "*.ogg"}};
-#endif
     file::FilePickOptions options = {std::nullopt, {filter}};
 
     m_pickListener.bind(this, &NongAddPopup::onFileOpen);
