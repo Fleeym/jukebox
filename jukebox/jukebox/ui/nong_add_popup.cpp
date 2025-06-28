@@ -232,7 +232,13 @@ bool NongAddPopup::setup(int songID, std::optional<Song*> replacedNong) {
     m_localSongButton = CCMenuItemSpriteExtra::create(
         spr, this, menu_selector(NongAddPopup::openFile));
     m_localSongMenu->addChild(m_localSongButton);
+
+    spr = CCSprite::createWithSpriteFrameName("GJ_pasteBtn2_001.png");
+    m_localSongPasteButton = CCMenuItemSpriteExtra::create(
+        spr, this, menu_selector(NongAddPopup::onPaste));
+    m_localSongMenu->addChild(m_localSongPasteButton);
     m_localSongMenu->setLayout(SimpleRowLayout::create()
+                                   ->setGap(5.0f)
                                    ->setMainAxisScaling(AxisScaling::Fit)
                                    ->setCrossAxisScaling(AxisScaling::Fit));
 
@@ -383,6 +389,15 @@ void NongAddPopup::openFile(CCObject* target) {
 
     m_pickListener.bind(this, &NongAddPopup::onFileOpen);
     m_pickListener.setFilter(file::pick(file::PickMode::OpenFile, options));
+}
+
+void NongAddPopup::onPaste(CCObject*) {
+    std::string clipboard = geode::utils::clipboard::read();
+    if (clipboard.empty()) {
+        return;
+    }
+
+    m_specialInput->setString(clipboard);
 }
 
 void NongAddPopup::onFileOpen(
@@ -656,7 +671,6 @@ void NongAddPopup::addSong(CCObject* target) {
 geode::Result<> NongAddPopup::addLocalSong(
     const std::string& songName, const std::string& artistName,
     const std::optional<std::string> levelName, int offset) {
-
     if (!m_localPath.has_value()) {
         std::filesystem::path path = m_specialInput->getString();
         if (std::filesystem::exists(path)) {
@@ -682,8 +696,8 @@ geode::Result<> NongAddPopup::addLocalSong(
 
     // make the extension lowercase, who knows what people got on their
     // computers
-    std::transform(extension.begin(), extension.end(), extension.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
+    std::ranges::transform(extension, extension.begin(),
+                           [](const uint8_t c) { return std::tolower(c); });
 
     if (extension != ".mp3" && extension != ".ogg" && extension != ".wav" &&
         extension != ".flac") {

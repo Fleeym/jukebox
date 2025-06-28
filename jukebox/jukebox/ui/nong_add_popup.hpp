@@ -64,6 +64,7 @@ protected:
     geode::TextInput* m_specialInput = nullptr;
     cocos2d::CCMenu* m_localSongMenu = nullptr;
     CCMenuItemSpriteExtra* m_localSongButton = nullptr;
+    CCMenuItemSpriteExtra* m_localSongPasteButton = nullptr;
 
     cocos2d::CCMenu* m_addSongMenu = nullptr;
     CCMenuItemSpriteExtra* m_addSongButton = nullptr;
@@ -88,6 +89,7 @@ protected:
     cocos2d::CCSize getPopupSize();
     void openFile(cocos2d::CCObject*);
     void addSong(cocos2d::CCObject*);
+    void onPaste(cocos2d::CCObject*);
     geode::Result<> addLocalSong(const std::string& songName,
                                  const std::string& artistName,
                                  const std::optional<std::string> levelName,
