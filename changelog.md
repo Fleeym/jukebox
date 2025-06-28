@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.4.0
+
+ * Add a "Paste" button in `NongAddPopup` for mobile platforms
+ * Fix macOS file picker (thanks calum12345)
+ * Fix downloaded songs not being set as active if the NONG popup was closed before the download was finished
+ * Add support for patchless (JIT-less) platforms
+
 ## v3.3.0
 
  * Implement a "verified" song system, helping with finding which NONG is needed for a certain level
