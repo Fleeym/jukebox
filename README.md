@@ -26,7 +26,7 @@ You can open up the Jukebox menu from any level page. Just click on the song nam
 
 ## Reporting bugs
 
-You can report bugs on the [Song FIle Hub Discord server](https://discord.gg/SFE7qxYFyU)
+You can report bugs on the [Song File Hub Discord server](https://discord.gg/maSgd4zpEF)
 
 ## Credits
 
