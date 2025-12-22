@@ -17,12 +17,17 @@
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/LevelPage.hpp>
+#include <Geode/binding/LevelTools.hpp>
+#include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/binding/BoomScrollLayer.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/modify/CustomSongWidget.hpp>  // IWYU pragma: keep
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
+#include <Geode/modify/LevelSelectLayer.hpp>  // IWYU pragma: keep
 #include <Geode/ui/GeodeUI.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
@@ -35,6 +40,52 @@
 
 using namespace geode::prelude;
 using namespace jukebox;
+
+static CCMenuItemSpriteExtra* jbFindTopRightMenuItem(CCMenu* menu) {
+    if (!menu) {
+        return nullptr;
+    }
+    auto children = menu->getChildren();
+    if (!children) {
+        return nullptr;
+    }
+
+    CCMenuItemSpriteExtra* best = nullptr;
+    float bestX = -1e9f;
+    float bestY = -1e9f;
+
+    CCObject* obj = nullptr;
+    CCARRAY_FOREACH(children, obj) {
+        auto item = typeinfo_cast<CCMenuItemSpriteExtra*>(obj);
+        if (!item) {
+            continue;
+        }
+        auto p = item->getPosition();
+        if (p.x > bestX || (p.x == bestX && p.y > bestY)) {
+            best = item;
+            bestX = p.x;
+            bestY = p.y;
+        }
+    }
+
+    return best;
+}
+
+static void jbCollectMenuItems(CCNode* node,
+                               std::vector<CCMenuItemSpriteExtra*>& out) {
+    if (!node) {
+        return;
+    }
+    if (auto item = typeinfo_cast<CCMenuItemSpriteExtra*>(node)) {
+        out.push_back(item);
+    }
+    if (auto children = node->getChildren()) {
+        CCObject* obj = nullptr;
+        CCARRAY_FOREACH(children, obj) {
+            jbCollectMenuItems(typeinfo_cast<CCNode*>(obj), out);
+        }
+    }
+}
 
 class $modify(JBSongWidget, CustomSongWidget) {
     struct Fields {
@@ -660,5 +711,155 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
         static_cast<JBSongWidget*>(this->m_songWidget)
             ->setLevelID(m_level->m_levelID.value());
         return true;
+    }
+};
+
+class $modify(JBLevelSelectLayer, LevelSelectLayer) {
+    struct Fields {
+        CCMenuItemSpriteExtra* m_jbBtn = nullptr;
+    };
+
+    void onJukebox(CCObject*) {
+        if (!m_scrollLayer) {
+            return;
+        }
+
+        // Don't guess with page math; use the actual LevelPage -> GJGameLevel
+        // the user is currently viewing.
+        GJGameLevel* level = nullptr;
+        if (auto pageLayer = m_scrollLayer->getPage(m_scrollLayer->m_page)) {
+            if (auto page = typeinfo_cast<LevelPage*>(pageLayer)) {
+                level = page->m_level;
+            }
+        }
+        if (!level && m_scrollLayer->m_page > 0) {
+            if (auto pageLayer = m_scrollLayer->getPage(m_scrollLayer->m_page - 1)) {
+                if (auto page = typeinfo_cast<LevelPage*>(pageLayer)) {
+                    level = page->m_level;
+                }
+            }
+        }
+        if (!level) {
+            return;
+        }
+
+        const bool isRobtopSong = level->m_songID == 0;
+        const int rawSongID = isRobtopSong ? level->m_audioTrack : level->m_songID;
+        const int adjustedID = NongManager::get().adjustSongID(rawSongID, isRobtopSong);
+        if (adjustedID == 0) {
+            return;
+        }
+
+        if (!NongManager::get().hasSongID(adjustedID)) {
+            auto title = LevelTools::getAudioTitle(rawSongID);
+            auto audioString = std::string(LevelTools::getAudioString(rawSongID));
+
+            std::string artist = "RobTop";
+            if (auto dash = audioString.find(" - "); dash != std::string::npos) {
+                artist = audioString.substr(0, dash);
+            }
+
+            auto obj = SongInfoObject::create(rawSongID, title, artist, 0, 0.0f,
+                                              "", "", "", 0, "", false, 0, 0);
+            if (!obj) {
+                return;
+            }
+
+            auto res = NongManager::get().initSongID(obj, rawSongID, isRobtopSong);
+            if (res.isErr()) {
+                FLAlertLayer::create("Error", res.unwrapErr(), "Ok")->show();
+                return;
+            }
+        }
+
+        auto layer = NongDropdownLayer::create({adjustedID}, nullptr, adjustedID, std::nullopt);
+        if (!layer) {
+            FLAlertLayer::create("Error", "Failed to open Jukebox popup", "Ok")
+                ->show();
+            return;
+        }
+        layer->setZOrder(106);
+        layer->show();
+    }
+
+    void ensureJukeboxButton() {
+        if (m_fields->m_jbBtn && m_fields->m_jbBtn->getParent()) {
+            return;
+        }
+        m_fields->m_jbBtn = nullptr;
+
+        auto win = CCDirector::sharedDirector()->getWinSize();
+
+        std::vector<CCMenuItemSpriteExtra*> items;
+        items.reserve(32);
+        jbCollectMenuItems(this, items);
+
+        CCMenuItemSpriteExtra* infoBtn = nullptr;
+        CCMenu* infoMenu = nullptr;
+        CCPoint best = {-1e9f, -1e9f};
+
+        for (auto* item : items) {
+            if (!item || item->getID() == "jb-levelselect-button"_spr) {
+                continue;
+            }
+            auto parentMenu = typeinfo_cast<CCMenu*>(item->getParent());
+            if (!parentMenu) {
+                continue;
+            }
+
+            auto world = parentMenu->convertToWorldSpace(item->getPosition());
+            if (world.x < win.width * 0.70f || world.y < win.height * 0.70f) {
+                continue;
+            }
+
+            if (world.x > best.x || (world.x == best.x && world.y > best.y)) {
+                best = world;
+                infoBtn = item;
+                infoMenu = parentMenu;
+            }
+        }
+
+        if (!infoBtn || !infoMenu) {
+            return;
+        }
+
+        auto spr = CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
+        if (!spr) {
+            spr = CCSprite::create("JB_PinDisc.png"_spr);
+        }
+        if (!spr) {
+            auto path = (Mod::get()->getResourcesDir() / "JB_PinDisc.png").string();
+            spr = CCSprite::create(path.c_str());
+        }
+        if (!spr) {
+            return;
+        }
+        spr->setScale(0.65f);
+
+        auto btn = CCMenuItemSpriteExtra::create(
+            spr, this, menu_selector(JBLevelSelectLayer::onJukebox));
+        btn->setID("jb-levelselect-button"_spr);
+
+        constexpr float gap = 6.f;
+        auto pos = infoBtn->getPosition();
+        float x = pos.x - infoBtn->getScaledContentSize().width / 2 -
+                  btn->getScaledContentSize().width / 2 - gap;
+        btn->setPosition({x, pos.y});
+
+        infoMenu->addChild(btn, infoBtn->getZOrder());
+        m_fields->m_jbBtn = btn;
+    }
+
+    bool init(int page) {
+        if (!LevelSelectLayer::init(page)) {
+            return false;
+        }
+        this->ensureJukeboxButton();
+        return true;
+    }
+
+    void scrollLayerMoved(cocos2d::CCPoint position) {
+        LevelSelectLayer::scrollLayerMoved(position);
+        this->ensureJukeboxButton();
     }
 };
