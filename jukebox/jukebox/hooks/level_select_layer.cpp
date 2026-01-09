@@ -53,10 +53,6 @@ class $modify(JBLevelSelectLayer, LevelSelectLayer) {
             auto title = LevelTools::getAudioTitle(rawSongID);
             int artistID = LevelTools::artistForAudio(rawSongID);
             std::string artist = LevelTools::nameForArtist(artistID);
-            
-            if (rawSongID == 21) {
-                artist = "MDK";
-            }
 
             auto obj = SongInfoObject::create(rawSongID, title, artist, artistID, 0.0f,
                                               "", "", "", 0, "", false, 0, 0);
