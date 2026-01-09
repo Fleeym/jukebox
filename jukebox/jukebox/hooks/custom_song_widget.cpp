@@ -17,6 +17,8 @@
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/LevelPage.hpp>
+#include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
@@ -662,3 +664,4 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
         return true;
     }
 };
+
