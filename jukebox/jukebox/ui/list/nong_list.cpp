@@ -82,6 +82,7 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
                                           ->setMainAxisDirection(AxisDirection::TopToBottom)
                                           ->setMainAxisAlignment(MainAxisAlignment::Start)
                                           ->setMainAxisScaling(AxisScaling::Grow)
+                                          ->ignoreInvisibleChildren(false)
                                           ->setGap(s_padding / 2));
     m_list->setID("list");
 
@@ -98,7 +99,7 @@ void NongList::build() {
         m_list->m_contentLayer->removeAllChildrenWithCleanup(true);
     }
 
-    if (m_songIds.size() == 0) {
+    if (m_songIds.empty()) {
         return;
     }
 
@@ -145,7 +146,7 @@ void NongList::build() {
         std::unordered_set<std::string> localYt;
         std::unordered_set<std::string> localHosted;
 
-        if (nongs->locals().size() == 0 && nongs->youtube().size() == 0 && nongs->hosted().size() == 0) {
+        if (nongs->locals().empty() && nongs->youtube().empty() && nongs->hosted().empty()) {
             this->addNoLocalSongsNotice();
         }
 
@@ -174,7 +175,7 @@ void NongList::build() {
                                                                              m_levelID.value(), {m_currentSong.value()})
                                                                        : std::vector<std::string>{};
 
-        std::sort(allLocalNongs.begin(), allLocalNongs.end(), [verifiedNongs](Song* a, Song* b) {
+        std::ranges::sort(allLocalNongs, [verifiedNongs](Song* a, Song* b) {
             auto sourcePriority = [](Song* s) {
                 if (typeinfo_cast<LocalSong*>(s)) {
                     return 0;
@@ -189,9 +190,9 @@ void NongList::build() {
             };
 
             bool aVerified =
-                std::find(verifiedNongs.begin(), verifiedNongs.end(), a->metadata()->uniqueID) != verifiedNongs.end();
+                std::ranges::find(verifiedNongs, a->metadata()->uniqueID) != verifiedNongs.end();
             bool bVerified =
-                std::find(verifiedNongs.begin(), verifiedNongs.end(), b->metadata()->uniqueID) != verifiedNongs.end();
+                std::ranges::find(verifiedNongs, b->metadata()->uniqueID) != verifiedNongs.end();
 
             // Sort by Verified
             if (aVerified != bVerified) {
@@ -213,7 +214,7 @@ void NongList::build() {
             this->addSongToList(nong, nongs);
         }
 
-        if (nongs->indexSongs().size() > 0) {
+        if (!nongs->indexSongs().empty()) {
             CCLabelBMFont* indexLabel = CCLabelBMFont::create("Download nongs", "goldFont.fnt");
             indexLabel->setID("index-section");
             indexLabel->setScale(0.5f);
