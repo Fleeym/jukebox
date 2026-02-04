@@ -2,14 +2,11 @@
 
 #include <string>
 
-#include <jukebox/download/download.hpp>
+#include <Geode/utils/general.hpp>
+#include <arc/future/Future.hpp>
 
-namespace jukebox {
+namespace jukebox::download {
 
-namespace download {
+arc::Future<geode::Result<geode::ByteVector>> startYoutubeDownload(const std::string& id);
 
-DownloadTask startYoutubeDownload(const std::string& id);
-
-}
-
-}
+} // namespace jukebox::download

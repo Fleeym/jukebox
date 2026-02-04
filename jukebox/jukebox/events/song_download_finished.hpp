@@ -4,29 +4,27 @@
 
 #include <Geode/loader/Event.hpp>
 
-#include <jukebox/nong/index.hpp>
 #include <jukebox/managers/index_manager.hpp>
+#include <jukebox/nong/index.hpp>
 #include <jukebox/nong/nong.hpp>
 
-namespace jukebox {
+namespace jukebox::event {
 
-namespace event {
-
-class SongDownloadFinished final : public geode::Event {
-protected:
-    friend class ::jukebox::IndexManager;
-
-    std::optional<index::IndexSongMetadata*> m_indexSource = nullptr;
+struct SongDownloadFinishedData final {
+private:
+    std::optional<index::IndexSongMetadata*> m_indexSource;
     Song* m_destination;
 
-    SongDownloadFinished(std::optional<index::IndexSongMetadata*> indexSource,
-                         Song* destination);
-
 public:
-    std::optional<index::IndexSongMetadata*> indexSource();
-    Song* destination();
+    SongDownloadFinishedData(const std::optional<index::IndexSongMetadata*> indexSource, Song* destination) noexcept
+        : m_indexSource(indexSource), m_destination(destination) {}
+
+    [[nodiscard]] std::optional<index::IndexSongMetadata*> indexSource() const noexcept { return m_indexSource; }
+    [[nodiscard]] Song* destination() const noexcept { return m_destination; }
 };
 
-}  // namespace event
+struct SongDownloadFinished final : geode::SimpleEvent<SongDownloadFinished, const SongDownloadFinishedData&> {
+    using SimpleEvent::SimpleEvent;
+};
 
-}  // namespace jukebox
+}  // namespace jukebox::event

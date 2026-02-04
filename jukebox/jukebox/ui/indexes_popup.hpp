@@ -11,27 +11,22 @@
 
 namespace jukebox {
 
-using namespace jukebox::index;
+using IndexesCallback = std::function<void(std::vector<index::IndexSource>)>;
 
-using IndexesCallback = std::function<void(std::vector<IndexSource>)>;
-
-class IndexesPopup
-    : public geode::Popup<std::vector<IndexSource>, IndexesCallback> {
+class IndexesPopup : public geode::Popup {
 protected:
-    std::vector<IndexSource> m_indexes;
+    std::vector<index::IndexSource> m_indexes;
     IndexesCallback m_setIndexesCallback;
-    geode::ScrollLayer* m_list;
+    geode::Ref<geode::ScrollLayer> m_list;
 
-    bool setup(std::vector<IndexSource>,
-               IndexesCallback setIndexesCallback) override;
+    bool init(std::vector<index::IndexSource>, IndexesCallback setIndexesCallback);
     void createList();
     cocos2d::CCSize getPopupSize();
-    void onClose(CCObject*) override;
-    void onAdd(CCObject*);
+    void onClose(cocos2d::CCObject*) override;
+    void onAdd(cocos2d::CCObject*);
 
 public:
-    static IndexesPopup* create(std::vector<IndexSource>,
-                                IndexesCallback setIndexesCallback);
+    static IndexesPopup* create(std::vector<index::IndexSource>, IndexesCallback setIndexesCallback);
 };
 
 }  // namespace jukebox

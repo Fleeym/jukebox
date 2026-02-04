@@ -1,25 +1,26 @@
 #pragma once
 
+#include <string>
+#include <string_view>
+
 #include <Geode/loader/Event.hpp>
 
-#include <jukebox/nong/index.hpp>
+namespace jukebox::event {
 
-namespace jukebox {
-
-namespace event {
-
-class StartDownload final : public geode::Event {
+struct StartDownloadData final {
 protected:
-    int m_gdSongID;
+    int m_gdId;
     std::string m_uniqueID;
 
 public:
-    StartDownload(int gdSongID, std::string uniqueID);
+    StartDownloadData(const int gdId, std::string uniqueID) noexcept : m_gdId(gdId), m_uniqueID(std::move(uniqueID)) {}
 
-    int gdSongID();
-    std::string uniqueID();
+    [[nodiscard]] int gdId() const noexcept { return m_gdId; }
+    [[nodiscard]] std::string_view uniqueID() const noexcept { return m_uniqueID; }
 };
 
-}  // namespace event
+struct StartDownload : geode::SimpleEvent<StartDownload, const StartDownloadData&> {
+    using SimpleEvent::SimpleEvent;
+};
 
-}  // namespace jukebox
+}  // namespace jukebox::event

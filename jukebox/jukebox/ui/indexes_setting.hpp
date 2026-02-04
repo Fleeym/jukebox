@@ -24,24 +24,20 @@ struct Indexes {
 
 class IndexSetting : public geode::SettingBaseValueV3<Indexes> {
 public:
-    static geode::Result<std::shared_ptr<SettingV3>> parse(
-        const std::string& key, const std::string& modID,
-        const matjson::Value& json);
+    static geode::Result<std::shared_ptr<SettingV3>> parse(const std::string& key, const std::string& modID,
+                                                           const matjson::Value& json);
 
     geode::SettingNodeV3* createNode(float width) override;
 };
 
 class IndexSettingNode : public geode::SettingValueNodeV3<IndexSetting> {
 protected:
-    CCMenuItemSpriteExtra* m_resetBtn;
-
-    bool init(std::shared_ptr<IndexSetting> setting, float width);
+    bool init(const std::shared_ptr<IndexSetting>& setting, float width);
     void onView(CCObject* sender);
     void onToggle(CCObject* sender);
 
 public:
-    static IndexSettingNode* create(std::shared_ptr<IndexSetting> setting,
-                                    float width);
+    static IndexSettingNode* create(const std::shared_ptr<IndexSetting>& setting, float width);
 };
 
 }  // namespace jukebox
@@ -61,8 +57,7 @@ struct matjson::Serialize<jukebox::Indexes> {
         return arr;
     }
 
-    static geode::Result<jukebox::Indexes> fromJson(
-        const matjson::Value& value) {
+    static geode::Result<jukebox::Indexes> fromJson(const matjson::Value& value) {
         jukebox::Indexes ret;
 
         for (const matjson::Value& elem : value) {

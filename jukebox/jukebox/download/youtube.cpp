@@ -7,39 +7,35 @@
 #include <Geode/Result.hpp>
 #include <Geode/utils/web.hpp>
 
-#include <jukebox/download/download.hpp>
 #include <jukebox/download/hosted.hpp>
 
 using namespace geode::prelude;
+using namespace arc;
 
-web::WebTask getMetadata(const std::string& id);
-Result<std::string> getUrlFromMetadataPayload(web::WebResponse* resp);
-jukebox::download::DownloadTask onMetadata(web::WebResponse*);
+web::WebFuture getMetadata(const std::string& id);
+Result<std::string> getUrlFromMetadataPayload(web::WebResponse r);
+Future<Result<ByteVector>> onMetadata(web::WebResponse result);
 
-namespace jukebox {
+namespace jukebox::download {
 
-namespace download {
-
-DownloadTask startYoutubeDownload(const std::string& id) {
+Future<Result<ByteVector>> startYoutubeDownload(const std::string& id) {
     if (id.length() != 11) {
-        return DownloadTask::immediate(Err("Invalid YouTube ID"));
+        co_return Err("Invalid YouTube ID");
     }
 
-    return getMetadata(id).chain(
-        [](web::WebResponse* r) { return onMetadata(r); });
+    auto metadata = co_await getMetadata(id);
+    co_return co_await onMetadata(std::move(metadata));
 }
 
-}  // namespace download
+}  // namespace jukebox::download
 
-}  // namespace jukebox
-
-Result<std::string> getUrlFromMetadataPayload(web::WebResponse* r) {
-    if (!r->ok()) {
+Result<std::string> getUrlFromMetadataPayload(web::WebResponse r) {
+    if (!r.ok()) {
         return Err(fmt::format(
-            "cobalt metadata query failed with status code {}", r->code()));
+            "cobalt metadata query failed with status code {}", r.code()));
     }
 
-    Result<matjson::Value> jsonRes = r->json();
+    Result<matjson::Value> jsonRes = r.json();
     if (jsonRes.isErr()) {
         return Err("cobalt metadata query returned invalid JSON");
     }
@@ -57,7 +53,7 @@ Result<std::string> getUrlFromMetadataPayload(web::WebResponse* r) {
     return Ok(payload["url"].asString().unwrap());
 }
 
-web::WebTask getMetadata(const std::string& id) {
+web::WebFuture getMetadata(const std::string& id) {
     int timeout = Mod::get()->getSettingValue<int>("download-timeout");
 
     if (timeout < 30) {
@@ -65,7 +61,7 @@ web::WebTask getMetadata(const std::string& id) {
     }
 
     return web::WebRequest()
-        .timeout(std::chrono::seconds(30))
+        .timeout(std::chrono::seconds(timeout))
         .bodyJSON(matjson::makeObject(
             {{"url", fmt::format("https://www.youtube.com/watch?v={}", id)},
              {"aFormat", "mp3"},
@@ -75,11 +71,11 @@ web::WebTask getMetadata(const std::string& id) {
         .post("https://api.cobalt.tools/api/json");
 }
 
-jukebox::download::DownloadTask onMetadata(web::WebResponse* result) {
-    Result<std::string> res = getUrlFromMetadataPayload(result);
+Future<Result<ByteVector>> onMetadata(web::WebResponse result) {
+    Result<std::string> res = getUrlFromMetadataPayload(std::move(result));
     if (res.isErr()) {
-        return jukebox::download::DownloadTask::immediate(Err(res.unwrapErr()));
+        co_return Err(res.unwrapErr());
     }
 
-    return jukebox::download::startHostedDownload(res.unwrap());
+    co_return co_await jukebox::download::startHostedDownload(res.unwrap());
 }

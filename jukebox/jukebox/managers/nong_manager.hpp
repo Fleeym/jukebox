@@ -4,16 +4,12 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <system_error>
 
 #include <Geode/Result.hpp>
-#include <Geode/binding/SongInfoObject.hpp>
-#include <Geode/loader/Event.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/Task.hpp>
 
-#include <jukebox/events/get_song_info.hpp>
-#include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/events/song_error.hpp>
 #include <jukebox/nong/nong.hpp>
 
 namespace jukebox {
@@ -24,53 +20,47 @@ protected:
     bool m_initialized = false;
 
     NongManager() = default;
+
+    void setupManifestPath() {
+        const std::filesystem::path path = this->baseManifestPath();
+
+        std::error_code ec;
+
+        if (!std::filesystem::exists(path, ec)) {
+            std::filesystem::create_directory(path);
+        }
+    }
+
+    geode::Result<> saveNongs(std::optional<int> saveId = std::nullopt);
+    geode::Result<std::unique_ptr<Nongs>> loadNongsFromPath(const std::filesystem::path& path);
+
+    geode::Result<> migrateV2();
+
+public:
     NongManager(const NongManager&) = delete;
     NongManager(NongManager&&) = delete;
 
     NongManager& operator=(const NongManager&) = delete;
     NongManager& operator=(NongManager&&) = delete;
 
-    void setupManifestPath() {
-        auto path = this->baseManifestPath();
-        if (!std::filesystem::exists(path)) {
-            std::filesystem::create_directory(path);
-        }
-    }
-
-    geode::Result<> saveNongs(std::optional<int> saveId = std::nullopt);
-    geode::EventListener<geode::EventFilter<event::SongError>>
-        m_songErrorListener;
-    geode::EventListener<geode::EventFilter<event::GetSongInfo>>
-        m_songInfoListener;
-    geode::EventListener<geode::EventFilter<event::SongDownloadFinished>>
-        m_downloadFinishedListener = {this, &NongManager::onDownloadFinished};
-    geode::Result<std::unique_ptr<Nongs>> loadNongsFromPath(
-        const std::filesystem::path& path);
-
-    geode::ListenerResult onDownloadFinished(event::SongDownloadFinished* e);
-    geode::Result<> migrateV2();
-
-public:
     using MultiAssetSizeTask = geode::Task<std::string>;
-    std::optional<Nongs*> m_currentlyPreparingNong;
+    std::optional<Nongs*> m_currentlyPreparingNong = std::nullopt;
 
     bool init();
 
     bool initialized() const { return m_initialized; }
 
     std::filesystem::path baseManifestPath() {
-        static std::filesystem::path path =
-            geode::Mod::get()->getSaveDir() / "manifest";
+        static std::filesystem::path path = geode::Mod::get()->getSaveDir() / "manifest";
         return path;
     }
 
     std::filesystem::path baseNongsPath() {
-        static std::filesystem::path path =
-            geode::Mod::get()->getSaveDir() / "nongs";
+        static std::filesystem::path path = geode::Mod::get()->getSaveDir() / "nongs";
         return path;
     }
 
-    bool hasSongID(int id);
+    [[nodiscard]] bool hasSongID(int id) const;
 
     geode::Result<Nongs*> initSongID(SongInfoObject* obj, int id, bool robtop);
 
@@ -87,12 +77,12 @@ public:
     /**
      * Gets the current manifest version stored in state
      */
-    int getCurrentManifestVersion();
+    [[nodiscard]] int getCurrentManifestVersion() const;
 
     /**
      * Gets the current number of song IDs that have been added to the manifest
      */
-    int getStoredIDCount();
+    [[nodiscard]] int getStoredIDCount() const;
 
     /**
      * Fetches all NONG data for a certain songID
@@ -111,8 +101,7 @@ public:
      * @return List of all uniqueIDs of nongs that are verified for the given
      * level ID
      */
-    std::vector<std::string> getVerifiedNongsForLevel(int levelID,
-                                                      std::vector<int> songIDs);
+    std::vector<std::string> getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs);
 
     /**
      * Returns whether the nong is verified for the a song in a level
@@ -122,8 +111,7 @@ public:
      * @param uniqueID the id of the nong
      * @return Boolean for whether the nong is verified
      */
-    bool isNongVerifiedForLevelSong(int levelID, int songID,
-                                    std::string_view uniqueID);
+    bool isNongVerifiedForLevelSong(int levelID, int songID, std::string_view uniqueID);
 
     /**
      * Checks if the given level has a verified song for any of the given song
@@ -152,7 +140,7 @@ public:
      * @param songs string of song ids, separated by commas
      * @param sfx string of sfx ids, separated by commas
      */
-    MultiAssetSizeTask getMultiAssetSizes(std::string songs, std::string sfx);
+    arc::Future<std::string> getMultiAssetSizes(std::string songs, std::string sfx);
 
     /**
      * Add actions needed to fix a broken song default
@@ -196,9 +184,8 @@ public:
     /**
      * Get a path to a song file
      */
-    std::filesystem::path generateSongFilePath(
-        const std::string& extension,
-        std::optional<std::string> filename = std::nullopt);
+    std::filesystem::path generateSongFilePath(const std::string& extension,
+                                               std::optional<std::string> filename = std::nullopt);
 
     static NongManager& get() {
         static NongManager instance;

@@ -26,21 +26,18 @@ public:
 
 protected:
     std::vector<int> m_songIds;
-    geode::ScrollLayer* m_list = nullptr;
-    cocos2d::extension::CCScale9Sprite* m_bg = nullptr;
+    geode::Ref<geode::ScrollLayer> m_list = nullptr;
+    geode::Ref<cocos2d::extension::CCScale9Sprite> m_bg = nullptr;
     std::optional<int> m_currentSong = std::nullopt;
     std::optional<int> m_levelID;
 
-    CCMenuItemSpriteExtra* m_backBtn = nullptr;
+    geode::Ref<CCMenuItemSpriteExtra> m_backBtn = nullptr;
 
     std::function<void(std::optional<int>)> m_onListTypeChange;
 
-    geode::EventListener<geode::EventFilter<event::SongDownloadFinished>>
-        m_downloadFinishedListener = {this, &NongList::onDownloadFinish};
-    geode::EventListener<geode::EventFilter<event::NongDeleted>>
-        m_nongDeletedListener = {this, &NongList::onNongDeleted};
-    geode::EventListener<geode::EventFilter<event::ManualSongAdded>>
-        m_nongAddedListener = {this, &NongList::onSongAdded};
+    geode::ListenerHandle m_downloadFinishedListener;
+    geode::ListenerHandle m_nongDeletedListener;
+    geode::ListenerHandle m_nongAddedListener;
 
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
@@ -48,9 +45,9 @@ protected:
     void addNoLocalSongsNotice(bool liveInsert = false);
     void addSongToList(Song* nong, Nongs* parent, bool liveInsert = false);
     void addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent);
-    geode::ListenerResult onDownloadFinish(event::SongDownloadFinished* e);
-    geode::ListenerResult onNongDeleted(event::NongDeleted* e);
-    geode::ListenerResult onSongAdded(event::ManualSongAdded* e);
+    geode::ListenerResult onDownloadFinish(const event::SongDownloadFinishedData& e);
+    geode::ListenerResult onNongDeleted(const event::NongDeletedData& e);
+    geode::ListenerResult onSongAdded(const event::ManualSongAddedData& e);
 
 public:
     void scrollToTop();
@@ -59,14 +56,11 @@ public:
     void onBack(cocos2d::CCObject*);
     void onSelectSong(int songId);
 
-    static NongList* create(
-        std::vector<int>& songIds, const cocos2d::CCSize& size,
-        std::optional<int> levelID,
-        std::function<void(std::optional<int>)> onListTypeChange = {});
+    static NongList* create(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
+                            std::function<void(std::optional<int>)> onListTypeChange = {});
 
 protected:
-    bool init(std::vector<int>& songIds, const cocos2d::CCSize& size,
-              std::optional<int> levelID,
+    bool init(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
               std::function<void(std::optional<int>)> onListTypeChange = {});
 };
 

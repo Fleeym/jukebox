@@ -34,8 +34,7 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
 #endif
 }
 
-void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
-                                                    gd::string p2) {
+void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1, gd::string p2) {
     m_fields->overrideSongInfo = true;
     MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
     geode::Result<int> songIDRes = geode::utils::numFromString<int>(p2);
@@ -52,8 +51,7 @@ void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1,
         return;
     }
 
-    jukebox::event::GetSongInfo(obj->m_songName, obj->m_artistName, songID)
-        .post();
+    event::GetSongInfo(songID).send(event::GetSongInfoData{songID, obj->m_songName, obj->m_artistName});
 }
 
 SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {

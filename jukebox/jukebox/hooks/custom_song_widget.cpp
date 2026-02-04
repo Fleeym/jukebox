@@ -12,6 +12,7 @@
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <ccTypes.h>
 #include <fmt/format.h>
+
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
@@ -27,6 +28,7 @@
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/utils/cocos.hpp>
+#include <ranges>
 
 #include <jukebox/events/song_state_changed.hpp>
 #include <jukebox/managers/nong_manager.hpp>
@@ -49,10 +51,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         CCSprite* sprRays = nullptr;
         CCMenuItemSpriteExtra* btnDisc = nullptr;
         std::unordered_map<int, Nongs*> assetNongData;
-        EventListener<NongManager::MultiAssetSizeTask> m_multiAssetListener;
-        std::unique_ptr<
-            EventListener<EventFilter<jukebox::event::SongStateChanged>>>
-            m_songStateListener;
+        ListenerHandle m_songStateListener;
         std::optional<int> levelID = std::nullopt;
     };
 
@@ -84,10 +83,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
         songIDs.push_back(id);
 
-        bool isVerified =
-            !NongManager::get()
-                 .getVerifiedNongsForLevel(m_fields->levelID.value(), songIDs)
-                 .empty();
+        bool isVerified = !NongManager::get().getVerifiedNongsForLevel(m_fields->levelID.value(), songIDs).empty();
         if (!isVerified) {
             return;
         }
@@ -96,8 +92,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->sprRays->setVisible(true);
         }
         if (m_fields->btnDisc) {
-            CCSprite* sprDiscGold =
-                CCSprite::createWithSpriteFrameName("JB_PinDiscGold.png"_spr);
+            CCSprite* sprDiscGold = CCSprite::createWithSpriteFrameName("JB_PinDiscGold.png"_spr);
             if (m_isMusicLibrary) {
                 sprDiscGold->setScale(0.5f);
             } else {
@@ -107,12 +102,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
     }
 
-    bool init(SongInfoObject* songInfo, CustomSongDelegate* songDelegate,
-              bool showSongSelect, bool showPlayMusic, bool showDownload,
-              bool isRobtopSong, bool unk, bool isMusicLibrary, int unkInt) {
+    bool init(SongInfoObject* songInfo, CustomSongDelegate* songDelegate, bool showSongSelect, bool showPlayMusic,
+              bool showDownload, bool isRobtopSong, bool unk, bool isMusicLibrary, int unkInt) {
         this->adjustSongInfoObject(songInfo);
-        if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect,
-                                    showPlayMusic, showDownload, isRobtopSong,
+        if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect, showPlayMusic, showDownload, isRobtopSong,
                                     unk, isMusicLibrary, unkInt)) {
             return false;
         }
@@ -129,22 +122,20 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->setupJBSW();
         m_fields->firstRun = false;
 
-        m_fields->m_songStateListener = std::make_unique<
-            EventListener<EventFilter<jukebox::event::SongStateChanged>>>(
-            ([this](jukebox::event::SongStateChanged* event) {
+        m_fields->m_songStateListener =
+            event::SongStateChanged().listen([this](const event::SongStateChangedData& event) {
                 if (!m_songInfoObject) {
                     return ListenerResult::Propagate;
                 }
 
-                this->maybeChangeDownloadedMark(event->nongs());
+                this->maybeChangeDownloadedMark(event.nongs());
 
-                if (event->nongs()->songID() !=
-                    NongManager::get().adjustSongID(m_songInfoObject->m_songID,
-                                                    m_isRobtopSong)) {
+                if (event.nongs()->songID() !=
+                    NongManager::get().adjustSongID(m_songInfoObject->m_songID, m_isRobtopSong)) {
                     return ListenerResult::Propagate;
                 }
 
-                Song* active = event->nongs()->active();
+                Song* active = event.nongs()->active();
 
                 m_songInfoObject->m_songName = active->metadata()->name;
                 m_songInfoObject->m_artistName = active->metadata()->artist;
@@ -152,7 +143,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                 this->fixMultiAssetSize();
 
                 return ListenerResult::Propagate;
-            }));
+            });
 
         return true;
     }
@@ -164,8 +155,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         std::optional optPath = nongs->active()->path();
 
-        if (auto found = m_songs.find(nongs->songID());
-            found != m_songs.end()) {
+        if (auto found = m_songs.find(nongs->songID()); found != m_songs.end()) {
             if (!optPath) {
                 found->second = false;
             } else {
@@ -175,12 +165,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void adjustSongInfoObject(SongInfoObject* object) {
-        if (!object || !object->m_isUnknownSong) {
+        if (!object || !object->m_unloaded) {
             return;
         }
 
-        std::optional<Nongs*> opt =
-            NongManager::get().getNongs(object->m_songID);
+        std::optional<Nongs*> opt = NongManager::get().getNongs(object->m_songID);
 
         if (!opt.has_value()) {
             return;
@@ -188,7 +177,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         Nongs* nongs = opt.value();
 
-        object->m_isUnknownSong = false;
+        object->m_unloaded;
         object->m_songName = nongs->active()->metadata()->name;
         object->m_artistName = nongs->active()->metadata()->artist;
     }
@@ -218,27 +207,20 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->fixMultiAssetSize();
     }
 
-    void onFixMultiAssetSizeFinished(
-        NongManager::MultiAssetSizeTask::Event* e) {
+    void onFixMultiAssetSizeFinished(std::string value) {
         if (m_songIDLabel == nullptr) {
-            return;
-        }
-
-        std::string* value = e->getValue();
-
-        if (!value) {
             return;
         }
 
         int downloaded = 0;
         int total = 0;
-        for (auto [k, v] : m_songs) {
+        for (const bool v : m_songs | std::views::values) {
             total++;
             if (v) {
                 downloaded++;
             }
         }
-        for (auto [k, v] : m_sfx) {
+        for (const bool v : m_sfx | std::views::values) {
             total++;
             if (v) {
                 downloaded++;
@@ -248,12 +230,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
         std::string label;
 
         if (downloaded != total) {
-            label = fmt::format("Songs: {}  SFX: {}  Size: {} ({}/{})",
-                                m_songs.size(), m_sfx.size(), *value,
+            label = fmt::format("Songs: {}  SFX: {}  Size: {} ({}/{})", m_songs.size(), m_sfx.size(), value,
                                 downloaded, total);
         } else {
-            label = fmt::format("Songs: {}  SFX: {}  Size: {}", m_songs.size(),
-                                m_sfx.size(), *value);
+            label = fmt::format("Songs: {}  SFX: {}  Size: {}", m_songs.size(), m_sfx.size(), value);
         }
 
         m_songIDLabel->setString(label.c_str());
@@ -265,11 +245,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        m_fields->m_multiAssetListener.bind(
-            this, &JBSongWidget::onFixMultiAssetSizeFinished);
-        m_fields->m_multiAssetListener.setFilter(
-            NongManager::get().getMultiAssetSizes(m_fields->songIds,
-                                                  m_fields->sfxIds));
+        async::spawn(NongManager::get().getMultiAssetSizes(m_fields->songIds, m_fields->sfxIds),
+                     [this](std::string result) { this->onFixMultiAssetSizeFinished(std::move(result)); });
     }
 
     void restoreUI() {
@@ -309,8 +286,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        if (m_showSelectSongBtn && obj->m_artistName.empty() &&
-            obj->m_songUrl.empty()) {
+        if (m_showSelectSongBtn && obj->m_artistName.empty() && obj->m_songUrl.empty()) {
             this->restoreUI();
             return;
         }
@@ -320,8 +296,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
 
         int id = obj->m_songID;
-        int adjustedId =
-            NongManager::get().adjustSongID(obj->m_songID, m_isRobtopSong);
+        int adjustedId = NongManager::get().adjustSongID(obj->m_songID, m_isRobtopSong);
 
         if (adjustedId == 0) {
             this->restoreUI();
@@ -331,19 +306,16 @@ class $modify(JBSongWidget, CustomSongWidget) {
         Nongs* nongs = nullptr;
 
         if (!NongManager::get().hasSongID(adjustedId)) {
-            Result<Nongs*> res =
-                NongManager::get().initSongID(obj, id, m_isRobtopSong);
+            Result<Nongs*> res = NongManager::get().initSongID(obj, id, m_isRobtopSong);
             if (res.isErr()) {
                 std::string err = res.unwrapErr();
                 log::error("{}", err);
-                FLAlertLayer::create(
-                    "Error",
-                    fmt::format(
-                        "Failed to initialize Jukebox data for this "
-                        "song ID. Please open a help thread on the "
-                        "Discord server if this keeps happening. Error: {}",
-                        err),
-                    "Ok")
+                FLAlertLayer::create("Error",
+                                     fmt::format("Failed to initialize Jukebox data for this "
+                                                 "song ID. Please open a help thread on the "
+                                                 "Discord server if this keeps happening. Error: {}",
+                                                 err),
+                                     "Ok")
                     ->show();
                 this->restoreUI();
                 return;
@@ -366,14 +338,12 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         if (m_fields->firstRun && m_isRobtopSong && m_songInfoObject) {
             std::optional<Nongs*> opt =
-                NongManager::get().getNongs(NongManager::get().adjustSongID(
-                    m_songInfoObject->m_songID, true));
+                NongManager::get().getNongs(NongManager::get().adjustSongID(m_songInfoObject->m_songID, true));
             if (opt) {
                 Nongs* n = opt.value();
 
                 m_songInfoObject->m_songName = n->active()->metadata()->name;
-                m_songInfoObject->m_artistName =
-                    n->active()->metadata()->artist;
+                m_songInfoObject->m_artistName = n->active()->metadata()->artist;
             }
         }
 
@@ -387,12 +357,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
         for (auto const& kv : m_songs) {
             Nongs* nongs = nullptr;
             if (!NongManager::get().hasSongID(kv.first)) {
-                Result<Nongs*> result =
-                    NongManager::get().initSongID(nullptr, kv.first, false);
+                Result<Nongs*> result = NongManager::get().initSongID(nullptr, kv.first, false);
 
                 if (result.isErr()) {
-                    log::error("Failed to init multi asset song: {}",
-                               result.unwrapErr());
+                    log::error("Failed to init multi asset song: {}", result.unwrapErr());
                     continue;
                 }
 
@@ -412,13 +380,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (m_songs.size() == 0 && m_sfx.size() == 0) {
             std::string label;
             if (m_isMusicLibrary) {
-                label = fmt::format("ID: {}  Size: {}MB",
-                                    m_songInfoObject->m_songID,
-                                    m_songInfoObject->m_fileSize);
+                label = fmt::format("ID: {}  Size: {}MB", m_songInfoObject->m_songID, m_songInfoObject->m_fileSize);
             } else {
-                label = fmt::format("SongID: {}  Size: {}MB",
-                                    m_songInfoObject->m_songID,
-                                    m_songInfoObject->m_fileSize);
+                label = fmt::format("SongID: {}  Size: {}MB", m_songInfoObject->m_songID, m_songInfoObject->m_fileSize);
             }
 
             m_songIDLabel->setString(label.c_str());
@@ -441,12 +405,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
             std::string label;
 
             if (downloaded != total) {
-                label = fmt::format("Songs: {}  SFX: {}  Size: 0.00MB ({}/{})",
-                                    m_songs.size(), m_sfx.size(), downloaded,
-                                    total);
+                label = fmt::format("Songs: {}  SFX: {}  Size: 0.00MB ({}/{})", m_songs.size(), m_sfx.size(),
+                                    downloaded, total);
             } else {
-                label = fmt::format("Songs: {}  SFX: {}  Size: 0.0MB",
-                                    m_songs.size(), m_sfx.size());
+                label = fmt::format("Songs: {}  SFX: {}  Size: 0.0MB", m_songs.size(), m_sfx.size());
             }
 
             m_songIDLabel->setString(label.c_str());
@@ -460,8 +422,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         Song* active = nongs->active();
         std::optional<std::filesystem::path> activePathOpt = active->path();
-        int songID =
-            NongManager::get().adjustSongID(nongs->songID(), m_isRobtopSong);
+        int songID = NongManager::get().adjustSongID(nongs->songID(), m_isRobtopSong);
 
         if (!activePathOpt) {
             return;
@@ -498,8 +459,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (m_isMusicLibrary) {
             labelText = fmt::format("ID: {}  Size: {}", idDisplay, sizeText);
         } else {
-            labelText =
-                fmt::format("SongID: {}  Size: {}", idDisplay, sizeText);
+            labelText = fmt::format("SongID: {}  Size: {}", idDisplay, sizeText);
         }
 
         if (m_songIDLabel != nullptr) {
@@ -525,11 +485,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->labelMenu = CCMenu::create();
             m_fields->labelMenu->setID("nong-menu"_spr);
             m_fields->labelMenu->ignoreAnchorPointForPosition(false);
-            CCLabelBMFont* label = CCLabelBMFont::create(
-                active->metadata()->name.c_str(), "bigFont.fnt");
+            CCLabelBMFont* label = CCLabelBMFont::create(active->metadata()->name.c_str(), "bigFont.fnt");
             label->setID("song-name-label"_spr);
-            CCMenuItemSpriteExtra* btn = CCMenuItemSpriteExtra::create(
-                label, this, menu_selector(JBSongWidget::addNongLayer));
+            CCMenuItemSpriteExtra* btn =
+                CCMenuItemSpriteExtra::create(label, this, menu_selector(JBSongWidget::addNongLayer));
             btn->setID("nong-button"_spr);
             float labelScale = label->getScale();
             m_fields->labelMenu->addChild(btn);
@@ -537,10 +496,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->labelMenu->setContentSize(m_songLabel->getContentSize());
             m_fields->labelMenu->setScale(m_songLabel->getScale());
             m_fields->labelMenu->setPosition(m_songLabel->getPosition());
-            m_fields->labelMenu->setLayout(
-                SimpleRowLayout::create()
-                    ->setMainAxisScaling(AxisScaling::Scale)
-                    ->setCrossAxisScaling(AxisScaling::Scale));
+            m_fields->labelMenu->setLayout(SimpleRowLayout::create()
+                                               ->setMainAxisScaling(AxisScaling::Scale)
+                                               ->setCrossAxisScaling(AxisScaling::Scale));
             m_songLabel->setVisible(false);
             this->addChild(m_fields->labelMenu);
         } else {
@@ -561,10 +519,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->pinMenu = CCMenu::create();
             m_fields->pinMenu->setID("nong-menu"_spr);
 
-            CCSprite* sprRays =
-                CCSprite::createWithSpriteFrameName("JB_PinDiscRays.png"_spr);
-            CCSprite* sprDisc =
-                CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
+            CCSprite* sprRays = CCSprite::createWithSpriteFrameName("JB_PinDiscRays.png"_spr);
+            CCSprite* sprDisc = CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
             if (m_isMusicLibrary) {
                 sprDisc->setScale(0.5f);
                 sprRays->setScale(0.5f * 1.15f);
@@ -574,8 +530,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             }
             sprDisc->setID("nong-pin"_spr);
 
-            CCMenuItemSpriteExtra* btnDisc = CCMenuItemSpriteExtra::create(
-                sprDisc, this, menu_selector(JBSongWidget::addNongLayer));
+            CCMenuItemSpriteExtra* btnDisc =
+                CCMenuItemSpriteExtra::create(sprDisc, this, menu_selector(JBSongWidget::addNongLayer));
             btnDisc->setID("nong-button"_spr);
 
             sprRays->setID("nong-pin-rays"_spr);
@@ -589,8 +545,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->pinMenu->addChildAtPosition(sprRays, Anchor::Center);
 
             static constexpr float rotationDuration = 80.0f;
-            CCRepeatForever* rotateAction = CCRepeatForever::create(
-                CCRotateBy::create(rotationDuration, 360));
+            CCRepeatForever* rotateAction = CCRepeatForever::create(CCRotateBy::create(rotationDuration, 360));
             sprRays->runAction(rotateAction);
 
             m_fields->pinMenu->setAnchorPoint({0.5f, 0.5f});
@@ -632,8 +587,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         } else {
             ids.push_back(id);
         }
-        auto layer =
-            NongDropdownLayer::create(ids, this, id, this->getLevelID());
+        auto layer = NongDropdownLayer::create(ids, this, id, this->getLevelID());
         // based robtroll
         layer->setZOrder(106);
         layer->show();
@@ -645,20 +599,17 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
         if (!LevelInfoLayer::init(level, p1)) {
             return false;
         }
-        if (Mod::get()->getSavedValue("show-tutorial", true) &&
-            GameManager::get()->m_levelEditorLayer == nullptr) {
-            auto popup =
-                FLAlertLayer::create("Jukebox",
-                                     "Thank you for using <co>Jukebox</c>! To "
-                                     "begin swapping songs, click "
-                                     "on the <cr>song name</c>!",
-                                     "Ok");
+        if (Mod::get()->getSavedValue("show-tutorial", true) && GameManager::get()->m_levelEditorLayer == nullptr) {
+            auto popup = FLAlertLayer::create("Jukebox",
+                                              "Thank you for using <co>Jukebox</c>! To "
+                                              "begin swapping songs, click "
+                                              "on the <cr>song name</c>!",
+                                              "Ok");
             Mod::get()->setSavedValue("show-tutorial", false);
             popup->m_scene = this;
             popup->show();
         }
-        static_cast<JBSongWidget*>(this->m_songWidget)
-            ->setLevelID(m_level->m_levelID.value());
+        static_cast<JBSongWidget*>(this->m_songWidget)->setLevelID(m_level->m_levelID.value());
         return true;
     }
 };
