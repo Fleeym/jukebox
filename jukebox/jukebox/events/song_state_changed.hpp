@@ -4,19 +4,20 @@
 
 #include <jukebox/nong/nong.hpp>
 
-namespace jukebox {
+namespace jukebox::event {
 
-namespace event {
-
-class SongStateChanged final : public geode::Event {
+struct SongStateChangedData final {
 private:
     Nongs* m_nongs;
 
 public:
-    SongStateChanged(Nongs* nongs);
-    Nongs* nongs() const;
+    explicit SongStateChangedData(Nongs* nongs) noexcept : m_nongs(nongs) {}
+
+    [[nodiscard]] Nongs* nongs() const noexcept { return m_nongs; }
 };
 
-}  // namespace event
+struct SongStateChanged : geode::SimpleEvent<SongStateChanged, const SongStateChangedData&> {
+    using SimpleEvent::SimpleEvent;
+};
 
-}  // namespace jukebox
+}  // namespace jukebox::event

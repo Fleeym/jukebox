@@ -6,6 +6,7 @@
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/loader/Event.hpp>
+#include <Geode/utils/cocos.hpp>
 
 #include <jukebox/events/get_song_info.hpp>
 #include <jukebox/events/song_download_failed.hpp>
@@ -22,41 +23,35 @@ class NongDropdownLayer;
 
 class NongCell : public cocos2d::CCNode {
 protected:
-    int m_songID;
+    int m_songID = 0;
     std::string m_uniqueID;
     std::optional<int> m_levelID;
 
     std::optional<index::IndexSongMetadata*> m_indexSongMetadataOpt;
 
-    NongCellUI* m_nongCell;
+    geode::Ref<NongCellUI> m_nongCell;
 
-    bool m_isDefault;
-    bool m_isActive;
-    bool m_isDownloaded;
-    bool m_isDownloadable;
-    bool m_isDownloading;
-    bool m_isVerified;
+    bool m_isDefault = false;
+    bool m_isActive = false;
+    bool m_isDownloaded = false;
+    bool m_isDownloadable = false;
+    bool m_isDownloading = false;
+    bool m_isVerified = false;
 
-    geode::EventListener<geode::EventFilter<event::SongDownloadProgress>>
-        m_progressListener{this, &NongCell::onDownloadProgress};
-    geode::EventListener<geode::EventFilter<event::GetSongInfo>>
-        m_songInfoListener{this, &NongCell::onGetSongInfo};
-    geode::EventListener<geode::EventFilter<event::SongDownloadFinished>>
-        m_downloadSuccessListener{this, &NongCell::onDownloadFinish};
-    geode::EventListener<geode::EventFilter<event::SongDownloadFailed>>
-        m_downloadFailedListener{this, &NongCell::onDownloadFailed};
-    geode::EventListener<geode::EventFilter<event::SongStateChanged>>
-        m_stateListener{this, &NongCell::onStateChange};
+    geode::ListenerHandle m_progressListener;
+    geode::ListenerHandle m_songInfoListener;
+    geode::ListenerHandle m_downloadSuccessListener;
+    geode::ListenerHandle m_downloadFailedListener;
+    geode::ListenerHandle m_stateListener;
 
-    bool init(int gdSongID, const std::string& uniqueID,
-              const cocos2d::CCSize& size, std::optional<int> levelID,
+    bool init(int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size, std::optional<int> levelID,
               std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
 
-    geode::ListenerResult onDownloadProgress(event::SongDownloadProgress* e);
-    geode::ListenerResult onGetSongInfo(event::GetSongInfo* e);
-    geode::ListenerResult onDownloadFailed(event::SongDownloadFailed* e);
-    geode::ListenerResult onDownloadFinish(event::SongDownloadFinished* e);
-    geode::ListenerResult onStateChange(event::SongStateChanged* e);
+    geode::ListenerResult onDownloadProgress(const event::SongDownloadProgressData& e);
+    geode::ListenerResult onGetSongInfo(const event::GetSongInfoData& e);
+    geode::ListenerResult onDownloadFailed(const event::SongDownloadFailedData& e);
+    geode::ListenerResult onDownloadFinish(const event::SongDownloadFinishedData& e);
+    geode::ListenerResult onStateChange(const event::SongStateChangedData& e);
 
     bool initLocal();
     bool initIndex();
@@ -72,10 +67,8 @@ protected:
     bool isIndex();
 
 public:
-    static NongCell* create(
-        int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
-        std::optional<int> levelID,
-        std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
+    static NongCell* create(int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
+                            std::optional<int> levelID, std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
 };
 
 }  // namespace jukebox

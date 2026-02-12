@@ -4,7 +4,6 @@
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <fmt/format.h>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/ui/Layout.hpp>
@@ -17,17 +16,17 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
-                     std::function<void()> onDelete, CCSize const& size) {
+bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, std::function<void()> onDelete,
+                     CCSize const& size) {
     if (!CCNode::init()) {
         return false;
     }
 
-    static const float HORIZONTAL_PADDING = 2.5f;
+    static constexpr float HORIZONTAL_PADDING = 2.5f;
 
     m_parentPopup = parentPopup;
     m_index = index;
-    m_onDelete = onDelete;
+    m_onDelete = std::move(onDelete);
 
     this->setContentSize(size);
     this->setAnchorPoint(CCPoint{0.5f, 0.5f});
@@ -50,8 +49,7 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
 
     float m_buttonsSize = 0.f;
 
-    m_toggleButton = CCMenuItemToggler::createWithStandardSprites(
-        this, menu_selector(IndexCell::onToggle), 1.0f);
+    m_toggleButton = CCMenuItemToggler::createWithStandardSprites(this, menu_selector(IndexCell::onToggle), 1.0f);
     m_toggleButton->setScale(0.7f);
     m_toggleButton->setAnchorPoint(ccp(0.5f, 0.5f));
 
@@ -63,10 +61,8 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
     buttonsMenu->setContentSize(CCSize{50.f, 30.f});
 
     if (m_index->m_userAdded) {
-        auto sprite =
-            CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
-        auto deleteButton = CCMenuItemSpriteExtra::create(
-            sprite, this, menu_selector(IndexCell::onDelete));
+        auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
+        auto deleteButton = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(IndexCell::onDelete));
         deleteButton->setID("delete-button");
         deleteButton->setScale(0.7f);
         buttonsMenu->addChild(deleteButton);
@@ -80,16 +76,14 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
                                ->setCrossAxisScaling(AxisScaling::ScaleDown));
     buttonsMenu->setID("button-menu");
 
-    auto inputNode = TextInput::create(
-        size.width - HORIZONTAL_PADDING * 2 - buttonsMenu->getContentWidth(),
-        "Index url", "chatFont.fnt");
+    auto inputNode = TextInput::create(size.width - HORIZONTAL_PADDING * 2 - buttonsMenu->getContentWidth(),
+                                       "Index url", "chatFont.fnt");
     inputNode->setScale(1.f);
     inputNode->setCommonFilter(CommonFilter::Any);
     inputNode->setMaxCharCount(300);
     inputNode->setString(m_index->m_url, false);
     inputNode->setTextAlign(TextInputAlign::Left);
-    inputNode->setCallback(
-        [this](std::string const& str) { m_index->m_url = str; });
+    inputNode->setCallback([this](std::string const& str) { m_index->m_url = str; });
 
     auto menu = CCMenu::create();
     menu->addChild(inputNode);
@@ -101,8 +95,7 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index,
                         ->setMainAxisScaling(AxisScaling::Scale));
     menu->setID("menu");
     menu->setAnchorPoint(CCPoint{0.5f, 0.5f});
-    menu->setContentSize(
-        CCSize{size.width - HORIZONTAL_PADDING * 2, size.height});
+    menu->setContentSize(CCSize{size.width - HORIZONTAL_PADDING * 2, size.height});
     menu->updateLayout();
 
     this->addChildAtPosition(menu, Anchor::Center, CCPoint{0.0f, 0.0f});
@@ -122,14 +115,13 @@ void IndexCell::onToggle(CCObject*) {
 
 void IndexCell::onDelete(CCObject*) { m_onDelete(); }
 
-IndexCell* IndexCell::create(IndexesPopup* parentPopup, IndexSource* index,
-                             std::function<void()> onDelete,
+IndexCell* IndexCell::create(IndexesPopup* parentPopup, IndexSource* index, std::function<void()> onDelete,
                              CCSize const& size) {
     auto ret = new IndexCell();
-    if (ret && ret->init(parentPopup, index, onDelete, size)) {
+    if (ret->init(parentPopup, index, std::move(onDelete), size)) {
         return ret;
     }
-    CC_SAFE_DELETE(ret);
+    delete ret;
     return nullptr;
 }
 

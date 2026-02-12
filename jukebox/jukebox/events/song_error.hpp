@@ -1,27 +1,27 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include <Geode/loader/Event.hpp>
 
-namespace jukebox {
+namespace jukebox::event {
 
-class NongManager;
-
-namespace event {
-
-class SongError final : public geode::Event {
+struct SongErrorData final {
 private:
     bool m_notifyUser;
     std::string m_error;
 
 public:
-    SongError(bool notifyUser, std::string error);
+    SongErrorData(const bool notifyUser, std::string error) noexcept
+        : m_notifyUser(notifyUser), m_error(std::move(error)) {}
 
-    std::string error();
-    bool notifyUser();
+    [[nodiscard]] std::string_view error() const noexcept { return m_error; }
+    [[nodiscard]] bool notifyUser() const noexcept { return m_notifyUser; }
 };
 
-}  // namespace event
+struct SongError : geode::SimpleEvent<SongError, const SongErrorData&> {
+    using SimpleEvent::SimpleEvent;
+};
 
-}  // namespace jukebox
+}  // namespace jukebox::event

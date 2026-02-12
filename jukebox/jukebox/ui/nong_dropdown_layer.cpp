@@ -24,6 +24,8 @@
 #include <Geode/utils/web.hpp>
 
 #include <jukebox/events/get_song_info.hpp>
+#include <jukebox/events/song_download_failed.hpp>
+#include <jukebox/events/song_error.hpp>
 #include <jukebox/managers/index_manager.hpp>
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/nong.hpp>
@@ -34,25 +36,26 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
-                              int defaultSongID, std::optional<int> levelID) {
+bool NongDropdownLayer::init(float width, float height, std::vector<int> ids, CustomSongWidget* parent,
+                             int defaultSongID, std::optional<int> levelID, const char* bg) {
+    if (!Popup::init(width, height, bg)) {
+        return false;
+    }
     m_songIDS = ids;
     m_parentWidget = parent;
     m_defaultSongID = defaultSongID;
-    bool isMultiple = ids.size() > 1;
+    const bool isMultiple = ids.size() > 1;
     if (ids.size() == 1) {
         m_currentSongID = ids[0];
     }
     m_levelID = levelID;
 
-    CCSize contentSize = m_mainLayer->getContentSize();
+    const CCSize contentSize = m_mainLayer->getContentSize();
 
     int manifest = NongManager::get().getCurrentManifestVersion();
     int count = NongManager::get().getStoredIDCount();
-    std::string label = fmt::format("Manifest v{}, storing {} unique song IDs.",
-                                    manifest, count);
-    CCLabelBMFont* manifestLabel =
-        CCLabelBMFont::create(label.c_str(), "chatFont.fnt");
+    const std::string label = fmt::format("Manifest v{}, storing {} unique song IDs.", manifest, count);
+    CCLabelBMFont* manifestLabel = CCLabelBMFont::create(label.c_str(), "chatFont.fnt");
     manifestLabel->setPosition(contentSize.width / 2, 12.f);
     manifestLabel->limitLabelWidth(140.f, 0.9f, 0.1f);
     manifestLabel->setColor(ccColor3B{220, 220, 220});
@@ -63,17 +66,14 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     m_bottomRightMenu->setID("bottom-right-menu");
     CCSprite* spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
     spr->setScale(0.7f);
-    m_addBtn = CCMenuItemSpriteExtra::create(
-        spr, this, menu_selector(NongDropdownLayer::openAddPopup));
+    m_addBtn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(NongDropdownLayer::openAddPopup));
 
     spr = CCSprite::createWithSpriteFrameName("gj_discordIcon_001.png");
-    m_discordBtn = CCMenuItemSpriteExtra::create(
-        spr, this, menu_selector(NongDropdownLayer::onDiscord));
+    m_discordBtn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(NongDropdownLayer::onDiscord));
     m_discordBtn->setID("discord-button");
 
     spr = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
-    m_deleteBtn = CCMenuItemSpriteExtra::create(
-        spr, this, menu_selector(NongDropdownLayer::deleteAllNongs));
+    m_deleteBtn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(NongDropdownLayer::deleteAllNongs));
 
     if (isMultiple) {
         m_addBtn->setVisible(false);
@@ -85,29 +85,25 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     m_bottomRightMenu->addChild(m_addBtn);
     m_bottomRightMenu->addChild(m_discordBtn);
     m_bottomRightMenu->addChild(m_deleteBtn);
-    SimpleAxisLayout* layout =
-        SimpleColumnLayout::create()
-            ->setMainAxisAlignment(MainAxisAlignment::Start)
-            ->setMainAxisDirection(AxisDirection::BottomToTop)
-            ->setMainAxisScaling(AxisScaling::ScaleDown)
-            ->setCrossAxisScaling(AxisScaling::ScaleDown)
-            ->setGap(5.0f);
+    SimpleAxisLayout* layout = SimpleColumnLayout::create()
+                                   ->setMainAxisAlignment(MainAxisAlignment::Start)
+                                   ->setMainAxisDirection(AxisDirection::BottomToTop)
+                                   ->setMainAxisScaling(AxisScaling::ScaleDown)
+                                   ->setCrossAxisScaling(AxisScaling::ScaleDown)
+                                   ->setGap(5.0f);
     layout->ignoreInvisibleChildren(true);
-    m_bottomRightMenu->setContentSize(
-        {40.0f, m_mainLayer->getContentHeight() / 2 - 5.0f});
+    m_bottomRightMenu->setContentSize({40.0f, m_mainLayer->getContentHeight() / 2 - 5.0f});
     m_bottomRightMenu->setAnchorPoint({1.0f, 0.0f});
     m_bottomRightMenu->setLayout(layout);
     m_bottomRightMenu->setZOrder(2);
-    m_mainLayer->addChildAtPosition(m_bottomRightMenu, Anchor::BottomRight,
-                                    CCPoint{-5.0f, 5.0f});
+    m_mainLayer->addChildAtPosition(m_bottomRightMenu, Anchor::BottomRight, CCPoint{-5.0f, 5.0f});
 
     CCMenu* settingsMenu = CCMenu::create();
     settingsMenu->setID("settings-menu");
-    CCSprite* sprite =
-        CCSprite::createWithSpriteFrameName("GJ_optionsBtn_001.png");
+    CCSprite* sprite = CCSprite::createWithSpriteFrameName("GJ_optionsBtn_001.png");
     sprite->setScale(0.8f);
-    CCMenuItemSpriteExtra* settingsButton = CCMenuItemSpriteExtra::create(
-        sprite, this, menu_selector(NongDropdownLayer::onSettings));
+    CCMenuItemSpriteExtra* settingsButton =
+        CCMenuItemSpriteExtra::create(sprite, this, menu_selector(NongDropdownLayer::onSettings));
     settingsButton->setID("settings-button");
     settingsMenu->addChild(settingsButton);
     settingsMenu->setAnchorPoint({1.0f, 1.0f});
@@ -116,73 +112,63 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
                                 ->setMainAxisScaling(AxisScaling::Fit)
                                 ->setCrossAxisScaling(AxisScaling::Fit));
     settingsMenu->setZOrder(1);
-    m_mainLayer->addChildAtPosition(settingsMenu, Anchor::TopRight,
-                                    CCPoint{-5.0f, -5.0f});
+    m_mainLayer->addChildAtPosition(settingsMenu, Anchor::TopRight, CCPoint{-5.0f, -5.0f});
 
-    CCSprite* bottomLeftArt =
-        CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
+    CCSprite* bottomLeftArt = CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
     bottomLeftArt->setAnchorPoint({0.0f, 0.0f});
     m_mainLayer->addChildAtPosition(bottomLeftArt, Anchor::BottomLeft);
 
-    CCSprite* bottomRightArt =
-        CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
+    CCSprite* bottomRightArt = CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
     bottomRightArt->setAnchorPoint({1.0f, 0.0f});
     bottomRightArt->setFlipX(true);
     m_mainLayer->addChildAtPosition(bottomRightArt, Anchor::BottomRight);
 
-    CCSprite* topLeftArt =
-        CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
+    CCSprite* topLeftArt = CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
     topLeftArt->setAnchorPoint({0.0f, 1.0f});
     topLeftArt->setFlipY(true);
     m_mainLayer->addChildAtPosition(topLeftArt, Anchor::TopLeft);
 
-    CCSprite* topRightArt =
-        CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
+    CCSprite* topRightArt = CCSprite::createWithSpriteFrameName("dailyLevelCorner_001.png");
     topRightArt->setAnchorPoint({1.0f, 1.0f});
     topRightArt->setFlipY(true);
     topRightArt->setFlipX(true);
     m_mainLayer->addChildAtPosition(topRightArt, Anchor::TopRight);
 
     this->createList();
-    CCSprite* title =
-        CCSprite::createWithSpriteFrameName("JB_ListLogo.png"_spr);
+    CCSprite* title = CCSprite::createWithSpriteFrameName("JB_ListLogo.png"_spr);
     title->setPosition(ccp(contentSize.width / 2, contentSize.height - 10.f));
     title->setScale(0.75f);
     m_mainLayer->addChild(title);
     handleTouchPriority(this);
 
-    m_songErrorListener.bind([this](event::SongError* event) {
-        if (event->notifyUser()) {
-            FLAlertLayer* popup =
-                FLAlertLayer::create("Error", event->error(), "OK");
+    m_songErrorListener = event::SongError().listen([this](const event::SongErrorData& event) {
+        if (event.notifyUser()) {
+            const auto err = std::string(event.error());
+            FLAlertLayer* popup = FLAlertLayer::create("Error", err, "OK");
             popup->setZOrder(this->getZOrder() + 1);
             popup->show();
         }
-        return ListenerResult::Propagate;
     });
 
-    m_songInfoListener.bind([this](event::GetSongInfo* event) {
-        if (!m_list || m_currentSongID != event->gdSongID()) {
+    m_songInfoListener = event::GetSongInfo().listen([this](const event::GetSongInfoData& event) {
+        if (!m_list || m_currentSongID != event.gdId()) {
             return ListenerResult::Propagate;
         }
 
-        FLAlertLayer* popup = FLAlertLayer::create(
-            "Song Refetched", "Successfully refetched default song data", "Ok");
+        FLAlertLayer* popup = FLAlertLayer::create("Song Refetched", "Successfully refetched default song data", "Ok");
         popup->setZOrder(this->getZOrder() + 1);
         popup->show();
 
         return ListenerResult::Propagate;
     });
 
-    m_downloadFailedListener.bind([this](event::SongDownloadFailed* event) {
-        if (!m_list || m_currentSongID != event->gdSongId()) {
+    m_downloadFailedListener = event::SongDownloadFailed().listen([this](const event::SongDownloadFailedData& event) {
+        if (!m_list || m_currentSongID != event.gdId()) {
             return ListenerResult::Propagate;
         }
 
         FLAlertLayer* popup = FLAlertLayer::create(
-            "Download failed",
-            fmt::format("Song download failed. Reason: {}", event->error()),
-            "Ok");
+            "Download failed", fmt::format("Song download failed. Reason: {}", event.error()), "Ok");
         popup->setZOrder(this->getZOrder() + 1);
         popup->show();
 
@@ -192,9 +178,7 @@ bool NongDropdownLayer::setup(std::vector<int> ids, CustomSongWidget* parent,
     return true;
 }
 
-void NongDropdownLayer::onSettings(CCObject* sender) {
-    geode::openSettingsPopup(Mod::get());
-}
+void NongDropdownLayer::onSettings(CCObject* sender) { openSettingsPopup(Mod::get()); }
 
 void NongDropdownLayer::onSelectSong(int songID) { m_currentSongID = songID; }
 
@@ -207,21 +191,20 @@ void NongDropdownLayer::openAddPopup(CCObject* target) {
 
 void NongDropdownLayer::createList() {
     if (!m_list) {
-        m_list = NongList::create(
-            m_songIDS, CCSize{this->getCellSize().width, 220.f}, m_levelID,
-            [this](std::optional<int> currentSongID) {
-                m_currentSongID = currentSongID;
-                bool multiple = !currentSongID.has_value();
-                if (multiple) {
-                    m_addBtn->setVisible(false);
-                    m_deleteBtn->setVisible(false);
-                    m_bottomRightMenu->updateLayout();
-                } else {
-                    m_addBtn->setVisible(true);
-                    m_deleteBtn->setVisible(true);
-                    m_bottomRightMenu->updateLayout();
-                }
-            });
+        m_list = NongList::create(m_songIDS, CCSize{this->getCellSize().width, 220.f}, m_levelID,
+                                  [this](std::optional<int> currentSongID) {
+                                      m_currentSongID = currentSongID;
+                                      bool multiple = !currentSongID.has_value();
+                                      if (multiple) {
+                                          m_addBtn->setVisible(false);
+                                          m_deleteBtn->setVisible(false);
+                                          m_bottomRightMenu->updateLayout();
+                                      } else {
+                                          m_addBtn->setVisible(true);
+                                          m_deleteBtn->setVisible(true);
+                                          m_bottomRightMenu->updateLayout();
+                                      }
+                                  });
         m_mainLayer->addChildAtPosition(m_list, Anchor::Center);
         return;
     }
@@ -243,8 +226,7 @@ void NongDropdownLayer::onDiscord(CCObject* target) {
                             "updates and submit bug reports?",
                             "No", "Yes", [](FLAlertLayer* alert, bool btn2) {
                                 if (btn2) {
-                                    geode::utils::web::openLinkInBrowser(
-                                        "https://discord.gg/maSgd4zpEF");
+                                    geode::utils::web::openLinkInBrowser("https://discord.gg/maSgd4zpEF");
                                 }
                             });
 }
@@ -255,10 +237,7 @@ void NongDropdownLayer::addSong(Nongs&& song, bool popup) {
     }
     int id = m_currentSongID.value();
     if (auto err = NongManager::get().addNongs(std::move(song)); err.isErr()) {
-        FLAlertLayer::create(
-            "Failed", fmt::format("Failed to add song: {}", err.unwrapErr()),
-            "Ok")
-            ->show();
+        FLAlertLayer::create("Failed", fmt::format("Failed to add song: {}", err.unwrapErr()), "Ok")->show();
         return;
     }
     if (popup) {
@@ -270,32 +249,25 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
     if (!m_currentSongID) {
         return;
     }
-    createQuickPopup(
-        "Delete all nongs",
-        "Are you sure you want to <cr>delete all nongs</c> for this song?",
-        "No", "Yes", [this](auto, bool btn2) {
-            if (!btn2) {
-                return;
-            }
+    createQuickPopup("Delete all nongs", "Are you sure you want to <cr>delete all nongs</c> for this song?", "No",
+                     "Yes", [this](auto, bool btn2) {
+                         if (!btn2) {
+                             return;
+                         }
 
-            if (!m_currentSongID) {
-                return;
-            }
+                         if (!m_currentSongID) {
+                             return;
+                         }
 
-            int id = m_currentSongID.value();
-            if (auto err = NongManager::get().deleteAllSongs(id); err.isErr()) {
-                FLAlertLayer::create(
-                    "Failed",
-                    fmt::format("Failed to delete nongs: {}", err.unwrapErr()),
-                    "Ok")
-                    ->show();
-                return;
-            }
-            Nongs* data = NongManager::get().getNongs(id).value();
-            FLAlertLayer::create("Success",
-                                 "All nongs were deleted successfully!", "Ok")
-                ->show();
-        });
+                         int id = m_currentSongID.value();
+                         if (auto err = NongManager::get().deleteAllSongs(id); err.isErr()) {
+                             FLAlertLayer::create("Failed", fmt::format("Failed to delete nongs: {}", err.unwrapErr()),
+                                                  "Ok")
+                                 ->show();
+                             return;
+                         }
+                         FLAlertLayer::create("Success", "All nongs were deleted successfully!", "Ok")->show();
+                     });
 }
 
 }  // namespace jukebox

@@ -1,27 +1,27 @@
 #pragma once
 
+#include <string>
+#include <string_view>
+#include <utility>
+
 #include <Geode/loader/Event.hpp>
 
-#include <jukebox/nong/nong.hpp>
+namespace jukebox::event {
 
-namespace jukebox {
-
-namespace event {
-
-class NongDeleted : public geode::Event {
+struct NongDeletedData final {
 protected:
-    std::string m_uniqueId;
     int m_gdId;
-
-    friend class ::jukebox::Nongs;
-
-    NongDeleted(const std::string& uniqueId, int gdId);
+    std::string m_uniqueId;
 
 public:
-    std::string uniqueId() const;
-    int gdId() const;
+    NongDeletedData(const int gdId, std::string uniqueId) noexcept : m_gdId(gdId), m_uniqueId(std::move(uniqueId)) {}
+
+    [[nodiscard]] int gdId() const noexcept { return m_gdId; }
+    [[nodiscard]] std::string_view uniqueId() const noexcept { return m_uniqueId; }
 };
 
-}  // namespace event
+struct NongDeleted : geode::GlobalEvent<NongDeleted, bool(const NongDeletedData&), int> {
+    using GlobalEvent::GlobalEvent;
+};
 
-}  // namespace jukebox
+}  // namespace jukebox::event

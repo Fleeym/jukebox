@@ -4,21 +4,24 @@
 
 #include <jukebox/nong/nong.hpp>
 
-namespace jukebox {
+namespace jukebox::event {
 
-namespace event {
-
-class ManualSongAdded final : public geode::Event {
+struct ManualSongAddedData {
 private:
     Nongs* m_nongs;
     Song* m_new;
 
 public:
-    ManualSongAdded(Nongs* nongs, Song* newSong);
-    Nongs* nongs() const;
-    Song* song() const;
+    explicit ManualSongAddedData(Nongs* nongs, Song* newSong) noexcept
+        : m_nongs(nongs), m_new(newSong) {}
+
+    [[nodiscard]] Nongs* nongs() const noexcept { return m_nongs; }
+    [[nodiscard]] Song* song() const noexcept { return m_new; }
 };
 
-}  // namespace event
+struct ManualSongAdded final
+    : geode::SimpleEvent<ManualSongAdded, const ManualSongAddedData&> {
+    using SimpleEvent::SimpleEvent;
+};
 
-}  // namespace jukebox
+}  // namespace jukebox::event

@@ -1,15 +1,13 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
-#include <jukebox/download/download.hpp>
+#include <Geode/Result.hpp>
+#include <Geode/utils/general.hpp>
+#include <arc/future/Future.hpp>
 
-namespace jukebox {
+namespace jukebox::download {
 
-namespace download {
+arc::Future<geode::Result<geode::ByteVector>> startHostedDownload(std::string_view url);
 
-DownloadTask startHostedDownload(const std::string& url);
-
-}
-
-}  // namespace jukebox
+}  // namespace jukebox::download

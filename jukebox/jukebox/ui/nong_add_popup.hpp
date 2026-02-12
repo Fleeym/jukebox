@@ -23,7 +23,7 @@ namespace jukebox {
 
 class NongDropdownLayer;
 
-class NongAddPopup : public geode::Popup<int, std::optional<Song*>> {
+class NongAddPopup : public geode::Popup {
 protected:
     enum class SongType {
         LOCAL,
@@ -36,7 +36,7 @@ protected:
         std::optional<std::string> artist;
     };
 
-    int m_songID;
+    int m_songID = 0;
 
     std::vector<std::string> m_publishableIndexes;
 
@@ -70,17 +70,15 @@ protected:
     CCMenuItemSpriteExtra* m_addSongButton = nullptr;
     CCMenuItemSpriteExtra* m_publishSongButton = nullptr;
 
-    SongType m_songType;
+    SongType m_songType = SongType::LOCAL;
 
-    geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>>
-        m_pickListener;
+    // geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_pickListener;
 
     std::optional<Song*> m_replacedNong;
 
-    bool setup(int songID, std::optional<Song*> replacedNong) override;
+    bool init(int songID, std::optional<Song*> replacedNong);
     void addPathLabel(std::string const& path);
-    void onFileOpen(
-        geode::Task<geode::Result<std::filesystem::path>>::Event* event);
+    void onFileOpen(geode::Result<std::optional<std::filesystem::path>> result);
     void setSongType(SongType type, bool memorizePrevious);
     void onSwitchToLocal(cocos2d::CCObject*);
     void onSwitchToYT(cocos2d::CCObject*);
@@ -90,24 +88,17 @@ protected:
     void openFile(cocos2d::CCObject*);
     void addSong(cocos2d::CCObject*);
     void onPaste(cocos2d::CCObject*);
-    geode::Result<> addLocalSong(const std::string& songName,
-                                 const std::string& artistName,
-                                 const std::optional<std::string> levelName,
-                                 int offset);
-    geode::Result<> addYTSong(const std::string& songName,
-                              const std::string& artistName,
-                              const std::optional<std::string> levelName,
-                              int offset);
-    geode::Result<> addHostedSong(const std::string& songName,
-                                  const std::string& artistName,
-                                  const std::optional<std::string> levelName,
-                                  int offset);
+    geode::Result<> addLocalSong(const std::string& songName, const std::string& artistName,
+                                 std::optional<std::string> levelName, int offset);
+    geode::Result<> addYTSong(const std::string& songName, const std::string& artistName,
+                              std::optional<std::string> levelName, int offset);
+    geode::Result<> addHostedSong(const std::string& songName, const std::string& artistName,
+                                  std::optional<std::string> levelName, int offset);
     void onPublish(cocos2d::CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
 
 public:
-    static NongAddPopup* create(int songID,
-                                std::optional<Song*> nong = std::nullopt);
+    static NongAddPopup* create(int songID, std::optional<Song*> nong = std::nullopt);
 };
 
 }  // namespace jukebox

@@ -5,18 +5,11 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
-#include <Geode/loader/Event.hpp>
 
-#include <jukebox/events/get_song_info.hpp>
-#include <jukebox/events/song_download_failed.hpp>
 #include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/events/song_download_progress.hpp>
-#include <jukebox/events/song_state_changed.hpp>
 #include <jukebox/nong/nong.hpp>
 
 namespace jukebox {
-
-class NongDropdownLayer;
 
 // Fields are public because they are meant to be changed and then UI will
 // update when build() is called.
@@ -38,9 +31,8 @@ protected:
     cocos2d::CCMenu* m_downloadProgressContainer = nullptr;
     cocos2d::CCProgressTimer* m_downloadProgressTimer = nullptr;
 
-    bool init(const cocos2d::CCSize& size, std::function<void()> onSelect,
-              std::function<void()> onTrash, std::function<void()> onFixDefault,
-              std::function<void()> onDownload, std::function<void()> onEdit);
+    bool init(const cocos2d::CCSize& size, std::function<void()> onSelect, std::function<void()> onTrash,
+              std::function<void()> onFixDefault, std::function<void()> onDownload, std::function<void()> onEdit);
 
 public:
     std::string m_songName = "None";
@@ -67,12 +59,9 @@ public:
     bool m_isDownloading = 0;
     float m_downloadProgress = 0;
 
-    static NongCellUI* create(const cocos2d::CCSize& size,
-                              std::function<void()> onSelect,
-                              std::function<void()> onTrash,
-                              std::function<void()> onFixDefault,
-                              std::function<void()> onDownload,
-                              std::function<void()> onEdit);
+    static NongCellUI* create(const cocos2d::CCSize& size, std::function<void()> onSelect,
+                              std::function<void()> onTrash, std::function<void()> onFixDefault,
+                              std::function<void()> onDownload, std::function<void()> onEdit);
 
     void build();
     void buildOnlyDownloadProgress();

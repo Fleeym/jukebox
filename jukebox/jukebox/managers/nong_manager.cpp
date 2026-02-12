@@ -8,6 +8,7 @@
 #include <system_error>
 #include <unordered_map>
 #include <utility>
+#include <xutility>
 
 #include <fmt/format.h>
 #include <Geode/Result.hpp>
@@ -20,7 +21,9 @@
 
 #include <jukebox/compat/compat.hpp>
 #include <jukebox/compat/v2.hpp>
+#include <jukebox/events/get_song_info.hpp>
 #include <jukebox/events/song_download_finished.hpp>
+#include <jukebox/events/song_error.hpp>
 #include <jukebox/managers/index_manager.hpp>
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/nong/nong_serialize.hpp>
@@ -38,17 +41,7 @@ std::optional<Nongs*> NongManager::getNongs(int songID) {
     return m_manifest.m_nongs[songID].get();
 }
 
-bool NongManager::isNongVerifiedForLevelSong(int levelID, int songID,
-                                             std::string_view uniqueID) {
-    // List the verified nongs for the given level and song
-    std::vector<std::string> verifiedNongs =
-        NongManager::get().getVerifiedNongsForLevel(levelID, {songID});
-    return std::find(verifiedNongs.begin(), verifiedNongs.end(), uniqueID) !=
-           verifiedNongs.end();
-}
-
-std::vector<std::string> NongManager::getVerifiedNongsForLevel(
-    int levelID, std::vector<int> songIDs) {
+std::vector<std::string> NongManager::getVerifiedNongsForLevel(int levelID, std::vector<int> songIDs) {
     std::vector<std::string> verifiedNongs;
 
     for (const int songID : songIDs) {
@@ -60,10 +53,8 @@ std::vector<std::string> NongManager::getVerifiedNongsForLevel(
 
         // For each indexSong, check if it contains the given levelID in its
         // verifiedLevelIDs field.
-        for (auto indexSong : nongs.value()->indexSongs()) {
-            auto& ids = indexSong->verifiedLevelIDs;
-
-            if (std::find(ids.begin(), ids.end(), levelID) != ids.end()) {
+        for (const auto indexSong : nongs.value()->indexSongs()) {
+            if (auto& ids = indexSong->verifiedLevelIDs; std::ranges::find(ids, levelID) != ids.end()) {
                 verifiedNongs.push_back(indexSong->uniqueID);
             }
         }
@@ -72,18 +63,15 @@ std::vector<std::string> NongManager::getVerifiedNongsForLevel(
     return verifiedNongs;
 }
 
-int NongManager::getCurrentManifestVersion() { return m_manifest.m_version; }
+int NongManager::getCurrentManifestVersion() const { return m_manifest.m_version; }
 
-int NongManager::getStoredIDCount() { return m_manifest.m_nongs.size(); }
+int NongManager::getStoredIDCount() const { return m_manifest.m_nongs.size(); }
 
-int NongManager::adjustSongID(int id, bool robtop) {
-    return robtop ? (id < 0 ? id : -id - 1) : id;
-}
+int NongManager::adjustSongID(int id, bool robtop) { return robtop ? (id < 0 ? id : -id - 1) : id; }
 
-bool NongManager::hasSongID(int id) { return m_manifest.m_nongs.contains(id); }
+bool NongManager::hasSongID(int id) const { return m_manifest.m_nongs.contains(id); }
 
-Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
-                                       bool robtop) {
+Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id, bool robtop) {
     int adjusted = this->adjustSongID(id, robtop);
 
     if (this->hasSongID(adjusted)) {
@@ -96,13 +84,10 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
 
     if (obj && robtop) {
         std::string filename = LevelTools::getAudioFileName(id);
-        std::filesystem::path gdDir = std::filesystem::path(
-            CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
-        std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(
-            Nongs{adjusted,
-                  LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
-                                         obj->m_songName, obj->m_artistName},
-                            gdDir / "Resources" / filename}});
+        std::filesystem::path gdDir = std::filesystem::path(CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
+        std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(Nongs{
+            adjusted, LocalSong{SongMetadata{adjusted, jukebox::random_string(16), obj->m_songName, obj->m_artistName},
+                                gdDir / "Resources" / filename}});
 
         Nongs* n = nongs.get();
         m_manifest.m_nongs.insert({adjusted, std::move(nongs)});
@@ -119,8 +104,7 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
     if (!obj) {
         // Try fetch song info from servers
         MusicDownloadManager::sharedState()->getSongInfo(id, true);
-        std::unique_ptr<Nongs> nongs =
-            std::make_unique<Nongs>(Nongs{id, LocalSong::createUnknown(id)});
+        std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(Nongs{id, LocalSong::createUnknown(id)});
 
         Nongs* n = nongs.get();
         m_manifest.m_nongs.insert({adjusted, std::move(nongs)});
@@ -131,12 +115,8 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
 
     // Finally, if obj exists just insert normally
     std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(Nongs{
-        adjusted,
-        LocalSong{SongMetadata{adjusted, jukebox::random_string(16),
-                               obj->m_songName, obj->m_artistName},
-                  std::filesystem::path(MusicDownloadManager::sharedState()
-                                            ->pathForSong(id)
-                                            .c_str())}});
+        adjusted, LocalSong{SongMetadata{adjusted, jukebox::random_string(16), obj->m_songName, obj->m_artistName},
+                            std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(id).c_str())}});
 
     Nongs* n = nongs.get();
     m_manifest.m_nongs.insert({adjusted, std::move(nongs)});
@@ -145,126 +125,72 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id,
     return Ok(n);
 }
 
-std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
-    std::error_code code;
-    auto size = std::filesystem::file_size(path, code);
-    if (code) {
-        return "N/A";
-    }
-    double toMegabytes = size / 1024.f / 1024.f;
-    return fmt::format("{:.2f}MB", toMegabytes);
-}
-
-NongManager::MultiAssetSizeTask NongManager::getMultiAssetSizes(
-    std::string songs, std::string sfx) {
-    auto resources =
-        std::filesystem::path(CCFileUtils::get()->getWritablePath2()) /
-        "Resources";
-    auto songDir = std::filesystem::path(CCFileUtils::get()->getWritablePath());
-
-    return MultiAssetSizeTask::run(
-        [this, songs, sfx, resources, songDir](
-            auto progress, auto hasBeenCanceled) -> MultiAssetSizeTask::Result {
-            float sum = 0.f;
-            std::istringstream stream(songs);
-            std::string s;
-            while (std::getline(stream, s, ',')) {
-                Result<int> idRes = geode::utils::numFromString<int>(s);
-                if (idRes.isErr()) {
-                    continue;
-                }
-                int id = idRes.unwrap();
-                auto result = this->getNongs(id);
-                if (!result.has_value()) {
-                    continue;
-                }
-                auto nongs = result.value();
-                auto path = nongs->active()->path().value();
-                if (path.string().starts_with("songs/")) {
-                    path = resources / path;
-                }
-                if (std::filesystem::exists(path)) {
-                    sum += std::filesystem::file_size(path);
-                }
-            }
-            stream = std::istringstream(sfx);
-            while (std::getline(stream, s, ',')) {
-                std::stringstream ss;
-                ss << "s" << s << ".ogg";
-                std::string filename = ss.str();
-                auto localPath = resources / "sfx" / filename;
-                std::error_code _ec;
-                if (std::filesystem::exists(localPath, _ec)) {
-                    sum += std::filesystem::file_size(localPath);
-                    continue;
-                }
-                auto path = songDir / filename;
-                if (std::filesystem::exists(path, _ec)) {
-                    sum += std::filesystem::file_size(path);
-                }
-            }
-
-            double toMegabytes = sum / 1024.f / 1024.f;
-            return fmt::format("{:.2f}MB", toMegabytes);
-        },
-        "Multiasset calculation");
-}
-
 bool NongManager::init() {
     if (m_initialized) {
         return true;
     }
 
-    m_songErrorListener.bind([this](event::SongError* event) {
-        log::error("{}", event->error());
-        return ListenerResult::Propagate;
-    });
+    event::SongError().listen([](const event::SongErrorData& event) { log::error("{}", event.error()); }).leak();
 
-    m_songInfoListener.bind([this](event::GetSongInfo* event) {
-        std::optional<Nongs*> nongs = this->getNongs(event->gdSongID());
-        if (!nongs.has_value()) {
-            return ListenerResult::Stop;
-        }
-        SongMetadata* defaultSongMetadata =
-            nongs.value()->defaultSong()->metadata();
-        if (event->songName() == defaultSongMetadata->name &&
-            event->artistName() == defaultSongMetadata->artist) {
-            return ListenerResult::Stop;
-        }
+    event::GetSongInfo()
+        .listen([this](const event::GetSongInfoData& event) {
+            const std::optional<Nongs*> nongs = this->getNongs(event.gdId());
+            if (!nongs.has_value()) {
+                return ListenerResult::Stop;
+            }
+            SongMetadata* defaultSongMetadata = nongs.value()->defaultSong()->metadata();
+            if (event.songName() == defaultSongMetadata->name && event.artistName() == defaultSongMetadata->artist) {
+                return ListenerResult::Stop;
+            }
 
-        defaultSongMetadata->name = event->songName();
-        defaultSongMetadata->artist = event->artistName();
+            defaultSongMetadata->name = event.songName();
+            defaultSongMetadata->artist = event.artistName();
 
-        (void)this->saveNongs(event->gdSongID());
+            (void)this->saveNongs(event.gdId());
 
-        return ListenerResult::Propagate;
-    });
+            return ListenerResult::Propagate;
+        })
+        .leak();
+
+    event::SongDownloadFinished()
+        .listen([this](const event::SongDownloadFinishedData& event) {
+            const auto nongsOpt = this->getNongs(event.destination()->metadata()->gdID);
+
+            if (!nongsOpt) {
+                return ListenerResult::Propagate;
+            }
+
+            Nongs* nongs = nongsOpt.value();
+
+            if (GEODE_UNWRAP_IF_ERR(err, nongs->setActive(event.destination()->metadata()->uniqueID))) {
+                log::error("Failed to set newly downloaded song {} as active: {}",
+                           event.destination()->metadata()->uniqueID, err);
+            }
+
+            return ListenerResult::Propagate;
+        })
+        .leak();
 
     log::info("Starting NONG read");
 
-    auto path = this->baseManifestPath();
+    const std::filesystem::path path = this->baseManifestPath();
     if (!std::filesystem::exists(path)) {
         log::info("No manifest directory found. Creating...");
         std::filesystem::create_directory(path);
     }
-    auto nongsPath = this->baseNongsPath();
-    if (!std::filesystem::exists(nongsPath)) {
+    if (const std::filesystem::path nongsPath = this->baseNongsPath(); !std::filesystem::exists(nongsPath)) {
         std::filesystem::create_directory(nongsPath);
     }
 
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(path)) {
+    for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(path)) {
         if (entry.path().extension() != ".json") {
             continue;
         }
 
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
-            log::error("Failed to read file {}: {}", entry.path().filename(),
-                       res.unwrapErr());
-            std::filesystem::rename(
-                entry.path(),
-                path / fmt::format("{}.bak", entry.path().filename().string()));
+            log::error("Failed to read file {}: {}", entry.path().filename(), res.unwrapErr());
+            std::filesystem::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename().string()));
             continue;
         }
 
@@ -274,10 +200,9 @@ bool NongManager::init() {
         m_manifest.m_nongs.insert({id, std::move(ptr)});
     }
 
-    log::info("Read {} files successfuly!", m_manifest.m_nongs.size());
+    log::info("Read {} files successfully!", m_manifest.m_nongs.size());
 
-    Result<> res = this->migrateV2();
-    if (res.isErr()) {
+    if (Result<> res = this->migrateV2(); res.isErr()) {
         log::error("{}", res.unwrapErr());
     }
 
@@ -286,9 +211,7 @@ bool NongManager::init() {
 }
 
 Result<> NongManager::migrateV2() {
-    bool migrate = compat::v2::manifestExists();
-
-    if (!migrate) {
+    if (bool migrate = compat::v2::manifestExists(); !migrate) {
         log::info("Nothing to migrate from V2!");
         return Ok();
     }
@@ -298,30 +221,27 @@ Result<> NongManager::migrateV2() {
 
     size_t i = 0;
 
-    for (const auto& kv : manifest) {
-        if (!m_manifest.m_nongs.contains(kv.first)) {
-            LocalSong defaultSong = kv.second.defaultSong;
-            int id = kv.first;
-            Nongs nongs = Nongs(kv.first, std::move(defaultSong));
-            m_manifest.m_nongs.insert(
-                {id, std::make_unique<Nongs>(std::move(nongs))});
+    for (const auto& [id, compatManifest] : manifest) {
+        if (!m_manifest.m_nongs.contains(id)) {
+            LocalSong defaultSong = compatManifest.defaultSong;
+            auto nongs = Nongs(id, std::move(defaultSong));
+            m_manifest.m_nongs.insert({id, std::make_unique<Nongs>(std::move(nongs))});
 
-            Nongs* n = m_manifest.m_nongs[kv.first].get();
+            Nongs* n = m_manifest.m_nongs[id].get();
             IndexManager::get().registerIndexNongs(n);
         }
 
-        Nongs* nongs = m_manifest.m_nongs[kv.first].get();
+        Nongs* nongs = m_manifest.m_nongs[id].get();
 
-        for (const LocalSong& i : kv.second.songs) {
-            if (i.path().value() == kv.second.defaultSong.path().value()) {
+        for (const LocalSong& song : compatManifest.songs) {
+            if (song.path().value() == compatManifest.defaultSong.path().value()) {
                 continue;
             }
             bool found = false;
             for (std::unique_ptr<LocalSong>& stored : nongs->locals()) {
-                if (stored->metadata()->startOffset ==
-                        stored->metadata()->startOffset &&
-                    stored->metadata()->name == i.metadata()->name &&
-                    stored->metadata()->artist == i.metadata()->artist) {
+                if (stored->metadata()->startOffset == stored->metadata()->startOffset &&
+                    stored->metadata()->name == song.metadata()->name &&
+                    stored->metadata()->artist == song.metadata()->artist) {
                     found = true;
                 }
             }
@@ -330,15 +250,14 @@ Result<> NongManager::migrateV2() {
                 continue;
             }
 
-            LocalSong cp = i;
+            LocalSong cp = song;
             auto res = nongs->add(std::move(cp));
             if (res.isErr()) {
-                log::error("Failed to add migrated song to manifest: {}",
-                           res.unwrapErr());
+                log::error("Failed to add migrated song to manifest: {}", res.unwrapErr());
             }
         }
 
-        (void)nongs->setActive(kv.second.active.metadata()->uniqueID);
+        (void)nongs->setActive(compatManifest.active.metadata()->uniqueID);
         (void)nongs->commit();
         i++;
     }
@@ -350,7 +269,7 @@ Result<> NongManager::migrateV2() {
 }
 
 Result<> NongManager::saveNongs(std::optional<int> saveID) {
-    auto path = this->baseManifestPath();
+    const std::filesystem::path path = this->baseManifestPath();
 
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directory(path);
@@ -401,7 +320,70 @@ Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
     return Ok(std::make_unique<Nongs>(std::move(nongs)));
 }
 
-void NongManager::refetchDefault(int songID) {
+bool NongManager::isNongVerifiedForLevelSong(const int levelID, int songID, const std::string_view uniqueID) {
+    // List the verified nongs for the given level and song
+    std::vector<std::string> verifiedNongs = NongManager::get().getVerifiedNongsForLevel(levelID, {songID});
+    return std::ranges::find(verifiedNongs, uniqueID) != verifiedNongs.end();
+}
+
+std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
+    std::error_code code;
+    const auto size = std::filesystem::file_size(path, code);
+    if (code) {
+        return "N/A";
+    }
+    double toMegabytes = static_cast<double>(size) / 1024.f / 1024.f;
+    return fmt::format("{:.2f}MB", toMegabytes);
+}
+
+arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std::string sfx) {
+    auto resources = std::filesystem::path(CCFileUtils::get()->getWritablePath2()) / "Resources";
+    auto songDir = std::filesystem::path(CCFileUtils::get()->getWritablePath());
+
+    double sum = 0.f;
+    std::istringstream stream(songs);
+    std::string s;
+    while (std::getline(stream, s, ',')) {
+        Result<int> idRes = geode::utils::numFromString<int>(s);
+        if (idRes.isErr()) {
+            continue;
+        }
+        int id = idRes.unwrap();
+        auto result = this->getNongs(id);
+        if (!result.has_value()) {
+            continue;
+        }
+        auto nongs = result.value();
+        auto path = nongs->active()->path().value();
+        if (path.string().starts_with("songs/")) {
+            path = resources / path;
+        }
+        if (std::filesystem::exists(path)) {
+            sum += std::filesystem::file_size(path);
+        }
+    }
+    stream = std::istringstream(sfx);
+    while (std::getline(stream, s, ',')) {
+        std::stringstream ss;
+        ss << "s" << s << ".ogg";
+        std::string filename = ss.str();
+        auto localPath = resources / "sfx" / filename;
+        std::error_code _ec;
+        if (std::filesystem::exists(localPath, _ec)) {
+            sum += std::filesystem::file_size(localPath);
+            continue;
+        }
+        auto path = songDir / filename;
+        if (std::filesystem::exists(path, _ec)) {
+            sum += std::filesystem::file_size(path);
+        }
+    }
+
+    double toMegabytes = sum / 1024.f / 1024.f;
+    co_return fmt::format("{:.2f}MB", toMegabytes);
+}
+
+void NongManager::refetchDefault(const int songID) {
     MusicDownloadManager::sharedState()->clearSong(songID);
     MusicDownloadManager::sharedState()->getSongInfo(songID, true);
 }
@@ -429,16 +411,16 @@ Result<> NongManager::setActiveSong(int gdSongID, std::string uniqueID) {
     return saveNongs(gdSongID);
 }
 
-Result<> NongManager::deleteAllSongs(int gdSongID) {
-    auto nongs = getNongs(gdSongID);
+Result<> NongManager::deleteSong(int gdSongID, std::string uniqueID) {
+    std::optional<Nongs*> nongs = this->getNongs(gdSongID);
     if (!nongs.has_value()) {
         return Err("Song not initialized in manifest");
     }
-    if (auto err = m_manifest.m_nongs.at(gdSongID)->deleteAllSongs();
-        err.isErr()) {
-        return err;
-    }
-    return saveNongs(gdSongID);
+
+    GEODE_UNWRAP(nongs.value()->deleteSong(uniqueID).mapErr(
+        [](std::string err) { return fmt::format("Couldn't delete Nong: {}", err); }));
+
+    return nongs.value()->commit();
 }
 
 Result<> NongManager::deleteSongAudio(int gdSongID, std::string uniqueID) {
@@ -447,30 +429,25 @@ Result<> NongManager::deleteSongAudio(int gdSongID, std::string uniqueID) {
         return Err("Song not initialized in manifest");
     }
 
-    GEODE_UNWRAP(
-        nongs.value()->deleteSongAudio(uniqueID).mapErr([](std::string err) {
-            return fmt::format("Couldn't delete Nong: {}", err);
-        }));
+    GEODE_UNWRAP(nongs.value()->deleteSongAudio(uniqueID).mapErr(
+        [](std::string err) { return fmt::format("Couldn't delete Nong: {}", err); }));
 
     return saveNongs(gdSongID);
 }
 
-Result<> NongManager::deleteSong(int gdSongID, std::string uniqueID) {
-    std::optional<Nongs*> nongs = this->getNongs(gdSongID);
+Result<> NongManager::deleteAllSongs(int gdSongID) {
+    auto nongs = getNongs(gdSongID);
     if (!nongs.has_value()) {
         return Err("Song not initialized in manifest");
     }
-
-    GEODE_UNWRAP(
-        nongs.value()->deleteSong(uniqueID).mapErr([](std::string err) {
-            return fmt::format("Couldn't delete Nong: {}", err);
-        }));
-
-    return nongs.value()->commit();
+    if (auto err = m_manifest.m_nongs.at(gdSongID)->deleteAllSongs(); err.isErr()) {
+        return err;
+    }
+    return saveNongs(gdSongID);
 }
 
-std::filesystem::path NongManager::generateSongFilePath(
-    const std::string& extension, std::optional<std::string> filename) {
+std::filesystem::path NongManager::generateSongFilePath(const std::string& extension,
+                                                        std::optional<std::string> filename) {
     auto unique = filename.value_or(jukebox::random_string(16));
     auto destination = Mod::get()->getSaveDir() / "nongs";
     if (!std::filesystem::exists(destination)) {
@@ -479,24 +456,6 @@ std::filesystem::path NongManager::generateSongFilePath(
     unique += extension;
     destination = destination / unique;
     return destination;
-}
-
-ListenerResult NongManager::onDownloadFinished(event::SongDownloadFinished* e) {
-    const auto nongsOpt = this->getNongs(e->destination()->metadata()->gdID);
-
-    if (!nongsOpt) {
-        return ListenerResult::Propagate;
-    }
-
-    Nongs* nongs = nongsOpt.value();
-
-    if (GEODE_UNWRAP_IF_ERR(
-            err, nongs->setActive(e->destination()->metadata()->uniqueID))) {
-        log::error("Failed to set newly downloaded song {} as active: {}",
-                   e->destination()->metadata()->uniqueID, err);
-    }
-
-    return ListenerResult::Propagate;
 }
 
 };  // namespace jukebox

@@ -11,24 +11,17 @@
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/cocos.hpp>
 
-#include <jukebox/events/get_song_info.hpp>
-#include <jukebox/events/song_download_failed.hpp>
-#include <jukebox/events/song_error.hpp>
 #include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/list/nong_cell.hpp>
 #include <jukebox/ui/list/nong_list.hpp>
 #include <jukebox/ui/list/song_cell.hpp>
-#include <jukebox/ui/nong_add_popup.hpp>
 
 namespace jukebox {
 
-class NongDropdownLayer
-    : public geode::Popup<std::vector<int>, CustomSongWidget*, int,
-                          std::optional<int>> {
+class NongDropdownLayer : public geode::Popup {
 protected:
     std::vector<int> m_songIDS;
     std::optional<int> m_currentSongID = std::nullopt;
-    int m_defaultSongID;
+    int m_defaultSongID = 0;
     geode::Ref<CustomSongWidget> m_parentWidget;
     NongList* m_list = nullptr;
     std::optional<int> m_levelID;
@@ -38,17 +31,14 @@ protected:
     CCMenuItemSpriteExtra* m_deleteBtn = nullptr;
     cocos2d::CCMenu* m_bottomRightMenu = nullptr;
 
-    geode::EventListener<geode::EventFilter<jukebox::event::SongError>>
-        m_songErrorListener;
-    geode::EventListener<geode::EventFilter<jukebox::event::GetSongInfo>>
-        m_songInfoListener;
-    geode::EventListener<geode::EventFilter<jukebox::event::SongDownloadFailed>>
-        m_downloadFailedListener;
+    geode::ListenerHandle m_songErrorListener;
+    geode::ListenerHandle m_songInfoListener;
+    geode::ListenerHandle m_downloadFailedListener;
 
     bool m_fetching = false;
 
-    bool setup(std::vector<int> ids, CustomSongWidget* parent,
-               int defaultSongID, std::optional<int> levelID) override;
+    bool init(float width, float height, std::vector<int> ids, CustomSongWidget* parent, int defaultSongID,
+              std::optional<int> levelID, const char* bg);
     void createList();
     cocos2d::CCSize getCellSize() const;
     void deleteAllNongs(cocos2d::CCObject*);
@@ -62,13 +52,10 @@ public:
     void addSong(Nongs&& song, bool popup = true);
     void updateParentWidget(SongMetadata const& song);
 
-    static NongDropdownLayer* create(std::vector<int> ids,
-                                     CustomSongWidget* parent,
-                                     int defaultSongID,
-                                     std::optional<int> levelID) {
+    static NongDropdownLayer* create(std::vector<int> ids, CustomSongWidget* parent, const int defaultSongID,
+                                     const std::optional<int> levelID) {
         auto ret = new NongDropdownLayer;
-        if (ret && ret->initAnchored(420.f, 280.f, ids, parent, defaultSongID,
-                                     levelID, "GJ_square01.png")) {
+        if (ret->init(420.f, 280.f, std::move(ids), parent, defaultSongID, levelID, "GJ_square01.png")) {
             ret->autorelease();
             return ret;
         }

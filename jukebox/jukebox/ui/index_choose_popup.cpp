@@ -2,18 +2,12 @@
 
 #include <optional>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
-#include <Geode/cocos/CCDirector.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <ccTypes.h>
-#include <fmod_common.h>
-#include <fmt/core.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/ui/Layout.hpp>
-#include <fmod.hpp>
 
 #include <jukebox/managers/index_manager.hpp>
 
@@ -21,11 +15,13 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool IndexChoosePopup::setup(
-    std::vector<std::string> indexIDs,
-    std::function<void(const std::string& indexID)> chooseIndex) {
-    m_indexIDs = indexIDs;
-    m_chooseIndex = chooseIndex;
+bool IndexChoosePopup::init(std::vector<std::string> indexIDs,
+                            std::function<void(const std::string& indexID)> chooseIndex) {
+    if (!Popup::init(280.0f, 80.0f)) {
+        return false;
+    }
+    m_indexIDs = std::move(indexIDs);
+    m_chooseIndex = std::move(chooseIndex);
 
     auto menu = CCMenu::create();
     menu->setContentWidth(m_mainLayer->getContentWidth() - 10.f);
@@ -35,17 +31,13 @@ bool IndexChoosePopup::setup(
     switchMenu->setLayout(RowLayout::create());
     switchMenu->setContentSize({menu->getContentSize().width, 40.f});
 
-    auto spriteLeft =
-        CCSprite::createWithSpriteFrameName("edit_leftBtn_001.png");
+    auto spriteLeft = CCSprite::createWithSpriteFrameName("edit_leftBtn_001.png");
     spriteLeft->setScale(1.5);
-    auto btnLeft = CCMenuItemSpriteExtra::create(
-        spriteLeft, this, menu_selector(IndexChoosePopup::onLeft));
+    auto btnLeft = CCMenuItemSpriteExtra::create(spriteLeft, this, menu_selector(IndexChoosePopup::onLeft));
 
-    auto spriteRight =
-        CCSprite::createWithSpriteFrameName("edit_rightBtn_001.png");
+    auto spriteRight = CCSprite::createWithSpriteFrameName("edit_rightBtn_001.png");
     spriteRight->setScale(1.5);
-    auto btnRight = CCMenuItemSpriteExtra::create(
-        spriteRight, this, menu_selector(IndexChoosePopup::onRight));
+    auto btnRight = CCMenuItemSpriteExtra::create(spriteRight, this, menu_selector(IndexChoosePopup::onRight));
 
     auto label = CCLabelBMFont::create("", "bigFont.fnt");
     m_label = label;
@@ -62,8 +54,7 @@ bool IndexChoosePopup::setup(
     switchMenu->updateLayout();
 
     auto addSongButton =
-        CCMenuItemSpriteExtra::create(ButtonSprite::create("OK"), this,
-                                      menu_selector(IndexChoosePopup::onOK));
+        CCMenuItemSpriteExtra::create(ButtonSprite::create("OK"), this, menu_selector(IndexChoosePopup::onOK));
     auto addSongMenu = CCMenu::create();
     addSongMenu->setID("add-song-menu");
     addSongButton->setID("add-song-button");
@@ -94,14 +85,11 @@ bool IndexChoosePopup::setup(
 }
 
 void IndexChoosePopup::updateLabel() {
-    m_label->setString(IndexManager::get()
-                           .getIndexName(m_indexIDs.at(m_currentIndex))
-                           ->c_str());
+    m_label->setString(IndexManager::get().getIndexName(m_indexIDs.at(m_currentIndex))->c_str());
 }
 
 void IndexChoosePopup::onLeft(CCObject*) {
-    m_currentIndex =
-        (m_currentIndex - 1 + m_indexIDs.size()) % m_indexIDs.size();
+    m_currentIndex = (m_currentIndex - 1 + m_indexIDs.size()) % m_indexIDs.size();
     updateLabel();
 }
 
@@ -115,15 +103,14 @@ void IndexChoosePopup::onOK(CCObject*) {
     m_closeBtn->activate();
 }
 
-IndexChoosePopup* IndexChoosePopup::create(
-    std::vector<std::string> indexIDs,
-    std::function<void(const std::string&)> setIndexesCallback) {
+IndexChoosePopup* IndexChoosePopup::create(std::vector<std::string> indexIDs,
+                                           std::function<void(const std::string&)> setIndexesCallback) {
     auto ret = new IndexChoosePopup();
-    if (ret && ret->initAnchored(280, 80, indexIDs, setIndexesCallback)) {
+    if (ret->init(std::move(indexIDs), std::move(setIndexesCallback))) {
         ret->autorelease();
         return ret;
     }
-    CC_SAFE_DELETE(ret);
+    delete ret;
     return nullptr;
 }
 

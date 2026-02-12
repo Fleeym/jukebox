@@ -1,32 +1,29 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include <Geode/loader/Event.hpp>
 
-#include <jukebox/hooks/music_download_manager.hpp>
+namespace jukebox::event {
 
-namespace jukebox {
-
-namespace event {
-
-class GetSongInfo : public geode::Event {
+struct GetSongInfoData final {
 private:
+    int m_gdId;
     std::string m_songName;
     std::string m_artistName;
-    int m_gdSongID;
-
-protected:
-    friend class ::JBMusicDownloadManager;
-
-    GetSongInfo(std::string songName, std::string artistName, int gdSongID);
 
 public:
-    std::string songName();
-    std::string artistName();
-    int gdSongID();
+    GetSongInfoData(const int gdId, std::string songName, std::string artistName) noexcept
+        : m_gdId(gdId), m_songName(std::move(songName)), m_artistName(std::move(artistName)) {}
+
+    [[nodiscard]] int gdId() const noexcept { return m_gdId; }
+    [[nodiscard]] std::string_view songName() const noexcept { return m_songName; }
+    [[nodiscard]] std::string_view artistName() const noexcept { return m_artistName; }
 };
 
-}  // namespace event
+struct GetSongInfo final : geode::GlobalEvent<GetSongInfo, bool(const GetSongInfoData&), int> {
+    using GlobalEvent::GlobalEvent;
+};
 
-}  // namespace jukebox
+}  // namespace jukebox::event
