@@ -604,7 +604,7 @@ void NongAddPopup::addSong(CCObject* target) {
 Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::string& artistName,
                                     const std::optional<std::string> levelName, int offset) {
     if (!m_localPath.has_value()) {
-        std::filesystem::path path = m_specialInput->getString();
+        std::filesystem::path path = std::string(std::move(m_specialInput->getString()));
         if (std::filesystem::exists(path)) {
             m_localPath = path;
         }
