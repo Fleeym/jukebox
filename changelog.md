@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.5.0-beta.1
+
+ * Port to Geometry Dash 2.2081 and Geode v5.0.0-beta.1
+ * Optimizations to song downloads and metadata fetching
+ * Optimizations to memory operations
+ * Updated Song File Hub discord link
+
 ## v3.4.0
 
  * Add a "Paste" button in `NongAddPopup` for mobile platforms

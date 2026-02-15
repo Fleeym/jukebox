@@ -1,13 +1,13 @@
 {
 	"geode": "5.0.0-beta.1",
-	"version": "3.4.0",
+	"version": "3.5.0-beta.1",
 	"id": "fleym.nongd",
 	"name": "Jukebox",
 	"gd": {
 		"win": "2.2081",
 		"mac": "2.2081",
-		"ios": "2.2074",
-		"android": "2.2074"
+		"ios": "2.2081",
+		"android": "2.2081"
 	},
 	"developers": [
 		"Fleym",
@@ -20,7 +20,7 @@
 		"source": "https://github.com/Fleeym/jukebox"
 	},
 	"issues": {
-		"info": "For any issues regarding this mod, send me a message on my discord: 'fleeym'. If you can, please give the level or song ID you are having problems with.",
+		"info": "For any issues regarding this mod, send me a message on my discord: 'fleeym', or open an issue on the project's GitHub. If you can, please give the level or song ID that you are having problems with.",
 		"url": "https://github.com/Fleeym/jukebox/issues"
 	},
 	"tags": [
