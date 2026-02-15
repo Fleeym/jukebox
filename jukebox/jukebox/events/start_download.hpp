@@ -19,8 +19,8 @@ public:
     [[nodiscard]] std::string_view uniqueID() const noexcept { return m_uniqueID; }
 };
 
-struct StartDownload : geode::SimpleEvent<StartDownload, const StartDownloadData&> {
-    using SimpleEvent::SimpleEvent;
+struct StartDownload : geode::Event<StartDownload, bool(const StartDownloadData&)> {
+    using Event::Event;
 };
 
 }  // namespace jukebox::event

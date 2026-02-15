@@ -20,8 +20,8 @@ public:
     [[nodiscard]] bool notifyUser() const noexcept { return m_notifyUser; }
 };
 
-struct SongError : geode::SimpleEvent<SongError, const SongErrorData&> {
-    using SimpleEvent::SimpleEvent;
+struct SongError : geode::Event<SongError, bool(const SongErrorData&)> {
+    using Event::Event;
 };
 
 }  // namespace jukebox::event

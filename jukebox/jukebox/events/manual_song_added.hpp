@@ -20,8 +20,8 @@ public:
 };
 
 struct ManualSongAdded final
-    : geode::SimpleEvent<ManualSongAdded, const ManualSongAddedData&> {
-    using SimpleEvent::SimpleEvent;
+    : geode::Event<ManualSongAdded, bool(const ManualSongAddedData&)> {
+    using Event::Event;
 };
 
 }  // namespace jukebox::event

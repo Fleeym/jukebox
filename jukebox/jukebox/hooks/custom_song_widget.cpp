@@ -177,7 +177,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         Nongs* nongs = opt.value();
 
-        object->m_unloaded;
         object->m_songName = nongs->active()->metadata()->name;
         object->m_artistName = nongs->active()->metadata()->artist;
     }

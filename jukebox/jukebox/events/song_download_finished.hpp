@@ -23,8 +23,8 @@ public:
     [[nodiscard]] Song* destination() const noexcept { return m_destination; }
 };
 
-struct SongDownloadFinished final : geode::SimpleEvent<SongDownloadFinished, const SongDownloadFinishedData&> {
-    using SimpleEvent::SimpleEvent;
+struct SongDownloadFinished final : geode::Event<SongDownloadFinished, bool(const SongDownloadFinishedData&)> {
+    using Event::Event;
 };
 
 }  // namespace jukebox::event

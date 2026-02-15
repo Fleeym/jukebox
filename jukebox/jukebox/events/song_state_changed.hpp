@@ -16,8 +16,8 @@ public:
     [[nodiscard]] Nongs* nongs() const noexcept { return m_nongs; }
 };
 
-struct SongStateChanged : geode::SimpleEvent<SongStateChanged, const SongStateChangedData&> {
-    using SimpleEvent::SimpleEvent;
+struct SongStateChanged : geode::Event<SongStateChanged, bool(const SongStateChangedData&)> {
+    using Event::Event;
 };
 
 }  // namespace jukebox::event
