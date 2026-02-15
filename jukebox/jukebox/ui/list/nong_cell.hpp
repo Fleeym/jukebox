@@ -3,8 +3,6 @@
 #include <optional>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/utils/cocos.hpp>
 
@@ -14,7 +12,6 @@
 #include <jukebox/events/song_download_progress.hpp>
 #include <jukebox/events/song_state_changed.hpp>
 #include <jukebox/nong/index.hpp>
-#include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/list/nong_cell_ui.hpp>
 
 namespace jukebox {
