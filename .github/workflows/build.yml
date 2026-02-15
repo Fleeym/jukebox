@@ -43,6 +43,7 @@ jobs:
         with:
           export-pdb: true
           combine: true
+          sdk: 'given'
           target: ${{ matrix.config.target }}
           ccache-variant: ccache
           build-config: ${{ matrix.config.build-type || 'Release' }}
