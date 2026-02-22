@@ -41,8 +41,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
         CCMenu* labelMenu = nullptr;
         CCMenu* pinMenu = nullptr;
         CCLabelBMFont* sizeIdLabel = nullptr;
-        std::string songIds = "";
-        std::string sfxIds = "";
+        std::string songIds;
+        std::string sfxIds;
         bool firstRun = true;
         bool searching = false;
         CCSprite* sprRays = nullptr;
@@ -133,7 +133,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
                     return ListenerResult::Propagate;
                 }
 
-                Song* active = event.nongs()->active();
+                const Song* active = event.nongs()->active();
 
                 m_songInfoObject->m_songName = active->metadata()->name;
                 m_songInfoObject->m_artistName = active->metadata()->artist;
@@ -146,18 +146,18 @@ class $modify(JBSongWidget, CustomSongWidget) {
         return true;
     }
 
-    void maybeChangeDownloadedMark(Nongs* nongs) {
-        if (m_songs.size() == 0) {
+    void maybeChangeDownloadedMark(const Nongs* nongs) {
+        if (m_songs.empty()) {
             return;
         }
 
-        std::optional optPath = nongs->active()->path();
+        const std::optional<std::filesystem::path> optPath = nongs->active()->path();
 
-        if (auto found = m_songs.find(nongs->songID()); found != m_songs.end()) {
+        if (const auto found = m_songs.find(nongs->songID()); found != m_songs.end()) {
             if (!optPath) {
                 found->second = false;
             } else {
-                found->second = std::filesystem::exists(optPath.value());
+                found->second = std::filesystem::exists(std::move(optPath).value());
             }
         }
     }
@@ -167,13 +167,13 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        std::optional<Nongs*> opt = NongManager::get().getNongs(object->m_songID);
+        const std::optional<Nongs*> opt = NongManager::get().getNongs(object->m_songID);
 
         if (!opt.has_value()) {
             return;
         }
 
-        Nongs* nongs = opt.value();
+        const Nongs* nongs = std::move(opt).value();
 
         object->m_songName = nongs->active()->metadata()->name;
         object->m_artistName = nongs->active()->metadata()->artist;
@@ -189,9 +189,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
         }
 
         if (!m_fields->nongs) {
-            auto res = NongManager::get().getNongs(m_songInfoObject->m_songID);
-            if (res) {
-                m_fields->nongs = res.value();
+            if (auto res = NongManager::get().getNongs(m_songInfoObject->m_songID)) {
+                m_fields->nongs = std::move(res).value();
                 this->createSongLabels(m_fields->nongs);
             }
         } else {
@@ -291,12 +290,12 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        if (m_songs.size() != 0) {
+        if (!m_songs.empty()) {
             this->getMultiAssetSongInfo();
         }
 
-        int id = obj->m_songID;
-        int adjustedId = NongManager::get().adjustSongID(obj->m_songID, m_isRobtopSong);
+        const int id = obj->m_songID;
+        const int adjustedId = NongManager::get().adjustSongID(obj->m_songID, m_isRobtopSong);
 
         if (adjustedId == 0) {
             this->restoreUI();
@@ -308,7 +307,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (!NongManager::get().hasSongID(adjustedId)) {
             Result<Nongs*> res = NongManager::get().initSongID(obj, id, m_isRobtopSong);
             if (res.isErr()) {
-                std::string err = res.unwrapErr();
+                std::string err = std::move(res).unwrapErr();
                 log::error("{}", err);
                 FLAlertLayer::create("Error",
                                      fmt::format("Failed to initialize Jukebox data for this "
@@ -319,9 +318,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
                     ->show();
                 this->restoreUI();
                 return;
-            } else {
-                nongs = res.unwrap();
             }
+            nongs = std::move(res).unwrap();
         } else {
             nongs = NongManager::get().getNongs(adjustedId).value();
         }
@@ -337,10 +335,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
         // m_showDownloadBtn, m_isRobtopSong, m_unkBool2, m_isMusicLibrary);
 
         if (m_fields->firstRun && m_isRobtopSong && m_songInfoObject) {
-            std::optional<Nongs*> opt =
-                NongManager::get().getNongs(NongManager::get().adjustSongID(m_songInfoObject->m_songID, true));
-            if (opt) {
-                Nongs* n = opt.value();
+            const int id = NongManager::get().adjustSongID(m_songInfoObject->m_songID, true);
+
+            if (const std::optional<Nongs*> opt = NongManager::get().getNongs(id)) {
+                const Nongs* n = std::move(opt).value();
 
                 m_songInfoObject->m_songName = n->active()->metadata()->name;
                 m_songInfoObject->m_artistName = n->active()->metadata()->artist;
@@ -377,7 +375,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        if (m_songs.size() == 0 && m_sfx.size() == 0) {
+        if (m_songs.empty() && m_sfx.empty()) {
             std::string label;
             if (m_isMusicLibrary) {
                 label = fmt::format("ID: {}  Size: {}MB", m_songInfoObject->m_songID, m_songInfoObject->m_fileSize);
@@ -416,7 +414,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void updateIdAndSizeLabel(Nongs* nongs) {
-        if (m_songs.size() > 0 || m_sfx.size() > 0) {
+        if (!m_songs.empty() || !m_sfx.empty()) {
             return;
         }
 
@@ -428,7 +426,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        std::filesystem::path activePath = activePathOpt.value();
+        const std::filesystem::path activePath = std::move(activePathOpt).value();
 
         std::string sizeText;
         if (std::filesystem::exists(activePath)) {
@@ -465,7 +463,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (m_songIDLabel != nullptr) {
             m_songIDLabel->setString(labelText.c_str());
         }
-        geode::cocos::handleTouchPriority(this);
     }
 
     void addPopupOpener(Nongs* nongs) {
@@ -485,12 +482,12 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->labelMenu = CCMenu::create();
             m_fields->labelMenu->setID("nong-menu"_spr);
             m_fields->labelMenu->ignoreAnchorPointForPosition(false);
+            m_fields->labelMenu->setTouchPriority(m_buttonMenu->getTouchPriority());
             CCLabelBMFont* label = CCLabelBMFont::create(active->metadata()->name.c_str(), "bigFont.fnt");
             label->setID("song-name-label"_spr);
             CCMenuItemSpriteExtra* btn =
                 CCMenuItemSpriteExtra::create(label, this, menu_selector(JBSongWidget::addNongLayer));
             btn->setID("nong-button"_spr);
-            float labelScale = label->getScale();
             m_fields->labelMenu->addChild(btn);
             m_fields->labelMenu->setAnchorPoint(m_songLabel->getAnchorPoint());
             m_fields->labelMenu->setContentSize(m_songLabel->getContentSize());
@@ -518,6 +515,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
             m_fields->pinMenu = CCMenu::create();
             m_fields->pinMenu->setID("nong-menu"_spr);
+            m_fields->pinMenu->setTouchPriority(m_buttonMenu->getTouchPriority());
 
             CCSprite* sprRays = CCSprite::createWithSpriteFrameName("JB_PinDiscRays.png"_spr);
             CCSprite* sprDisc = CCSprite::createWithSpriteFrameName("JB_PinDisc.png"_spr);
@@ -567,10 +565,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void addNongLayer(CCObject* target) {
-        if (m_songs.size() != 0) {
+        if (!m_songs.empty()) {
             this->getMultiAssetSongInfo();
         }
-        auto scene = CCDirector::sharedDirector()->getRunningScene();
         std::vector<int> ids;
         int id = m_songInfoObject->m_songID;
         if (m_isRobtopSong) {
@@ -588,6 +585,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
             ids.push_back(id);
         }
         auto layer = NongDropdownLayer::create(ids, this, id, this->getLevelID());
+
+        if (!layer) {
+            return;
+        }
+
         // based robtroll
         layer->setZOrder(106);
         layer->show();
@@ -600,14 +602,16 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
             return false;
         }
         if (Mod::get()->getSavedValue("show-tutorial", true) && GameManager::get()->m_levelEditorLayer == nullptr) {
-            auto popup = FLAlertLayer::create("Jukebox",
+            const auto popup = FLAlertLayer::create("Jukebox",
                                               "Thank you for using <co>Jukebox</c>! To "
                                               "begin swapping songs, click "
                                               "on the <cr>song name</c>!",
                                               "Ok");
-            Mod::get()->setSavedValue("show-tutorial", false);
-            popup->m_scene = this;
-            popup->show();
+            if (popup) {
+                Mod::get()->setSavedValue("show-tutorial", false);
+                popup->m_scene = this;
+                popup->show();
+            }
         }
         static_cast<JBSongWidget*>(this->m_songWidget)->setLevelID(m_level->m_levelID.value());
         return true;
