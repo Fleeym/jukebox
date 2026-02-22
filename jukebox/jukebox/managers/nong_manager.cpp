@@ -287,34 +287,25 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
     return Ok();
 }
 
-Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(
-    const std::filesystem::path& path) {
+Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(const std::filesystem::path& path) {
     auto stem = path.stem().string();
     GEODE_UNWRAP_INTO(int id, geode::utils::numFromString<int>(stem));
 
     if (id == 0) {
-        return Err(
-            fmt::format("Invalid filename {}", path.filename().string()));
+        return Err(fmt::format("Invalid filename {}", path.filename().string()));
     }
 
     std::ifstream input(path);
     if (!input.is_open()) {
-        return Err(
-            fmt::format("Couldn't open file: {}", path.filename().string()));
+        return Err(fmt::format("Couldn't open file: {}", path.filename().string()));
     }
 
-    GEODE_UNWRAP_INTO(matjson::Value json,
-                      matjson::parse(input).mapErr([id](std::string err) {
-                          return fmt::format(
-                              "Couldn't parse JSON from file: {}", err);
-                      }));
+    GEODE_UNWRAP_INTO(matjson::Value json, matjson::parse(input).mapErr([id](std::string err) {
+        return fmt::format("Couldn't parse JSON from file: {}", err);
+    }));
 
-    GEODE_UNWRAP_INTO(Nongs nongs,
-                      matjson::Serialize<Nongs>::fromJson(json, id).mapErr(
-                          [id](std::string err) {
-                              return fmt::format("Failed to parse JSON: {}",
-                                                 err);
-                          }));
+    GEODE_UNWRAP_INTO(Nongs nongs, matjson::Serialize<Nongs>::fromJson(json, id).mapErr(
+                                       [id](std::string err) { return fmt::format("Failed to parse JSON: {}", err); }));
 
     return Ok(std::make_unique<Nongs>(std::move(nongs)));
 }
@@ -335,11 +326,10 @@ std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
     return fmt::format("{:.2f}MB", toMegabytes);
 }
 
-arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std::string sfx) {
-    auto resources = std::filesystem::path(CCFileUtils::get()->getWritablePath2()) / "Resources";
-    auto songDir = std::filesystem::path(CCFileUtils::get()->getWritablePath());
-
-    double sum = 0.f;
+arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std::string sfx,
+                                                         const std::filesystem::path& resourcesDir,
+                                                         const std::filesystem::path& songDir) {
+    uintmax_t sum = 0.f;
     std::istringstream stream(songs);
     std::string s;
     while (std::getline(stream, s, ',')) {
@@ -355,7 +345,7 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         auto nongs = result.value();
         auto path = nongs->active()->path().value();
         if (path.string().starts_with("songs/")) {
-            path = resources / path;
+            path = resourcesDir / path;
         }
         if (std::filesystem::exists(path)) {
             sum += std::filesystem::file_size(path);
@@ -366,7 +356,7 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         std::stringstream ss;
         ss << "s" << s << ".ogg";
         std::string filename = ss.str();
-        auto localPath = resources / "sfx" / filename;
+        auto localPath = resourcesDir / "sfx" / filename;
         std::error_code _ec;
         if (std::filesystem::exists(localPath, _ec)) {
             sum += std::filesystem::file_size(localPath);
@@ -378,7 +368,7 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         }
     }
 
-    double toMegabytes = sum / 1024.f / 1024.f;
+    double toMegabytes = static_cast<double>(sum) / 1024.f / 1024.f;
     co_return fmt::format("{:.2f}MB", toMegabytes);
 }
 

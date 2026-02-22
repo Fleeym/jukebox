@@ -139,8 +139,12 @@ public:
      *
      * @param songs string of song ids, separated by commas
      * @param sfx string of sfx ids, separated by commas
+     * @param resourcesDir CCFileUtils::get()->getWritablePath2() / "Resources"
+     * @param songDir CCFileUtils::get()->getWritablePath()
      */
-    arc::Future<std::string> getMultiAssetSizes(std::string songs, std::string sfx);
+    arc::Future<std::string> getMultiAssetSizes(std::string songs, std::string sfx,
+                                                const std::filesystem::path& resourcesDir,
+                                                const std::filesystem::path& songDir);
 
     /**
      * Add actions needed to fix a broken song default

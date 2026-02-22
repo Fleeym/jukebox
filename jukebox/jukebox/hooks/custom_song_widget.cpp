@@ -242,7 +242,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        async::spawn(NongManager::get().getMultiAssetSizes(m_fields->songIds, m_fields->sfxIds),
+        const auto resources = std::filesystem::path(CCFileUtils::get()->getWritablePath2()) / "Resources";
+        const auto song = std::filesystem::path(CCFileUtils::get()->getWritablePath());
+
+        async::spawn(NongManager::get().getMultiAssetSizes(m_fields->songIds, m_fields->sfxIds, resources, song),
                      [this](std::string result) { this->onFixMultiAssetSizeFinished(std::move(result)); });
     }
 
