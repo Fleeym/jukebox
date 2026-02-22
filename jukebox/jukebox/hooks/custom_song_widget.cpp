@@ -24,7 +24,6 @@
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
-#include <Geode/utils/cocos.hpp>
 #include <ranges>
 
 #include <jukebox/events/song_state_changed.hpp>
@@ -105,43 +104,32 @@ class $modify(JBSongWidget, CustomSongWidget) {
                                     unk, isMusicLibrary, unkInt)) {
             return false;
         }
-        /*log::info("CSW INIT");*/
-        /*log::info("name: {}, artist: {}, url: {}, unknown: {}, id: {}",*/
-        /*          songInfo->m_songName, songInfo->m_artistName,*/
-        /*          songInfo->m_songUrl, songInfo->m_isUnknownSong,*/
-        /*          songInfo->m_songID);*/
-        /*log::info(*/
-        /*    "songselect {}, playmusic {}, download {}, robtop {}, unk {}, "*/
-        /*    "musiclib {}, int: {}",*/
-        /*    m_showSelectSongBtn, m_showPlayMusicBtn, m_showDownloadBtn,*/
-        /*    m_isRobtopSong, unk, m_isMusicLibrary, unkInt);*/
+
         this->setupJBSW();
         m_fields->firstRun = false;
 
-        this->addEventListener(
-            "CSW-song-state"_spr,
-            event::SongStateChanged(),
-            [this](const event::SongStateChangedData& event) {
-                if (!m_songInfoObject) {
-                    return ListenerResult::Propagate;
-                }
+        this->addEventListener("CSW-song-state"_spr, event::SongStateChanged(),
+                               [this](const event::SongStateChangedData& event) {
+                                   if (!m_songInfoObject) {
+                                       return ListenerResult::Propagate;
+                                   }
 
-                this->maybeChangeDownloadedMark(event.nongs());
+                                   this->maybeChangeDownloadedMark(event.nongs());
 
-                if (event.nongs()->songID() !=
-                    NongManager::get().adjustSongID(m_songInfoObject->m_songID, m_isRobtopSong)) {
-                    return ListenerResult::Propagate;
-                }
+                                   if (event.nongs()->songID() !=
+                                       NongManager::get().adjustSongID(m_songInfoObject->m_songID, m_isRobtopSong)) {
+                                       return ListenerResult::Propagate;
+                                   }
 
-                const Song* active = event.nongs()->active();
+                                   const Song* active = event.nongs()->active();
 
-                m_songInfoObject->m_songName = active->metadata()->name;
-                m_songInfoObject->m_artistName = active->metadata()->artist;
-                this->updateSongInfo();
-                this->fixMultiAssetSize();
+                                   m_songInfoObject->m_songName = active->metadata()->name;
+                                   m_songInfoObject->m_artistName = active->metadata()->artist;
+                                   this->updateSongInfo();
+                                   this->fixMultiAssetSize();
 
-                return ListenerResult::Propagate;
-            });
+                                   return ListenerResult::Propagate;
+                               });
 
         return true;
     }
@@ -226,8 +214,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
         std::string label;
 
         if (downloaded != total) {
-            label = fmt::format("Songs: {}  SFX: {}  Size: {} ({}/{})", m_songs.size(), m_sfx.size(), value,
-                                downloaded, total);
+            label = fmt::format("Songs: {}  SFX: {}  Size: {} ({}/{})", m_songs.size(), m_sfx.size(), value, downloaded,
+                                total);
         } else {
             label = fmt::format("Songs: {}  SFX: {}  Size: {}", m_songs.size(), m_sfx.size(), value);
         }
@@ -329,10 +317,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     void updateSongInfo() {
-        // log::info("update song object");
-        // log::info("songselect {}, playmusic {}, download {}, robtop {}, unk
-        // {}, musiclib {}", m_showSelectSongBtn, m_showPlayMusicBtn,
-        // m_showDownloadBtn, m_isRobtopSong, m_unkBool2, m_isMusicLibrary);
+        log::debug("update song object");
+        log::debug("songselect {}, playmusic {}, download {}, robtop {}, unk{}, musiclib {}", m_showSelectSongBtn,
+                   m_showPlayMusicBtn, m_showDownloadBtn, m_isRobtopSong, m_unkBool2, m_isMusicLibrary);
 
         if (m_fields->firstRun && m_isRobtopSong && m_songInfoObject) {
             const int id = NongManager::get().adjustSongID(m_songInfoObject->m_songID, true);
@@ -550,7 +537,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->pinMenu->ignoreAnchorPointForPosition(false);
             m_fields->pinMenu->addChildAtPosition(btnDisc, Anchor::Center);
             m_fields->pinMenu->setContentSize(btnDisc->getScaledContentSize());
-            m_fields->pinMenu->setLayout(AnchorLayout::create());
+            m_fields->pinMenu->setLayout(SimpleRowLayout::create());
 
             m_fields->pinMenu->setPosition(pos);
             this->addChild(m_fields->pinMenu);
@@ -564,7 +551,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->updateIdAndSizeLabel(nongs);
     }
 
-    void addNongLayer(CCObject* target) {
+    void addNongLayer(CCObject*) {
         if (!m_songs.empty()) {
             this->getMultiAssetSongInfo();
         }
@@ -584,13 +571,13 @@ class $modify(JBSongWidget, CustomSongWidget) {
         } else {
             ids.push_back(id);
         }
-        auto layer = NongDropdownLayer::create(ids, this, id, this->getLevelID());
 
+        const auto layer = NongDropdownLayer::create(ids, this, id, this->getLevelID());
         if (!layer) {
             return;
         }
 
-        // based robtroll
+        // Make sure the popup sits above any possible popups
         layer->setZOrder(106);
         layer->show();
     }
@@ -603,10 +590,10 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
         }
         if (Mod::get()->getSavedValue("show-tutorial", true) && GameManager::get()->m_levelEditorLayer == nullptr) {
             const auto popup = FLAlertLayer::create("Jukebox",
-                                              "Thank you for using <co>Jukebox</c>! To "
-                                              "begin swapping songs, click "
-                                              "on the <cr>song name</c>!",
-                                              "Ok");
+                                                    "Thank you for using <co>Jukebox</c>! To "
+                                                    "begin swapping songs, click "
+                                                    "on the <cr>disc icon above the song name</c>!",
+                                                    "Ok");
             if (popup) {
                 Mod::get()->setSavedValue("show-tutorial", false);
                 popup->m_scene = this;
