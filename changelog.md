@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.5.0-beta.2
+
+ * Bump Geode to v5.0.0-beta.4
+ * Fix a crash on Android
+
 ## v3.5.0-beta.1
 
  * Port to Geometry Dash 2.2081 and Geode v5.0.0-beta.1
