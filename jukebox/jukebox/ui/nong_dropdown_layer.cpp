@@ -259,13 +259,14 @@ void NongDropdownLayer::deleteAllNongs(CCObject*) {
                              return;
                          }
 
-                         int id = m_currentSongID.value();
+                         const int id = m_currentSongID.value();
                          if (auto err = NongManager::get().deleteAllSongs(id); err.isErr()) {
                              FLAlertLayer::create("Failed", fmt::format("Failed to delete nongs: {}", err.unwrapErr()),
                                                   "Ok")
                                  ->show();
                              return;
                          }
+                         this->createList();
                          FLAlertLayer::create("Success", "All nongs were deleted successfully!", "Ok")->show();
                      });
 }

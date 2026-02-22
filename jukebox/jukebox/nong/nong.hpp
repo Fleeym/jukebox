@@ -168,9 +168,9 @@ public:
      * Otherwise, returns ok
      */
     geode::Result<> setActive(const std::string& uniqueID);
-    geode::Result<> merge(Nongs&&) const;
+    geode::Result<> merge(Nongs&&);
     // Remove all custom nongs and set the default song as active
-    [[nodiscard]] geode::Result<> deleteAllSongs() const;
+    [[nodiscard]] geode::Result<> deleteAllSongs();
     [[nodiscard]] geode::Result<> deleteSong(const std::string& uniqueID, bool audio = true);
     [[nodiscard]] geode::Result<> deleteSongAudio(const std::string& uniqueID) const;
     [[nodiscard]] std::optional<Song*> findSong(const std::string& uniqueID) const;

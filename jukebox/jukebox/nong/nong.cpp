@@ -385,7 +385,7 @@ public:
         return Ok();
     }
 
-    Result<> deleteAllSongs() {
+    Result<> deleteAllSongs(Nongs* self) {
         for (std::unique_ptr<LocalSong>& local : m_locals) {
             this->deletePath(local->path());
         }
@@ -402,6 +402,7 @@ public:
         m_hosted.clear();
 
         m_active = m_default.get();
+        event::SongStateChanged().send(event::SongStateChangedData{self});
 
         return Ok();
     }
@@ -719,8 +720,8 @@ int Nongs::songID() const { return m_impl->songID(); }
 LocalSong* Nongs::defaultSong() const { return m_impl->defaultSong(); }
 Song* Nongs::active() const { return m_impl->active(); }
 Result<> Nongs::setActive(const std::string& uniqueID) { return m_impl->setActive(uniqueID, this); }
-Result<> Nongs::merge(Nongs&& other) const { return m_impl->merge(std::move(other)); }
-Result<> Nongs::deleteAllSongs() const { return m_impl->deleteAllSongs(); }
+Result<> Nongs::merge(Nongs&& other) { return m_impl->merge(std::move(other)); }
+Result<> Nongs::deleteAllSongs() { return m_impl->deleteAllSongs(this); }
 Result<> Nongs::deleteSong(const std::string& uniqueID, bool audio) {
     return m_impl->deleteSong(uniqueID, audio, this);
 }
