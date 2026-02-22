@@ -1,6 +1,5 @@
 #include <Geode/Result.hpp>
 #include <filesystem>
-#include <memory>
 #include <optional>
 #include <sstream>
 
@@ -10,7 +9,6 @@
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <ccTypes.h>
 #include <fmt/format.h>
 
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
@@ -24,7 +22,6 @@
 #include <Geode/loader/Mod.hpp>
 #include <Geode/modify/CustomSongWidget.hpp>  // IWYU pragma: keep
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
-#include <Geode/ui/GeodeUI.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/utils/cocos.hpp>
@@ -51,7 +48,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
         CCSprite* sprRays = nullptr;
         CCMenuItemSpriteExtra* btnDisc = nullptr;
         std::unordered_map<int, Nongs*> assetNongData;
-        ListenerHandle m_songStateListener;
         std::optional<int> levelID = std::nullopt;
     };
 
@@ -122,8 +118,10 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->setupJBSW();
         m_fields->firstRun = false;
 
-        m_fields->m_songStateListener =
-            event::SongStateChanged().listen([this](const event::SongStateChangedData& event) {
+        this->addEventListener(
+            "CSW-song-state"_spr,
+            event::SongStateChanged(),
+            [this](const event::SongStateChangedData& event) {
                 if (!m_songInfoObject) {
                     return ListenerResult::Propagate;
                 }

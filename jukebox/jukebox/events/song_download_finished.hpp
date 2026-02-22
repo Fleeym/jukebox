@@ -16,7 +16,7 @@ private:
     Song* m_destination;
 
 public:
-    SongDownloadFinishedData(const std::optional<index::IndexSongMetadata*> indexSource, Song* destination) noexcept
+    SongDownloadFinishedData(std::optional<index::IndexSongMetadata*> indexSource, Song* destination) noexcept
         : m_indexSource(indexSource), m_destination(destination) {}
 
     [[nodiscard]] std::optional<index::IndexSongMetadata*> indexSource() const noexcept { return m_indexSource; }

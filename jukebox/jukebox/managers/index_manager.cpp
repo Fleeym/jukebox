@@ -72,7 +72,7 @@ bool IndexManager::init() {
             const auto url = std::string(event.url());
             if (const auto& it = m_urlToIDs.find(url); it != m_urlToIDs.end()) {
                 const int gdId = std::get<int>(it->second);
-                const std::string uniqueID = std::get<std::string>(it->second);
+                auto uniqueID = std::get<std::string>(it->second);
                 event::SongDownloadProgress(gdId).send(
                     event::SongDownloadProgressData{gdId, std::move(uniqueID), event.progress()});
             }
@@ -389,7 +389,7 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         uniqueId = std::get<Song*>(source)->metadata()->uniqueID;
     }
 
-    if (data.size() == 0) {
+    if (data.empty()) {
         const std::string err = "Failed to store downloaded file. ByteVector empty.";
         log::error("{}", err);
         event::SongDownloadFailed(destination->songID())
