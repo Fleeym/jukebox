@@ -143,8 +143,8 @@ public:
      * @param songDir CCFileUtils::get()->getWritablePath()
      */
     arc::Future<std::string> getMultiAssetSizes(std::string songs, std::string sfx,
-                                                const std::filesystem::path& resourcesDir,
-                                                const std::filesystem::path& songDir);
+                                                std::filesystem::path resourcesDir,
+                                                std::filesystem::path songDir);
 
     /**
      * Add actions needed to fix a broken song default

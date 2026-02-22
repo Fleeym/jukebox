@@ -327,8 +327,8 @@ std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
 }
 
 arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std::string sfx,
-                                                         const std::filesystem::path& resourcesDir,
-                                                         const std::filesystem::path& songDir) {
+                                                         const std::filesystem::path resourcesDir,
+                                                         const std::filesystem::path songDir) {
     uintmax_t sum = 0.f;
     std::istringstream stream(songs);
     std::string s;
