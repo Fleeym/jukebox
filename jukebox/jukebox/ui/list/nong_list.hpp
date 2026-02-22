@@ -48,6 +48,8 @@ protected:
     geode::ListenerResult onDownloadFinish(const event::SongDownloadFinishedData& e);
     geode::ListenerResult onNongDeleted(const event::NongDeletedData& e);
     geode::ListenerResult onSongAdded(const event::ManualSongAddedData& e);
+    // This just moves the list up by 0.00001. That's it. Don't ask.
+    void updateLayoutAndFixWeirdDisplay() const;
 
 public:
     void scrollToTop();

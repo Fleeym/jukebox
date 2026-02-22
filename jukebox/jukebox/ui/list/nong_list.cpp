@@ -379,7 +379,7 @@ ListenerResult NongList::onDownloadFinish(const event::SongDownloadFinishedData&
         return ListenerResult::Propagate;
     }
 
-    Nongs* nongs = optNongs.value();
+    Nongs* nongs = std::move(optNongs).value();
 
     if (!nongs->findSong(e.destination()->metadata()->uniqueID)) {
         return ListenerResult::Propagate;
@@ -397,7 +397,7 @@ ListenerResult NongList::onDownloadFinish(const event::SongDownloadFinishedData&
         node->removeFromParentAndCleanup(true);
     }
 
-    m_list->m_contentLayer->updateLayout();
+    this->updateLayoutAndFixWeirdDisplay();
 
     return ListenerResult::Propagate;
 }
@@ -409,7 +409,7 @@ ListenerResult NongList::onNongDeleted(const event::NongDeletedData& e) {
 
     if (CCNode* found = m_list->m_contentLayer->getChildByID(e.uniqueId())) {
         found->removeFromParentAndCleanup(true);
-        m_list->m_contentLayer->updateLayout();
+        this->updateLayoutAndFixWeirdDisplay();
     }
 
     std::optional<Nongs*> optNongs = NongManager::get().getNongs(m_currentSong.value());
@@ -433,8 +433,9 @@ ListenerResult NongList::onNongDeleted(const event::NongDeletedData& e) {
         }
 
         this->addIndexSongToList(i, nongs);
-        m_list->m_contentLayer->updateLayout();
     }
+
+    this->updateLayoutAndFixWeirdDisplay();
 
     return ListenerResult::Propagate;
 }
@@ -451,8 +452,13 @@ ListenerResult NongList::onSongAdded(const event::ManualSongAddedData& e) {
         node->removeFromParentAndCleanup(true);
     }
 
-    m_list->m_contentLayer->updateLayout();
+    this->updateLayoutAndFixWeirdDisplay();
     return ListenerResult::Propagate;
+}
+
+void NongList::updateLayoutAndFixWeirdDisplay() const {
+    m_list->m_contentLayer->updateLayout();
+    m_list->m_contentLayer->setPositionY(m_list->m_contentLayer->getPositionY() + 0.00001f);
 }
 
 NongList* NongList::create(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
