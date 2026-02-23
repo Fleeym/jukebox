@@ -1,15 +1,14 @@
 # Changelog
 
-## v3.5.0-beta.2
+## v3.5.0
 
- * Bump Geode to v5.0.0-beta.4
- * Fix a crash on Android
-
-## v3.5.0-beta.1
-
- * Port to Geometry Dash 2.2081 and Geode v5.0.0-beta.1
+ * Port to Geometry Dash 2.2081 and Geode v5.0.0
  * Optimizations to song downloads and metadata fetching
  * Optimizations to memory operations
+ * Fix outdated tutorial
+ * Fix NONG list lines dissapearing after state update
+ * Fix "Delete all NONGs" button not updating UI properly
+ * Fix editor touch issues
  * Updated Song File Hub discord link
 
 ## v3.4.0
