@@ -527,7 +527,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->sprRays = sprRays;
             m_fields->btnDisc = btnDisc;
 
-            m_fields->pinMenu->addChildAtPosition(sprRays, Anchor::Center);
+            btnDisc->addChildAtPosition(sprRays, Anchor::Center);
 
             static constexpr float rotationDuration = 80.0f;
             CCRepeatForever* rotateAction = CCRepeatForever::create(CCRotateBy::create(rotationDuration, 360));
