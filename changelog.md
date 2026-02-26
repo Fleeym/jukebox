@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.5.1
+
+ * Fix featured song effect positioning
+
 ## v3.5.0
 
  * Port to Geometry Dash 2.2081 and Geode v5.0.0
