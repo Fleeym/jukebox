@@ -25,10 +25,8 @@ file(GLOB SOURCES
 	jukebox/jukebox/*.cpp
 )
 
-add_library(${PROJECT_NAME} SHARED ${SOURCES}
-        jukebox/jukebox/events/file_download_progress.hpp)
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC jukebox)
-
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
