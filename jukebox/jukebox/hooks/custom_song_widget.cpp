@@ -537,7 +537,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->pinMenu->ignoreAnchorPointForPosition(false);
             m_fields->pinMenu->addChildAtPosition(btnDisc, Anchor::Center);
             m_fields->pinMenu->setContentSize(btnDisc->getScaledContentSize());
-            m_fields->pinMenu->setLayout(SimpleRowLayout::create());
+            m_fields->pinMenu->setLayout(AnchorLayout::create());
 
             m_fields->pinMenu->setPosition(pos);
             this->addChild(m_fields->pinMenu);
