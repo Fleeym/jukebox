@@ -350,7 +350,20 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 CCSize NongAddPopup::getPopupSize() { return {320.f, 240.f}; }
 
 void NongAddPopup::openFile(CCObject* target) {
-    file::FilePickOptions::Filter filter = {.description = "Songs", .files = {"*.mp3", "*.flac", "*.wav", "*.ogg"}};
+    file::FilePickOptions::Filter filter = {
+        .description = "Songs",
+        .files = {
+            ".mp3", ".mp2",
+            ".ogg",
+            ".wav",
+            ".aiff", ".aif",
+            ".flac",
+            ".aac", ".m4a",
+            ".opus",
+            ".mid", ".midi",
+            ".mod", ".s3m", ".xm", ".it"
+        }
+    };
     file::FilePickOptions options = {std::nullopt, {filter}};
     async::spawn(file::pick(file::PickMode::OpenFile, options),
                  [this](Result<std::optional<std::filesystem::path>> result) { this->onFileOpen(std::move(result)); });
@@ -388,10 +401,9 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
     std::string extension = path.extension().string();
     std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
-    if (extension != ".mp3" && extension != ".ogg" && extension != ".wav" && extension != ".flac") {
+    if (!this->isPathValidSong(path)) {
         FLAlertLayer::create("Error",
-                             "The selected file must be one of the "
-                             "following: <cb>mp3, wav, flac, ogg</c>.",
+                             "The selected file is not a valid song",
                              "Ok")
             ->show();
         return;
@@ -626,16 +638,6 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
 
     std::string extension = path.extension().string();
 
-    // make the extension lowercase, who knows what people got on their
-    // computers
-    std::ranges::transform(extension, extension.begin(), [](const uint8_t c) { return std::tolower(c); });
-
-    if (extension != ".mp3" && extension != ".ogg" && extension != ".wav" && extension != ".flac") {
-        return Err(
-            "The selected file must be one of the "
-            "following: <cb>mp3, wav, flac, ogg</c>.");
-    }
-
     if (songName.empty()) {
         return Err("Song name is empty");
     }
@@ -816,6 +818,22 @@ geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const s
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
     }
     return Ok();
+}
+
+bool NongAddPopup::isPathValidSong(const std::filesystem::path& song) const {
+    const auto stringPath = string::pathToString(song);
+
+    FMOD::Sound* sound = nullptr;
+    const FMOD_RESULT result = FMODAudioEngine::sharedEngine()->m_system->createSound(
+        stringPath.c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound
+    );
+
+    if (result == FMOD_OK) {
+        sound->release();
+        return true;
+    }
+
+    return false;
 }
 
 std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::filesystem::path path) {
