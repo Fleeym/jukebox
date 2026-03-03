@@ -88,6 +88,7 @@ protected:
     void openFile(cocos2d::CCObject*);
     void addSong(cocos2d::CCObject*);
     void onPaste(cocos2d::CCObject*);
+    bool isPathValidSong(const std::filesystem::path& song) const;
     geode::Result<> addLocalSong(const std::string& songName, const std::string& artistName,
                                  std::optional<std::string> levelName, int offset);
     geode::Result<> addYTSong(const std::string& songName, const std::string& artistName,
