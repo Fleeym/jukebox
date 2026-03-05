@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include <asp/iter.hpp>
 #include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/LevelTools.hpp>
@@ -330,9 +331,9 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
                                                          const std::filesystem::path resourcesDir,
                                                          const std::filesystem::path songDir) {
     uintmax_t sum = 0.f;
-    std::istringstream stream(songs);
-    std::string s;
-    while (std::getline(stream, s, ',')) {
+    std::error_code _ec;
+
+    for (auto s : asp::iter::split(std::string_view(songs), ',')) {
         Result<int> idRes = geode::utils::numFromString<int>(s);
         if (idRes.isErr()) {
             continue;
@@ -343,32 +344,41 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
             continue;
         }
         auto nongs = result.value();
+        if (nongs->isDefaultActive()) {
+            auto songObj = co_await async::waitForMainThread<SongInfoObject*>([id]() {
+                return MusicDownloadManager::sharedState()->getSongInfoObject(id);
+            });
+            if (songObj && songObj.value() && songObj.value()->m_fileSize > 0.f) {
+                double filesizeMB = songObj.value()->m_fileSize;
+                sum += static_cast<uintmax_t>(filesizeMB * 1000000.f);
+                continue;
+            }
+        }
+
         auto path = nongs->active()->path().value();
         if (path.string().starts_with("songs/")) {
             path = resourcesDir / path;
         }
-        if (std::filesystem::exists(path)) {
-            sum += std::filesystem::file_size(path);
+        if (std::filesystem::exists(path, _ec)) {
+            sum += std::filesystem::file_size(path, _ec);
         }
     }
-    stream = std::istringstream(sfx);
-    while (std::getline(stream, s, ',')) {
-        std::stringstream ss;
-        ss << "s" << s << ".ogg";
-        std::string filename = ss.str();
+
+    for (auto s : asp::iter::split(std::string_view(sfx), ',')) {
+        std::string filename = fmt::format("s{}.ogg", s);
         auto localPath = resourcesDir / "sfx" / filename;
-        std::error_code _ec;
+
         if (std::filesystem::exists(localPath, _ec)) {
-            sum += std::filesystem::file_size(localPath);
+            sum += std::filesystem::file_size(localPath, _ec);
             continue;
         }
         auto path = songDir / filename;
         if (std::filesystem::exists(path, _ec)) {
-            sum += std::filesystem::file_size(path);
+            sum += std::filesystem::file_size(path, _ec);
         }
     }
 
-    double toMegabytes = static_cast<double>(sum) / 1024.f / 1024.f;
+    double toMegabytes = static_cast<double>(sum) / 1000000.f;
     co_return fmt::format("{:.2f}MB", toMegabytes);
 }
 

@@ -45,6 +45,9 @@ class $modify(JBSongWidget, CustomSongWidget) {
         bool firstRun = true;
         bool searching = false;
         CCSprite* sprRays = nullptr;
+        std::string lastMultiAssetValue;
+        bool isCalculatingMultiAssetSize = false;
+        bool enqueuedMultiAssetTask = false;
         CCMenuItemSpriteExtra* btnDisc = nullptr;
         std::unordered_map<int, Nongs*> assetNongData;
         std::optional<int> levelID = std::nullopt;
@@ -191,7 +194,17 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->fixMultiAssetSize();
     }
 
-    void onFixMultiAssetSizeFinished(std::string value) {
+    void onFixMultiAssetSizeFinished(std::string value, bool alterEnqueued = true) {
+        m_fields->lastMultiAssetValue = value;
+
+        if (alterEnqueued) {
+            m_fields->isCalculatingMultiAssetSize = false;
+            if (m_fields->enqueuedMultiAssetTask) {
+                m_fields->enqueuedMultiAssetTask = false;
+                this->fixMultiAssetSize();
+            }
+        }
+
         if (m_songIDLabel == nullptr) {
             return;
         }
@@ -220,7 +233,6 @@ class $modify(JBSongWidget, CustomSongWidget) {
             label = fmt::format("Songs: {}  SFX: {}  Size: {}", m_songs.size(), m_sfx.size(), value);
         }
 
-        log::debug("Setting multi asset size value: {}", value);
         m_songIDLabel->setString(label.c_str());
     }
 
@@ -230,8 +242,23 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
+        if (m_fields->isCalculatingMultiAssetSize) {
+            if (!m_fields->lastMultiAssetValue.empty()) {
+                this->onFixMultiAssetSizeFinished(m_fields->lastMultiAssetValue, false);
+            }
+
+            m_fields->enqueuedMultiAssetTask = true;
+            return;
+        }
+
         const auto resources = std::filesystem::path(CCFileUtils::get()->getWritablePath2()) / "Resources";
         const auto song = std::filesystem::path(CCFileUtils::get()->getWritablePath());
+
+        if (m_songIDLabel && !m_fields->lastMultiAssetValue.empty()) {
+            this->onFixMultiAssetSizeFinished(m_fields->lastMultiAssetValue, false);
+        }
+
+        m_fields->isCalculatingMultiAssetSize = true;
 
         async::spawn(NongManager::get().getMultiAssetSizes(m_fields->songIds, m_fields->sfxIds, resources, song),
                      [node = Ref(this)](std::string result) {node->onFixMultiAssetSizeFinished(std::move(result)); });
