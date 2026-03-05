@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.6.0
+
+ * Add support for most song formats (except .opus, which sadly isn't usable by GD)
+ * Optimize 0.0B fix a lot
+ * Optimize autocomplete metadata parsing
+ * Fix a crash that sometimes happened when loading a custom level screen
+ * Bump Geode to v5.3.0
+
 ## v3.5.1
 
  * Fix featured song effect positioning
