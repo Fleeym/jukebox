@@ -359,7 +359,6 @@ void NongAddPopup::openFile(CCObject* target) {
             "*.aiff", "*.aif",
             "*.flac",
             "*.aac", "*.m4a",
-            "*.opus",
             "*.mid", "*.midi",
             "*.mod", "*.s3m", "*.xm", "*.it"
         }
