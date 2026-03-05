@@ -353,15 +353,15 @@ void NongAddPopup::openFile(CCObject* target) {
     file::FilePickOptions::Filter filter = {
         .description = "Songs",
         .files = {
-            ".mp3", ".mp2",
-            ".ogg",
-            ".wav",
-            ".aiff", ".aif",
-            ".flac",
-            ".aac", ".m4a",
-            ".opus",
-            ".mid", ".midi",
-            ".mod", ".s3m", ".xm", ".it"
+            "*.mp3", "*.mp2",
+            "*.ogg",
+            "*.wav",
+            "*.aiff", "*.aif",
+            "*.flac",
+            "*.aac", "*.m4a",
+            "*.opus",
+            "*.mid", "*.midi",
+            "*.mod", "*.s3m", "*.xm", "*.it"
         }
     };
     file::FilePickOptions options = {std::nullopt, {filter}};
