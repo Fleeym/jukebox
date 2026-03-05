@@ -220,6 +220,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             label = fmt::format("Songs: {}  SFX: {}  Size: {}", m_songs.size(), m_sfx.size(), value);
         }
 
+        log::debug("Setting multi asset size value: {}", value);
         m_songIDLabel->setString(label.c_str());
     }
 
@@ -233,7 +234,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         const auto song = std::filesystem::path(CCFileUtils::get()->getWritablePath());
 
         async::spawn(NongManager::get().getMultiAssetSizes(m_fields->songIds, m_fields->sfxIds, resources, song),
-                     [this](std::string result) { this->onFixMultiAssetSizeFinished(std::move(result)); });
+                     [node = Ref(this)](std::string result) {node->onFixMultiAssetSizeFinished(std::move(result)); });
     }
 
     void restoreUI() {
