@@ -853,7 +853,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD::Sound* sound;
     FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
 
-    system->createSound(path.string().c_str(), FMOD_LOOP_NORMAL, nullptr, &sound);
+    system->createSound(path.string().c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
 
     if (!sound) {
         return std::nullopt;
