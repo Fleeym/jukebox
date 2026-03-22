@@ -34,6 +34,7 @@
 #include <jukebox/nong/index_serialize.hpp>
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/indexes_setting.hpp>
+#include <jukebox/utils/web.hpp>
 
 using namespace geode::prelude;
 using namespace jukebox::index;
@@ -229,10 +230,12 @@ Future<Result<>> IndexManager::fetchIndexes() {
 }
 
 Future<Result<matjson::Value>> IndexManager::fetchIndex(const IndexSource& index) {
-    const web::WebResponse response = co_await web::WebRequest().timeout(std::chrono::seconds(30)).get(index.m_url);
+    const web::WebResponse response = co_await web::WebRequest()
+        .timeout(std::chrono::seconds(30))
+        .get(index.m_url);
 
     if (!response.ok()) {
-        co_return Err(fmt::format("Web request failed. Status code: {}", response.code()));
+        co_return Err(utils::web::getErrorFromResponse(response));
     }
 
     ARC_CO_UNWRAP_INTO(matjson::Value jsonObj, response.json());

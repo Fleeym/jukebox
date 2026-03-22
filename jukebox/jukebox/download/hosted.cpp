@@ -8,6 +8,7 @@
 #include <Geode/utils/web.hpp>
 
 #include <jukebox/events/file_download_progress.hpp>
+#include <jukebox/utils/web.hpp>
 
 using namespace geode::prelude;
 
@@ -31,14 +32,10 @@ arc::Future<Result<ByteVector>> startHostedDownload(const std::string_view url) 
             .get(std::string(url));
 
     if (!response.ok()) {
-        if (response.code() == 502) {
-            co_return Err(
-                "Web request failed. Service is currently "
-                "unavailable or under maintenance. Please try "
-                "again later.");
-        }
+        std::string err = utils::web::getErrorFromResponse(response);
+        log::error("File download failed. Error: {}", err);
 
-        co_return Err(fmt::format("Web request failed. Status {}", response.code()));
+        co_return Err(std::move(err));
     }
 
     co_return Ok(std::move(response).data());
