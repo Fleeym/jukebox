@@ -483,7 +483,7 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
 }
 
 void IndexManager::registerIndexNongs(Nongs* destination) {
-    if (m_nongsForId.contains(destination->songID())) {
+    if (m_nongsForId.contains(!destination->songID())) {
         return;
     }
 
