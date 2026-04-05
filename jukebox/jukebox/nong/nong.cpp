@@ -17,8 +17,8 @@
 #include <Geode/utils/general.hpp>
 #include <matjson.hpp>
 
+#include <jukebox/download/cobalt.hpp>
 #include <jukebox/download/hosted.hpp>
-#include <jukebox/download/youtube.hpp>
 #include <jukebox/events/nong_deleted.hpp>
 #include <jukebox/events/song_state_changed.hpp>
 #include <jukebox/managers/nong_manager.hpp>

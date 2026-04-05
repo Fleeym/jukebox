@@ -58,6 +58,22 @@
 			"default": 60,
 			"min": 30
 		},
+		"cobalt-title": {
+			"name": "Cobalt",
+			"type": "title"
+		},
+		"cobalt-instance-url": {
+			"name": "cobalt instance URL",
+			"type": "string",
+			"description": "API URL for the <cb>cobalt</c> instance you want to use to download songs",
+			"default": ""
+		},
+		"cobalt-instance-api-key": {
+			"name": "cobalt instance API key",
+			"type": "string",
+			"description": "API key for the <cb>cobalt</c> instance you want to use to download songs (<co>only required if enforced by the instance owner</c>)",
+			"default": ""
+		},
 		"visual-title": {
 			"name": "Visual",
 			"type": "title"
