@@ -27,11 +27,8 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
         return MusicDownloadManager::pathForSong(id);
     }
     NongManager::get().m_currentlyPreparingNong = value;
-#ifdef GEODE_IS_WINDOWS
-    return geode::utils::string::wideToUtf8(active->path().value().c_str());
-#else
-    return active->path().value().string();
-#endif
+
+    return geode::utils::string::pathToString(active->path().value());
 }
 
 void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1, gd::string p2) {

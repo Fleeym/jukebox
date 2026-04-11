@@ -31,8 +31,7 @@ Future<Result<ByteVector>> startYoutubeDownload(const std::string& id) {
 
 Result<std::string> getUrlFromMetadataPayload(web::WebResponse r) {
     if (!r.ok()) {
-        return Err(fmt::format(
-            "cobalt metadata query failed with status code {}", r.code()));
+        return Err("cobalt metadata query failed with status code {}", r.code());
     }
 
     Result<matjson::Value> jsonRes = r.json();

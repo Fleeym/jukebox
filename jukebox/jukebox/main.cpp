@@ -9,12 +9,9 @@
 
 using namespace geode::prelude;
 
-$execute {
-    (void)Mod::get()->registerCustomSettingType("indexes",
-                                                &jukebox::IndexSetting::parse);
-}
+$execute { (void)Mod::get()->registerCustomSettingType("indexes", &jukebox::IndexSetting::parse); }
 
 $on_mod(Loaded) {
-    jukebox::NongManager::get().init();
     jukebox::IndexManager::get().init();
+    jukebox::NongManager::get().init();
 };

@@ -1,7 +1,7 @@
 #include <jukebox/managers/index_manager.hpp>
 
 #include <filesystem>
-#include <fstream>
+
 #include <functional>
 #include <ios>
 #include <memory>
@@ -17,6 +17,7 @@
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/utils/file.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/web.hpp>
 #include <arc/future/Future.hpp>
@@ -49,7 +50,6 @@ bool IndexManager::init() {
 
     if (const std::filesystem::path path = this->baseIndexesPath(); !std::filesystem::exists(path)) {
         std::filesystem::create_directory(path);
-        return true;
     }
 
     async::spawn(this->fetchIndexes(), [](Result<> result) {
@@ -99,12 +99,7 @@ Result<> IndexManager::loadIndex(std::filesystem::path path) {
         return Err("Index file does not exist");
     }
 
-    std::ifstream input(path);
-    if (!input.is_open()) {
-        return Err(fmt::format("Couldn't open file: {}", path.filename().string()));
-    }
-
-    GEODE_UNWRAP_INTO(matjson::Value jsonObj, matjson::parse(input));
+    GEODE_UNWRAP_INTO(matjson::Value jsonObj, geode::utils::file::readJson(path));
 
     return this->loadIndex(std::move(jsonObj));
 }
@@ -230,9 +225,7 @@ Future<Result<>> IndexManager::fetchIndexes() {
 }
 
 Future<Result<matjson::Value>> IndexManager::fetchIndex(const IndexSource& index) {
-    const web::WebResponse response = co_await web::WebRequest()
-        .timeout(std::chrono::seconds(30))
-        .get(index.m_url);
+    const web::WebResponse response = co_await web::WebRequest().timeout(std::chrono::seconds(30)).get(index.m_url);
 
     if (!response.ok()) {
         co_return Err(utils::web::getErrorFromResponse(response));

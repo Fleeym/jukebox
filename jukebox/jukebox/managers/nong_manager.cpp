@@ -9,14 +9,14 @@
 #include <unordered_map>
 #include <utility>
 
-#include <asp/iter.hpp>
 #include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Log.hpp>
-#include <Geode/utils/general.hpp>
+#include <Geode/utils/file.hpp>
+#include <asp/iter.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/compat/compat.hpp>
@@ -190,7 +190,7 @@ bool NongManager::init() {
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
             log::error("Failed to read file {}: {}", entry.path().filename(), res.unwrapErr());
-            std::filesystem::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename().string()));
+            std::filesystem::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename()));
             continue;
         }
 
@@ -289,19 +289,14 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
 }
 
 Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(const std::filesystem::path& path) {
-    auto stem = path.stem().string();
+    auto stem = string::pathToString(path.stem());
     GEODE_UNWRAP_INTO(int id, geode::utils::numFromString<int>(stem));
 
     if (id == 0) {
-        return Err(fmt::format("Invalid filename {}", path.filename().string()));
+        return Err("Invalid filename {}", path.filename());
     }
 
-    std::ifstream input(path);
-    if (!input.is_open()) {
-        return Err(fmt::format("Couldn't open file: {}", path.filename().string()));
-    }
-
-    GEODE_UNWRAP_INTO(matjson::Value json, matjson::parse(input).mapErr([id](std::string err) {
+    GEODE_UNWRAP_INTO(matjson::Value json, geode::utils::file::readJson(path).mapErr([id](std::string err) {
         return fmt::format("Couldn't parse JSON from file: {}", err);
     }));
 
@@ -345,9 +340,8 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         }
         auto nongs = result.value();
         if (nongs->isDefaultActive()) {
-            auto songObj = co_await async::waitForMainThread<SongInfoObject*>([id]() {
-                return MusicDownloadManager::sharedState()->getSongInfoObject(id);
-            });
+            auto songObj = co_await async::waitForMainThread<SongInfoObject*>(
+                [id]() { return MusicDownloadManager::sharedState()->getSongInfoObject(id); });
             if (songObj && songObj.value() && songObj.value()->m_fileSize > 0.f) {
                 double filesizeMB = songObj.value()->m_fileSize;
                 sum += static_cast<uintmax_t>(filesizeMB * 1000000.f);
@@ -356,7 +350,7 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         }
 
         auto path = nongs->active()->path().value();
-        if (path.string().starts_with("songs/")) {
+        if (string::pathToString(path).starts_with("songs/")) {
             path = resourcesDir / path;
         }
         if (std::filesystem::exists(path, _ec)) {

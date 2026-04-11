@@ -28,10 +28,7 @@ class $modify(GJGameLevel) {
             return GJGameLevel::getAudioFileName();
         }
         jukebox::NongManager::get().m_currentlyPreparingNong = res.value();
-#ifdef GEODE_IS_WINDOWS
-        return geode::utils::string::wideToUtf8(active->path().value().c_str());
-#else
-        return active->path().value().string();
-#endif
+
+        return geode::utils::string::pathToString(active->path().value());
     }
 };

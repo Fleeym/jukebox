@@ -288,7 +288,7 @@ public:
 
         std::ofstream output(path);
         if (!output.is_open()) {
-            return Err(fmt::format("Couldn't open file: {}", path));
+            return Err("Couldn't open file: {}", path);
         }
 
         output << json.dump(matjson::NO_INDENTATION);
@@ -554,7 +554,7 @@ public:
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
-            return Err(fmt::format("NONG ID {} not found", id));
+            return Err("NONG ID {} not found", id);
         }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
@@ -578,7 +578,7 @@ public:
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
-            return Err(fmt::format("NONG ID {} not found", id));
+            return Err("NONG ID {} not found", id);
         }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
@@ -604,7 +604,7 @@ public:
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
-            return Err(fmt::format("NONG ID {} not found", id));
+            return Err("NONG ID {} not found", id);
         }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
