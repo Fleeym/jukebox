@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.7.0
+
+* Added nong search text entry!
+
 ## v3.6.2
 
  * Fix index songs not loading on newly initialized song IDs

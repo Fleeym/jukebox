@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <GUI/CCControlExtension/CCScale9Sprite.h>
@@ -11,6 +12,7 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
+#include <Geode/ui/TextInput.hpp>
 
 #include <jukebox/events/manual_song_added.hpp>
 #include <jukebox/events/nong_deleted.hpp>
@@ -39,8 +41,14 @@ protected:
     geode::ListenerHandle m_nongDeletedListener;
     geode::ListenerHandle m_nongAddedListener;
 
+    // Search input shown in single-song view
+    geode::Ref<geode::TextInput> m_searchInput = nullptr;
+    std::string m_searchQuery = "";
+
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
+    // Height reserved for the search bar
+    static constexpr float s_searchBarHeight = 30.0f;
 
     void addNoLocalSongsNotice(bool liveInsert = false);
     void addSongToList(Song* nong, Nongs* parent, bool liveInsert = false);
@@ -50,6 +58,9 @@ protected:
     geode::ListenerResult onSongAdded(const event::ManualSongAddedData& e);
     // This just moves the list up by 0.00001. That's it. Don't ask.
     void updateLayoutAndFixWeirdDisplay() const;
+
+    // return true if the given name passes the current search filter
+    bool matchesSearch(const std::string& name) const;
 
 public:
     void scrollToTop();
