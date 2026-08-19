@@ -31,7 +31,7 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::optional<int> levelID,
-                    std::function<void(std::optional<int>)> onListTypeChange) {
+                    geode::Function<void(std::optional<int>)> onListTypeChange) {
     if (!CCNode::init()) {
         return false;
     }
@@ -321,7 +321,7 @@ void NongList::addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent)
 void NongList::addNoLocalSongsNotice(bool liveInsert) {
     geode::Label* label = geode::Label::create("You have no stored nongs :(", "bigFont.fnt");
     label->setID("no-local-songs");
-    label->limitLabelWidth(150.0f, 0.7f, 0.1f);
+    label->setLimitLabelWidth(150.0f, 0.7f, 0.1f);
 
     if (!liveInsert) {
         m_list->m_contentLayer->addChild(label);
@@ -461,7 +461,7 @@ void NongList::updateLayoutAndFixWeirdDisplay() const {
 }
 
 NongList* NongList::create(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-                           std::function<void(std::optional<int>)> onListTypeChange) {
+                           geode::Function<void(std::optional<int>)> onListTypeChange) {
     auto ret = new NongList();
     if (ret->init(std::move(songIds), size, levelID, std::move(onListTypeChange))) {
         ret->autorelease();

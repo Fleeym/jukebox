@@ -17,7 +17,7 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, std::function<void()> onDelete,
+bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete,
                      CCSize const& size) {
     if (!CCNode::init()) {
         return false;
@@ -116,7 +116,7 @@ void IndexCell::onToggle(CCObject*) {
 
 void IndexCell::onDelete(CCObject*) { m_onDelete(); }
 
-IndexCell* IndexCell::create(IndexesPopup* parentPopup, IndexSource* index, std::function<void()> onDelete,
+IndexCell* IndexCell::create(IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete,
                              CCSize const& size) {
     auto ret = new IndexCell();
     if (ret->init(parentPopup, index, std::move(onDelete), size)) {

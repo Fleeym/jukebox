@@ -14,7 +14,7 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size, std::function<void()> selectCallback) {
+bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size, geode::Function<void()> selectCallback) {
     if (!CCNode::init()) {
         return false;
     }
@@ -34,13 +34,13 @@ bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size, std::fun
 
     auto label = geode::Label::create(songInfo->name, "bigFont.fnt");
     label->setAnchorPoint(ccp(0, 0.5f));
-    label->limitLabelWidth(240.f, 0.8f, 0.1f);
+    label->setLimitLabelWidth(240.f, 0.8f, 0.1f);
     label->setPosition(ccp(12.f, 40.f));
     this->addChild(label);
     m_songNameLabel = label;
     auto author = geode::Label::create(songInfo->artist, "goldFont.fnt");
     author->setAnchorPoint(ccp(0, 0.5f));
-    author->limitLabelWidth(260.f, 0.6f, 0.1f);
+    author->setLimitLabelWidth(260.f, 0.6f, 0.1f);
     author->setPosition(ccp(12.f, 15.f));
     m_authorNameLabel = author;
     this->addChild(author);

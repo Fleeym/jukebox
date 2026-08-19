@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>
-#include <functional>
+#include <Geode/utils/function.hpp>
 #include <memory>
 #include <optional>
 #include <regex>
@@ -66,14 +66,14 @@ std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
 
 class IndexDisclaimerPopup : public FLAlertLayer, public FLAlertLayerProtocol {
 protected:
-    std::function<void(FLAlertLayer*, bool)> m_selected;
+    geode::Function<void(FLAlertLayer*, bool)> m_selected;
 
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override { m_selected(layer, btn2); }
 
 public:
     static IndexDisclaimerPopup* create(char const* title, std::string const& content, char const* btn1,
                                         char const* btn2, float width,
-                                        std::function<void(FLAlertLayer*, bool)> selected) {
+                                        geode::Function<void(FLAlertLayer*, bool)> selected) {
         auto inst = new IndexDisclaimerPopup();
         inst->m_selected = std::move(selected);
         if (inst->init(inst, title, content, btn1, btn2, width, true, .0f, 1.0f)) {
@@ -281,7 +281,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
     if (edit->metadata()->level.has_value()) {
         m_levelNameInput->setString(edit->metadata()->level.value());
     }
-    m_startOffsetInput->setString(std::to_string(edit->metadata()->startOffset));
+    m_startOffsetInput->setString(fmt::to_string(edit->metadata()->startOffset));
 
     switch (edit->type()) {
         case NongType::LOCAL:
@@ -562,7 +562,8 @@ void NongAddPopup::onPublish(CCObject* target) {
         if (submit.m_preSubmitMessage.has_value()) {
             const auto popup =
                 IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(),
-                                             submit.m_preSubmitMessage.value(), "Back", "Continue", 420.f, submitFunc);
+                                             submit.m_preSubmitMessage.value(), "Back", "Continue", 420.f,
+                                             std::move(submitFunc));
             if (popup) {
                 popup->m_scene = this;
                 popup->show();

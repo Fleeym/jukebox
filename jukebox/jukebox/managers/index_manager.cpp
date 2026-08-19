@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include <functional>
+#include <Geode/utils/function.hpp>
 #include <ios>
 #include <memory>
 #include <optional>
@@ -432,7 +433,7 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
 
     auto metadata = std::get<IndexSongMetadata*>(source);
 
-    const std::function<void(std::string)> orElse = [destination, uniqueId, path](std::string err) {
+    geode::Function<void(std::string)> orElse = [destination, uniqueId, path](std::string err) {
         const std::string print = fmt::format("Couldn't store index song. {}", err);
         log::error("{}", print);
         event::SongDownloadFailed(destination->songID())

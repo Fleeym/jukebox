@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 #include <optional>
 #include <vector>
 
@@ -33,7 +33,7 @@ protected:
 
     geode::Ref<CCMenuItemSpriteExtra> m_backBtn = nullptr;
 
-    std::function<void(std::optional<int>)> m_onListTypeChange;
+    geode::Function<void(std::optional<int>)> m_onListTypeChange;
 
     geode::ListenerHandle m_downloadFinishedListener;
     geode::ListenerHandle m_nongDeletedListener;
@@ -59,11 +59,11 @@ public:
     void onSelectSong(int songId);
 
     static NongList* create(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-                            std::function<void(std::optional<int>)> onListTypeChange = {});
+                            geode::Function<void(std::optional<int>)> onListTypeChange = {});
 
 protected:
     bool init(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-              std::function<void(std::optional<int>)> onListTypeChange = {});
+              geode::Function<void(std::optional<int>)> onListTypeChange = {});
 };
 
 }  // namespace jukebox

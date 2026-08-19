@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 
 #include <Geode/ui/Label.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
@@ -31,8 +31,8 @@ protected:
     cocos2d::CCMenu* m_downloadProgressContainer = nullptr;
     cocos2d::CCProgressTimer* m_downloadProgressTimer = nullptr;
 
-    bool init(const cocos2d::CCSize& size, std::function<void()> onSelect, std::function<void()> onTrash,
-              std::function<void()> onFixDefault, std::function<void()> onDownload, std::function<void()> onEdit);
+    bool init(const cocos2d::CCSize& size, geode::Function<void()> onSelect, geode::Function<void()> onTrash,
+              geode::Function<void()> onFixDefault, geode::Function<void()> onDownload, geode::Function<void()> onEdit);
 
 public:
     std::string m_songName = "None";
@@ -41,11 +41,11 @@ public:
 
     cocos2d::CCSize m_size;
 
-    std::function<void()> m_onSelect;
-    std::function<void()> m_onTrash;
-    std::function<void()> m_onFixDefault;
-    std::function<void()> m_onDownload;
-    std::function<void()> m_onEdit;
+    geode::Function<void()> m_onSelect;
+    geode::Function<void()> m_onTrash;
+    geode::Function<void()> m_onFixDefault;
+    geode::Function<void()> m_onDownload;
+    geode::Function<void()> m_onEdit;
 
     bool m_showSelectButton = false;
     bool m_showTrashButton = false;
@@ -59,9 +59,9 @@ public:
     bool m_isDownloading = 0;
     float m_downloadProgress = 0;
 
-    static NongCellUI* create(const cocos2d::CCSize& size, std::function<void()> onSelect,
-                              std::function<void()> onTrash, std::function<void()> onFixDefault,
-                              std::function<void()> onDownload, std::function<void()> onEdit);
+    static NongCellUI* create(const cocos2d::CCSize& size, geode::Function<void()> onSelect,
+                              geode::Function<void()> onTrash, geode::Function<void()> onFixDefault,
+                              geode::Function<void()> onDownload, geode::Function<void()> onEdit);
 
     void build();
     void buildOnlyDownloadProgress();

@@ -16,7 +16,7 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool IndexChoosePopup::init(std::vector<std::string> indexIDs,
-                            std::function<void(const std::string& indexID)> chooseIndex) {
+                            geode::Function<void(const std::string& indexID)> chooseIndex) {
     if (!Popup::init(280.0f, 80.0f)) {
         return false;
     }
@@ -41,7 +41,7 @@ bool IndexChoosePopup::init(std::vector<std::string> indexIDs,
 
     auto label = geode::Label::create("", "bigFont.fnt");
     m_label = label;
-    label->limitLabelWidth(switchMenu->getContentWidth() - 10.f, 0.8f, 0.1f);
+    label->setLimitLabelWidth(switchMenu->getContentWidth() - 10.f, 0.8f, 0.1f);
     label->setID("index-name");
     auto labelMenu = CCMenu::create();
     labelMenu->addChild(label);
@@ -104,7 +104,7 @@ void IndexChoosePopup::onOK(CCObject*) {
 }
 
 IndexChoosePopup* IndexChoosePopup::create(std::vector<std::string> indexIDs,
-                                           std::function<void(const std::string&)> setIndexesCallback) {
+                                           geode::Function<void(const std::string&)> setIndexesCallback) {
     auto ret = new IndexChoosePopup();
     if (ret->init(std::move(indexIDs), std::move(setIndexesCallback))) {
         ret->autorelease();

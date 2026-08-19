@@ -19,9 +19,9 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool NongCellUI::init(const cocos2d::CCSize& size, std::function<void()> onSelect, std::function<void()> onTrash,
-                      std::function<void()> onFixDefault, std::function<void()> onDownload,
-                      std::function<void()> onEdit) {
+bool NongCellUI::init(const cocos2d::CCSize& size, geode::Function<void()> onSelect, geode::Function<void()> onTrash,
+                      geode::Function<void()> onFixDefault, geode::Function<void()> onDownload,
+                      geode::Function<void()> onEdit) {
     if (!CCNode::init()) {
         return false;
     }
@@ -259,9 +259,9 @@ void NongCellUI::onFixDefault(CCObject*) { m_onFixDefault(); }
 void NongCellUI::onDownload(CCObject*) { m_onDownload(); }
 void NongCellUI::onEdit(CCObject*) { m_onEdit(); }
 
-NongCellUI* NongCellUI::create(const cocos2d::CCSize& size, std::function<void()> onSelect,
-                               std::function<void()> onTrash, std::function<void()> onFixDefault,
-                               std::function<void()> onDownload, std::function<void()> onEdit) {
+NongCellUI* NongCellUI::create(const cocos2d::CCSize& size, geode::Function<void()> onSelect,
+                               geode::Function<void()> onTrash, geode::Function<void()> onFixDefault,
+                               geode::Function<void()> onDownload, geode::Function<void()> onEdit) {
     auto ret = new NongCellUI();
     if (ret->init(size, std::move(onSelect), std::move(onTrash), std::move(onFixDefault), std::move(onDownload),
                   std::move(onEdit))) {

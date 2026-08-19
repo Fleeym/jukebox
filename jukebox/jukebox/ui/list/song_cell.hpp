@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
@@ -22,13 +22,13 @@ protected:
     geode::Ref<geode::Label> m_songIDLabel;
     int m_songID = 0;
 
-    std::function<void()> m_callback;
+    geode::Function<void()> m_callback;
 
-    bool init(int id, SongMetadata* songInfo, const cocos2d::CCSize& size, std::function<void()> selectCallback);
+    bool init(int id, SongMetadata* songInfo, const cocos2d::CCSize& size, geode::Function<void()> selectCallback);
 
 public:
     static SongCell* create(int id, SongMetadata* songInfo, const cocos2d::CCSize& size,
-                            std::function<void()> selectCallback) {
+                            geode::Function<void()> selectCallback) {
         auto ret = new SongCell();
         if (ret->init(id, songInfo, size, std::move(selectCallback))) {
             return ret;
