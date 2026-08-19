@@ -1,8 +1,8 @@
 #include <jukebox/ui/list/song_cell.hpp>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/cocos/cocoa/CCGeometry.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <ccTypes.h>
 #include <fmt/format.h>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
@@ -25,26 +25,26 @@ bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size, std::fun
     this->setContentSize(size);
     this->setAnchorPoint(CCPoint{0.5f, 0.5f});
 
-    auto bg = CCScale9Sprite::create("square02b_001.png");
+    auto bg = NineSlice::create("square02b_001.png");
     bg->setColor({0, 0, 0});
     bg->setOpacity(75);
     bg->setScale(0.3f);
     bg->setContentSize(size / bg->getScale());
     this->addChildAtPosition(bg, Anchor::Center);
 
-    auto label = CCLabelBMFont::create(songInfo->name.c_str(), "bigFont.fnt");
+    auto label = geode::Label::create(songInfo->name, "bigFont.fnt");
     label->setAnchorPoint(ccp(0, 0.5f));
     label->limitLabelWidth(240.f, 0.8f, 0.1f);
     label->setPosition(ccp(12.f, 40.f));
     this->addChild(label);
     m_songNameLabel = label;
-    auto author = CCLabelBMFont::create(songInfo->artist.c_str(), "goldFont.fnt");
+    auto author = geode::Label::create(songInfo->artist, "goldFont.fnt");
     author->setAnchorPoint(ccp(0, 0.5f));
     author->limitLabelWidth(260.f, 0.6f, 0.1f);
     author->setPosition(ccp(12.f, 15.f));
     m_authorNameLabel = author;
     this->addChild(author);
-    auto idLabel = CCLabelBMFont::create(fmt::format("#{}", id).c_str(), "chatFont.fnt");
+    auto idLabel = geode::Label::create(fmt::format("#{}", id), "chatFont.fnt");
     idLabel->setPosition({size.width - 5.f, 0 + 3.f});
     idLabel->setAnchorPoint({1.0f, 0.0f});
     idLabel->setColor(ccColor3B{230, 230, 230});

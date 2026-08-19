@@ -24,6 +24,7 @@
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/binding/FMODAudioEngine.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
@@ -98,7 +99,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     if (replacedNong.has_value() && replacedNong.value()->type() == NongType::YOUTUBE) {
         m_mainLayer->addChildAtPosition(
-            CCLabelBMFont::create("Sorry, YouTube songs are not available at the moment.", "bigFont.fnt"),
+            geode::Label::create("Sorry, YouTube songs are not available at the moment.", "bigFont.fnt"),
             Anchor::Center);
         return true;
     }
@@ -397,7 +398,7 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
     auto path = pathOpt.value();
 
     std::string strPath = string::pathToString(path);
-    std::string extension = path.extension().string();
+    std::string extension = string::pathToString(path.extension());
     std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
     if (!this->isPathValidSong(path)) {

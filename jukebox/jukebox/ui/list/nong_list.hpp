@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
@@ -27,7 +27,7 @@ public:
 protected:
     std::vector<int> m_songIds;
     geode::Ref<geode::ScrollLayer> m_list = nullptr;
-    geode::Ref<cocos2d::extension::CCScale9Sprite> m_bg = nullptr;
+    geode::Ref<geode::NineSlice> m_bg = nullptr;
     std::optional<int> m_currentSong = std::nullopt;
     std::optional<int> m_levelID;
 

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/ui/Popup.hpp>
 
 namespace jukebox {
@@ -14,7 +14,7 @@ class IndexChoosePopup : public geode::Popup {
 protected:
     std::vector<std::string> m_indexIDs;
     std::function<void(const std::string& indexID)> m_chooseIndex;
-    cocos2d::CCLabelBMFont* m_label = nullptr;
+    geode::Label* m_label = nullptr;
     int m_currentIndex = 0;
 
     bool init(std::vector<std::string> indexIDs, std::function<void(const std::string& indexID)> chooseIndex);

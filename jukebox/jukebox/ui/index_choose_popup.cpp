@@ -3,7 +3,7 @@
 #include <optional>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
@@ -39,7 +39,7 @@ bool IndexChoosePopup::init(std::vector<std::string> indexIDs,
     spriteRight->setScale(1.5);
     auto btnRight = CCMenuItemSpriteExtra::create(spriteRight, this, menu_selector(IndexChoosePopup::onRight));
 
-    auto label = CCLabelBMFont::create("", "bigFont.fnt");
+    auto label = geode::Label::create("", "bigFont.fnt");
     m_label = label;
     label->limitLabelWidth(switchMenu->getContentWidth() - 10.f, 0.8f, 0.1f);
     label->setID("index-name");

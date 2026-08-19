@@ -7,6 +7,7 @@
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
 
@@ -31,7 +32,7 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, std::functio
     this->setContentSize(size);
     this->setAnchorPoint(CCPoint{0.5f, 0.5f});
 
-    auto bg = CCScale9Sprite::create("square02b_001.png");
+    auto bg = NineSlice::create("square02b_001.png");
     bg->setColor({0, 0, 0});
     bg->setOpacity(75);
     bg->setScale(0.3f);

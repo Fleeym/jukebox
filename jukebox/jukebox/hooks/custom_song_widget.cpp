@@ -6,7 +6,7 @@
 #include <Geode/cocos/actions/CCActionInterval.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <fmt/format.h>
@@ -39,7 +39,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         Nongs* nongs = nullptr;
         CCMenu* labelMenu = nullptr;
         CCMenu* pinMenu = nullptr;
-        CCLabelBMFont* sizeIdLabel = nullptr;
+        geode::Label* sizeIdLabel = nullptr;
         std::string songIds;
         std::string sfxIds;
         bool firstRun = true;
@@ -498,7 +498,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->labelMenu->setID("nong-menu"_spr);
             m_fields->labelMenu->ignoreAnchorPointForPosition(false);
             m_fields->labelMenu->setTouchPriority(m_buttonMenu->getTouchPriority());
-            CCLabelBMFont* label = CCLabelBMFont::create(active->metadata()->name.c_str(), "bigFont.fnt");
+            geode::Label* label = geode::Label::create(active->metadata()->name, "bigFont.fnt");
             label->setID("song-name-label"_spr);
             CCMenuItemSpriteExtra* btn =
                 CCMenuItemSpriteExtra::create(label, this, menu_selector(JBSongWidget::addNongLayer));

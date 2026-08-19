@@ -5,7 +5,7 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/utils/cocos.hpp>
 
 #include <jukebox/nong/nong.hpp>
@@ -17,9 +17,9 @@ class NongDropdownLayer;
 class SongCell : public cocos2d::CCNode {
 protected:
     SongMetadata* m_active = nullptr;
-    geode::Ref<cocos2d::CCLabelBMFont> m_songNameLabel;
-    geode::Ref<cocos2d::CCLabelBMFont> m_authorNameLabel;
-    geode::Ref<cocos2d::CCLabelBMFont> m_songIDLabel;
+    geode::Ref<geode::Label> m_songNameLabel;
+    geode::Ref<geode::Label> m_authorNameLabel;
+    geode::Ref<geode::Label> m_songIDLabel;
     int m_songID = 0;
 
     std::function<void()> m_callback;

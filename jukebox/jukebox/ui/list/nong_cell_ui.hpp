@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 
@@ -15,9 +15,9 @@ namespace jukebox {
 // update when build() is called.
 class NongCellUI : public cocos2d::CCNode {
 protected:
-    cocos2d::CCLabelBMFont* m_songNameLabel = nullptr;
-    cocos2d::CCLabelBMFont* m_authorNameLabel = nullptr;
-    cocos2d::CCLabelBMFont* m_metadataLabel = nullptr;
+    geode::Label* m_songNameLabel = nullptr;
+    geode::Label* m_authorNameLabel = nullptr;
+    geode::Label* m_metadataLabel = nullptr;
 
     cocos2d::CCNode* m_songInfoNode = nullptr;
 

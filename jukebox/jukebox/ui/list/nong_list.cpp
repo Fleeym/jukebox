@@ -5,10 +5,9 @@
 #include <optional>
 #include <unordered_set>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <fmt/core.h>
@@ -56,7 +55,7 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     this->setAnchorPoint({0.5f, 0.5f});
     this->setID("NongList");
 
-    m_bg = CCScale9Sprite::create("square02b_001.png");
+    m_bg = NineSlice::create("square02b_001.png");
     m_bg->setColor({0, 0, 0});
     m_bg->setOpacity(75);
     m_bg->setScale(0.3f);
@@ -138,7 +137,7 @@ void NongList::build() {
 
         m_list->m_contentLayer->addChild(NongCell::create(id, defaultID, itemSize, m_levelID, std::nullopt));
 
-        CCLabelBMFont* localSongs = CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
+        geode::Label* localSongs = geode::Label::create("Stored nongs", "goldFont.fnt");
         localSongs->setID("local-section");
         localSongs->setScale(0.5f);
         m_list->m_contentLayer->addChild(localSongs);
@@ -215,7 +214,7 @@ void NongList::build() {
         }
 
         if (!nongs->indexSongs().empty()) {
-            CCLabelBMFont* indexLabel = CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            geode::Label* indexLabel = geode::Label::create("Download nongs", "goldFont.fnt");
             indexLabel->setID("index-section");
             indexLabel->setScale(0.5f);
             m_list->m_contentLayer->addChild(indexLabel);
@@ -320,7 +319,7 @@ void NongList::addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent)
 }
 
 void NongList::addNoLocalSongsNotice(bool liveInsert) {
-    CCLabelBMFont* label = CCLabelBMFont::create("You have no stored nongs :(", "bigFont.fnt");
+    geode::Label* label = geode::Label::create("You have no stored nongs :(", "bigFont.fnt");
     label->setID("no-local-songs");
     label->limitLabelWidth(150.0f, 0.7f, 0.1f);
 
@@ -426,7 +425,7 @@ ListenerResult NongList::onNongDeleted(const event::NongDeletedData& e) {
         }
 
         if (!m_list->m_contentLayer->getChildByID("index-section")) {
-            CCLabelBMFont* indexLabel = CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            geode::Label* indexLabel = geode::Label::create("Download nongs", "goldFont.fnt");
             indexLabel->setID("index-section");
             indexLabel->setScale(0.5f);
             m_list->m_contentLayer->addChild(indexLabel);
