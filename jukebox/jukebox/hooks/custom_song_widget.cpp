@@ -1,7 +1,6 @@
 #include <Geode/Result.hpp>
 #include <filesystem>
 #include <optional>
-#include <sstream>
 
 #include <Geode/cocos/actions/CCActionInterval.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
@@ -455,18 +454,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
         std::string labelText;
         std::string idDisplay;
         if (nongs->isDefaultActive()) {
-            std::stringstream ss;
-            int displayId = songID;
-            if (displayId < 0) {
-                displayId = (-displayId) - 1;
-                ss << "(R) ";
-            }
-            ss << displayId;
-            idDisplay = ss.str();
-        } else if (songID < 0) {
-            idDisplay = "(R) NONG";
-        } else {
-            idDisplay = "NONG";
+            int displayId = songID < 0 ? - songID - 1 : songID;
+            idDisplay = fmt::format("{}{}", songID < 0 ? "(R) " : "", displayId);
+        }
+        else {
+            idDisplay = songID < 0 ? "(R) NONG" : "NONG";
         }
 
         if (m_isMusicLibrary) {

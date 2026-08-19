@@ -7,7 +7,6 @@
 #include <memory>
 #include <optional>
 #include <regex>
-#include <sstream>
 #include <system_error>
 #include <utility>
 
@@ -416,19 +415,16 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
 
             if (!artistName.empty() || !songName.empty()) {
                 // We should ask before replacing stuff
-                std::stringstream ss;
-
-                ss << "Found metadata for the imported song: ";
+                std::string msg = "Found metadata for the imported song: ";
                 if (meta->name.has_value()) {
-                    ss << fmt::format("Name: \"{}\". ", meta->name.value());
+                    msg += fmt::format("Name: \"{}\". ", meta->name.value());
                 }
                 if (meta->artist.has_value()) {
-                    ss << fmt::format("Artist: \"{}\". ", meta->artist.value());
+                    msg += fmt::format("Artist: \"{}\". ", meta->artist.value());
                 }
+                msg += "Do you want to set those values for the song?";
 
-                ss << "Do you want to set those values for the song?";
-
-                createQuickPopup("Metadata found", ss.str(), "No", "Yes", [this, meta](auto, bool btn2) {
+                createQuickPopup("Metadata found", msg, "No", "Yes", [this, meta](auto, bool btn2) {
                     if (!btn2) {
                         return;
                     }
