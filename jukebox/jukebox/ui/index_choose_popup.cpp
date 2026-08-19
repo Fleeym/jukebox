@@ -85,7 +85,7 @@ bool IndexChoosePopup::init(std::vector<std::string> indexIDs,
 }
 
 void IndexChoosePopup::updateLabel() {
-    m_label->setString(IndexManager::get().getIndexName(m_indexIDs.at(m_currentIndex))->c_str());
+    m_label->setText(IndexManager::get().getIndexName(m_indexIDs.at(m_currentIndex)).value());
 }
 
 void IndexChoosePopup::onLeft(CCObject*) {
