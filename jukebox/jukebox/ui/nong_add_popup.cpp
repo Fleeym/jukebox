@@ -626,7 +626,7 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
     std::filesystem::path path = m_localPath.value();
 
     if (!asp::fs::exists(path)) {
-        return Err(fmt::format("The selected file ({}) does not exist.", path));
+        return Err("The selected file ({}) does not exist.", path);
     }
 
     if (asp::fs::isDirectory(path)) {
@@ -671,19 +671,19 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         Result<> res = nongs->replaceSong(m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
+            return Err("Failed to add song: {}", res.unwrapErr());
         }
     } else {
         Result<LocalSong*> res = nongs->add(std::move(song));
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
+            return Err("Failed to add song: {}", res.unwrapErr());
         }
 
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
     }
 
     if (auto commitRes = nongs->commit(); commitRes.isErr()) {
-        return Err(fmt::format("Failed to save song data: {}", commitRes.unwrapErr()));
+        return Err("Failed to save song data: {}", commitRes.unwrapErr());
     }
 
     return Ok();
@@ -742,13 +742,13 @@ geode::Result<> NongAddPopup::addYTSong(const std::string& songName, const std::
         auto res = nongs->replaceSong(m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to update song: {}", res.unwrapErr()));
+            return Err("Failed to update song: {}", res.unwrapErr());
         }
     } else {
         auto res = nongs->add(std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
+            return Err("Failed to add song: {}", res.unwrapErr());
         }
 
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
@@ -795,17 +795,17 @@ geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const s
         auto res = nongs->replaceSong(id, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to update song: {}", res.unwrapErr()));
+            return Err("Failed to update song: {}", res.unwrapErr());
         }
     } else {
         auto res = nongs->add(std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to create song: {}", res.unwrapErr()));
+            return Err("Failed to create song: {}", res.unwrapErr());
         }
 
         if (auto commitRes = nongs->commit(); commitRes.isErr()) {
-            return Err(fmt::format("Failed to save song data: {}", commitRes.unwrapErr()));
+            return Err("Failed to save song data: {}", commitRes.unwrapErr());
         }
 
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
