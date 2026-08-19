@@ -9,6 +9,7 @@
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <fmt/format.h>
+#include <asp/fs/fs.hpp>
 
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CustomSongWidget.hpp>
@@ -23,7 +24,6 @@
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
-#include <ranges>
 
 #include <jukebox/events/song_state_changed.hpp>
 #include <jukebox/managers/nong_manager.hpp>
@@ -147,7 +147,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             if (!optPath) {
                 found->second = false;
             } else {
-                found->second = std::filesystem::exists(std::move(optPath).value());
+                found->second = asp::fs::exists(std::move(optPath).value());
             }
         }
     }
@@ -443,7 +443,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         const std::filesystem::path activePath = std::move(activePathOpt).value();
 
         std::string sizeText;
-        if (std::filesystem::exists(activePath)) {
+        if (asp::fs::exists(activePath)) {
             sizeText = NongManager::get().getFormattedSize(activePath);
         } else if (m_songInfoObject) {
             sizeText = fmt::format("{:.2f}MB", m_songInfoObject->m_fileSize);

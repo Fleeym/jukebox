@@ -31,13 +31,13 @@ bool isSongValid(const matjson::Value& s) {
            s["authorName"].isString() && s.contains("path") && s["path"].isString();
 }
 
-bool manifestExists() { return std::filesystem::exists(manifestPath()); }
+bool manifestExists() { return asp::fs::exists(manifestPath()); }
 
 std::filesystem::path manifestPath() { return Mod::get()->getSaveDir() / "nong_data.json"; }
 
-void backupManifest(bool deleteOrig) {
+Result<> backupManifest(bool deleteOrig) {
     if (!manifestExists()) {
-        return;
+        return Ok();
     }
 
     const std::filesystem::path backupDir = Mod::get()->getSaveDir() / ".v2-compat-backup";
@@ -45,22 +45,47 @@ void backupManifest(bool deleteOrig) {
     bool isDir = asp::fs::isDirectory(backupDir).unwrapOr(false);
 
     if (exists && !isDir) {
-        (void)asp::fs::removeFile(backupDir);
+        GEODE_UNWRAP(asp::fs::removeFile(backupDir).mapErr(
+            [backupDir](const auto& err) {
+                return fmt::format("Failed to remove conflicting backup path {}. Code: {}, message: {}", backupDir,
+                                   err.getCode(), err.message());
+            }));
         exists = false;
     }
 
     if (!exists) {
-        (void)asp::fs::createDirAll(backupDir);
+        GEODE_UNWRAP(asp::fs::createDirAll(backupDir).mapErr(
+            [backupDir](const auto& err) {
+                return fmt::format("Failed to create backup directory {}. Code: {}, message: {}", backupDir,
+                                   err.getCode(), err.message());
+            }));
     }
 
     const std::filesystem::path filepath = backupDir / "nong_data.json";
     if (asp::fs::exists(filepath)) {
-        (void)asp::fs::remove(filepath);
+        GEODE_UNWRAP(asp::fs::remove(filepath).mapErr(
+            [filepath](const auto& err) {
+                return fmt::format("Failed to replace backup file {}. Code: {}, message: {}", filepath,
+                                   err.getCode(), err.message());
+            }));
     }
 
-    if (asp::fs::copy(manifestPath(), filepath).isOk() && deleteOrig) {
-        (void)asp::fs::remove(manifestPath());
+    GEODE_UNWRAP(asp::fs::copy(manifestPath(), filepath).mapErr(
+        [filepath](const auto& err) {
+            return fmt::format("Failed to write backup file {}. Code: {}, message: {}", filepath, err.getCode(),
+                               err.message());
+        }));
+
+    if (deleteOrig) {
+        const auto sourcePath = manifestPath();
+        GEODE_UNWRAP(asp::fs::remove(sourcePath).mapErr(
+            [sourcePath](const auto& err) {
+                return fmt::format("Failed to delete original v2 manifest {}. Code: {}, message: {}", sourcePath,
+                                   err.getCode(), err.message());
+            }));
     }
+
+    return Ok();
 }
 
 Result<LocalSong> parseSong(const matjson::Value& i, int id) {

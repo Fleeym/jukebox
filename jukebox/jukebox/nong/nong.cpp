@@ -1,11 +1,9 @@
 #include <jukebox/nong/nong.hpp>
 
 #include <filesystem>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -15,6 +13,8 @@
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/general.hpp>
+#include <Geode/utils/file.hpp>
+#include <asp/fs/fs.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/download/hosted.hpp>
@@ -289,13 +289,10 @@ public:
 
         matjson::Value json = matjson::Serialize<Nongs>::toJson(*self);
 
-        std::ofstream output(path);
-        if (!output.is_open()) {
-            return Err("Couldn't open file: {}", path);
+        auto writeRes = geode::utils::file::writeString(path, json.dump(matjson::NO_INDENTATION));
+        if (writeRes.isErr()) {
+            return Err("Couldn't write manifest: {}", writeRes.unwrapErr());
         }
-
-        output << json.dump(matjson::NO_INDENTATION);
-        output.close();
 
         return Ok();
     }
@@ -416,7 +413,8 @@ public:
         }
 
         if (m_active->metadata()->uniqueID == uniqueID) {
-            (void)this->setActive(m_default->metadata()->uniqueID, self);
+            GEODE_UNWRAP(this->setActive(m_default->metadata()->uniqueID, self)
+                             .mapErr([](std::string err) { return fmt::format("Failed to reset active song: {}", err); }));
         }
 
         for (auto i = m_locals.begin(); i != m_locals.end(); ++i) {

@@ -614,7 +614,7 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
                                     const std::optional<std::string> levelName, int offset) {
     if (!m_localPath.has_value()) {
         std::filesystem::path path = std::string(std::move(m_specialInput->getString()));
-        if (std::filesystem::exists(path)) {
+        if (asp::fs::exists(path)) {
             m_localPath = path;
         }
     }
@@ -625,11 +625,11 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
 
     std::filesystem::path path = m_localPath.value();
 
-    if (!std::filesystem::exists(path)) {
+    if (!asp::fs::exists(path)) {
         return Err(fmt::format("The selected file ({}) does not exist.", path));
     }
 
-    if (std::filesystem::is_directory(path)) {
+    if (asp::fs::isDirectory(path)) {
         return Err("You selected a directory.");
     }
 
@@ -682,7 +682,9 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
     }
 
-    (void)nongs->commit();
+    if (auto commitRes = nongs->commit(); commitRes.isErr()) {
+        return Err(fmt::format("Failed to save song data: {}", commitRes.unwrapErr()));
+    }
 
     return Ok();
 }
@@ -802,7 +804,9 @@ geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const s
             return Err(fmt::format("Failed to create song: {}", res.unwrapErr()));
         }
 
-        (void)nongs->commit();
+        if (auto commitRes = nongs->commit(); commitRes.isErr()) {
+            return Err(fmt::format("Failed to save song data: {}", commitRes.unwrapErr()));
+        }
 
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
     }

@@ -296,15 +296,20 @@ struct matjson::Serialize<jukebox::Nongs> {
         }
 
         if (!value["active"].isString()) {
-            // This can't fail
-            (void)nongs.setActive(nongs.defaultSong()->metadata()->uniqueID);
+            GEODE_UNWRAP(nongs.setActive(nongs.defaultSong()->metadata()->uniqueID)
+                             .mapErr([](std::string err) {
+                                 return fmt::format("Failed to set default active song while loading JSON: {}", err);
+                             }));
         } else {
             geode::Result<> res =
                 nongs.setActive(value["active"].asString().unwrap());
             if (res.isErr()) {
-                // Can't fail...
-                (void)nongs.setActive(
-                    nongs.defaultSong()->metadata()->uniqueID);
+                GEODE_UNWRAP(nongs.setActive(nongs.defaultSong()->metadata()->uniqueID)
+                                 .mapErr([res = res.unwrapErr()](std::string fallbackErr) {
+                                     return fmt::format(
+                                         "Failed to set active song from JSON ({}) and failed fallback to default ({})",
+                                         res, fallbackErr);
+                                 }));
             }
         }
 

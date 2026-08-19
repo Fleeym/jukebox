@@ -5,7 +5,6 @@
 
 #include <functional>
 #include <Geode/utils/function.hpp>
-#include <ios>
 #include <memory>
 #include <optional>
 #include <string>
@@ -50,8 +49,11 @@ bool IndexManager::init() {
         return true;
     }
 
-    if (const std::filesystem::path path = this->baseIndexesPath(); !std::filesystem::exists(path)) {
-        std::filesystem::create_directory(path);
+    if (const std::filesystem::path path = this->baseIndexesPath(); !asp::fs::exists(path)) {
+        auto createDirRes = geode::utils::file::createDirectory(path);
+        if (createDirRes.isErr()) {
+            log::error("Failed to create indexes directory {}: {}", path, createDirRes.unwrapErr());
+        }
     }
 
     async::spawn(this->fetchIndexes(), [](Result<> result) {
@@ -97,7 +99,7 @@ std::filesystem::path IndexManager::baseIndexesPath() {
 }
 
 Result<> IndexManager::loadIndex(std::filesystem::path path) {
-    if (!std::filesystem::exists(path)) {
+    if (!asp::fs::exists(path)) {
         return Err("Index file does not exist");
     }
 
@@ -410,18 +412,13 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         path = NongManager::get().baseNongsPath() / name;
     }
 
-    std::ofstream out(path, std::ios_base::out | std::ios_base::binary);
-
-    if (!out.is_open()) {
-        const std::string err = "Failed to store downloaded file. Couldn't open file for write";
+    if (auto res = file::writeBinary(path, data); res.isErr()) {
+        const std::string err = fmt::format("Failed to store downloaded file. {}", res.unwrapErr());
         log::error("{}", err);
         event::SongDownloadFailed(destination->songID())
             .send(event::SongDownloadFailedData{destination->songID(), uniqueId, err});
         return;
     }
-
-    out.write(reinterpret_cast<const char*>(data.data()), data.size());
-    out.close();
 
     Song* insertedSong = nullptr;
 
@@ -439,7 +436,12 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         log::error("{}", print);
         event::SongDownloadFailed(destination->songID())
             .send(event::SongDownloadFailedData{destination->songID(), uniqueId, print});
-        (void)asp::fs::remove(path);
+
+        if (auto removeRes = asp::fs::remove(path); removeRes.isErr()) {
+            auto removeErr = removeRes.unwrapErr();
+            log::warn("Failed to cleanup partially downloaded file {}. Code: {}, message: {}", path,
+                      removeErr.getCode(), removeErr.message());
+        }
     };
 
     if (metadata->url.has_value()) {
@@ -471,7 +473,13 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         return;
     }
 
-    (void)destination->commit();
+    if (auto commitRes = destination->commit(); commitRes.isErr()) {
+        const std::string err = fmt::format("Couldn't commit downloaded song metadata. {}", commitRes.unwrapErr());
+        log::error("{}", err);
+        event::SongDownloadFailed(destination->songID())
+            .send(event::SongDownloadFailedData{destination->songID(), uniqueId, err});
+        return;
+    }
 
     event::SongDownloadFinished().send(event::SongDownloadFinishedData{std::optional(metadata), insertedSong});
 }

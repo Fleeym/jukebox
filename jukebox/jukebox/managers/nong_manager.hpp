@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include <Geode/Result.hpp>
+#include <Geode/loader/Log.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/Task.hpp>
@@ -26,7 +27,10 @@ protected:
         const std::filesystem::path path = this->baseManifestPath();
 
         if (!asp::fs::exists(path)) {
-            (void)geode::utils::file::createDirectory(path);
+            auto createDirRes = geode::utils::file::createDirectory(path);
+            if (createDirRes.isErr()) {
+                geode::log::error("Failed to create manifest path {}: {}", path, createDirRes.unwrapErr());
+            }
         }
     }
 
