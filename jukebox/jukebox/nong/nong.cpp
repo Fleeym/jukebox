@@ -124,8 +124,8 @@ public:
     [[nodiscard]] std::string youtubeID() const { return m_youtubeID; }
     [[nodiscard]] std::optional<std::string> indexID() const { return m_indexID; }
     Future<Result<ByteVector>> startDownload() const {
-        if (std::error_code ec; m_path.has_value() && std::filesystem::exists(m_path.value(), ec)) {
-            co_return Err("Song already is downloaded");
+        if (m_path.has_value() && asp::fs::exists(m_path.value())) {
+            co_return Err("Song is already downloaded");
         }
 
         co_return co_await download::startYoutubeDownload(m_youtubeID);
@@ -202,8 +202,8 @@ public:
     [[nodiscard]] std::optional<std::string> indexID() const noexcept { return m_indexID; }
     [[nodiscard]] std::optional<std::filesystem::path> path() const noexcept { return m_path; }
     Future<Result<ByteVector>> startDownload() const {
-        if (std::error_code ec; m_path.has_value() && std::filesystem::exists(m_path.value(), ec)) {
-            co_return Err("Song already is downloaded");
+        if (m_path.has_value() && asp::fs::exists(m_path.value())) {
+            co_return Err("Song is already downloaded");
         }
 
         co_return co_await download::startHostedDownload(m_url);
@@ -256,12 +256,11 @@ private:
     std::vector<IndexSongMetadata*> m_indexSongs;
 
     void deletePath(const std::optional<std::filesystem::path>& path) {
-        std::error_code ec;
-        if (path.has_value() && std::filesystem::exists(path.value(), ec)) {
-            std::filesystem::remove(path.value(), ec);
-            if (ec) {
-                log::error("Couldn't delete nong. Category: {}, message: {}", ec.category().name(),
-                           ec.category().message(ec.value()));
+        if (path.has_value() && asp::fs::exists(path.value())) {
+            auto removeRes = asp::fs::remove(path.value());
+            if (removeRes.isErr()) {
+                auto err = removeRes.unwrapErr();
+                log::error("Couldn't delete NONG. Code: {}, message: {}", err.getCode(), err.message());
             }
         }
     }
@@ -277,8 +276,12 @@ public:
 
         // Don't save manifest for songs with no nongs
         if (m_locals.empty() && m_youtube.empty() && m_hosted.empty()) {
-            if (std::error_code ec; std::filesystem::exists(path, ec)) {
-                std::filesystem::remove(path, ec);
+            if (asp::fs::exists(path)) {
+                auto removeRes = asp::fs::remove(path);
+                if (removeRes.isErr()) {
+                    auto err = removeRes.unwrapErr();
+                    return Err("Failed to remove file. Code: {}, message: {}", err.getCode(), err.message());
+                }
             }
 
             return Ok();
@@ -304,7 +307,7 @@ public:
             return Ok();
         }
 
-        if (std::error_code ec; !std::filesystem::exists(path, ec)) {
+        if (!asp::fs::exists(path)) {
             return Err("Song doesn't exist on disk");
         }
 

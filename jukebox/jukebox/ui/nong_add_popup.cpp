@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>
+#include <asp/fs/fs.hpp>
 #include <Geode/utils/function.hpp>
 #include <memory>
 #include <optional>
 #include <regex>
-#include <system_error>
 #include <utility>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
@@ -633,8 +633,7 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         return Err("You selected a directory.");
     }
 
-    std::string extension = path.extension().string();
-
+    std::string extension = geode::utils::string::pathToString(path.extension());
     if (songName.empty()) {
         return Err("Song name is empty");
     }
@@ -647,27 +646,20 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         m_replacedNong.has_value() ? m_replacedNong.value()->metadata()->uniqueID : jukebox::random_string(16);
     std::string unique = fmt::format("{}{}", id, extension);
     std::filesystem::path destination = Mod::get()->getSaveDir() / "nongs";
-    std::error_code error_code;
-    if (!std::filesystem::exists(destination, error_code)) {
-        if (!std::filesystem::create_directory(destination, error_code)) {
+    if (!asp::fs::exists(destination)) {
+        auto createDirRes = geode::utils::file::createDirectory(destination);
+        if (createDirRes.isErr()) {
             return Err("Failed to create nongs directory.");
         }
     }
     destination /= unique;
 
     if (destination.compare(path) != 0) {
-        bool result = std::filesystem::copy_file(path, destination, std::filesystem::copy_options::overwrite_existing,
-                                                 error_code);
-        if (error_code) {
+        auto copyFileRes = asp::fs::copy(path, destination, std::filesystem::copy_options::overwrite_existing);
+        if (copyFileRes.isErr()) {
+            auto err = copyFileRes.unwrapErr();
             return Err(
-                fmt::format("Failed to save song. Please try again! Error category: {}, "
-                            "message: {}",
-                            error_code.category().name(), error_code.category().message(error_code.value())));
-        }
-        if (!result) {
-            return Err(
-                "Failed to copy song to Jukebox's songs folder. Please try "
-                "again.");
+                "Failed to save song. Please try again! Code: {}, message: {}", err.getCode(), err.message());
         }
     }
 
@@ -850,7 +842,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD::Sound* sound;
     FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
 
-    system->createSound(path.string().c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
+    system->createSound(geode::utils::string::pathToString(path).c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
 
     if (!sound) {
         return std::nullopt;
@@ -861,7 +853,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD_RESULT nameResult = FMOD_OK;
     FMOD_RESULT artistResult = FMOD_OK;
 
-    const std::string extension = path.extension().string();
+    const std::string extension = geode::utils::string::pathToString(path.extension());
     if (extension == ".mp3") {
         nameResult = sound->getTag(MP3_NAME_TAG, 0, &nameTag);
         artistResult = sound->getTag(MP3_ARTIST_TAG, 0, &artistTag);

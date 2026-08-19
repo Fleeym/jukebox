@@ -1,6 +1,7 @@
 #include <jukebox/managers/index_manager.hpp>
 
 #include <filesystem>
+#include <asp/fs/fs.hpp>
 
 #include <functional>
 #include <Geode/utils/function.hpp>
@@ -438,8 +439,7 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         log::error("{}", print);
         event::SongDownloadFailed(destination->songID())
             .send(event::SongDownloadFailedData{destination->songID(), uniqueId, print});
-        std::error_code ec;
-        std::filesystem::remove(path, ec);
+        (void)asp::fs::remove(path);
     };
 
     if (metadata->url.has_value()) {

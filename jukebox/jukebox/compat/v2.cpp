@@ -1,5 +1,6 @@
 #include <jukebox/compat/v2.hpp>
 
+#include <asp/fs/fs.hpp>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -40,27 +41,25 @@ void backupManifest(bool deleteOrig) {
     }
 
     const std::filesystem::path backupDir = Mod::get()->getSaveDir() / ".v2-compat-backup";
-    bool exists = std::filesystem::exists(backupDir);
+    bool exists = asp::fs::exists(backupDir);
+    bool isDir = asp::fs::isDirectory(backupDir).unwrapOr(false);
 
-    if (exists && !std::filesystem::is_directory(backupDir)) {
-        std::error_code ec;
-        std::filesystem::remove_all(backupDir, ec);
-
+    if (exists && !isDir) {
+        (void)asp::fs::removeFile(backupDir);
         exists = false;
     }
 
     if (!exists) {
-        std::filesystem::create_directory(backupDir);
+        (void)asp::fs::createDirAll(backupDir);
     }
 
-    std::error_code ec;
     const std::filesystem::path filepath = backupDir / "nong_data.json";
-    if (std::filesystem::exists(filepath)) {
-        std::filesystem::remove(filepath, ec);
+    if (asp::fs::exists(filepath)) {
+        (void)asp::fs::remove(filepath);
     }
-    std::filesystem::copy_file(manifestPath(), filepath, ec);
-    if (deleteOrig) {
-        std::filesystem::remove(manifestPath(), ec);
+
+    if (asp::fs::copy(manifestPath(), filepath).isOk() && deleteOrig) {
+        (void)asp::fs::remove(manifestPath());
     }
 }
 
