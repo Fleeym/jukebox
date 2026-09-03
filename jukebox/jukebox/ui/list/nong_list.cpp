@@ -1,22 +1,28 @@
 #include <jukebox/ui/list/nong_list.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <unordered_set>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/ui/Label.hpp>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <fmt/core.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
+#include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/cocos.hpp>
+#include <asp/iter/std.hpp>
 
 #include <jukebox/events/nong_deleted.hpp>
 #include <jukebox/events/song_download_finished.hpp>
@@ -76,6 +82,16 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     menu->setID("back-menu");
     this->addChildAtPosition(menu, Anchor::Left, CCPoint{-10.0f, 0.0f});
 
+    m_searchInput = TextInput::create(size.width - s_padding * 2, "Search nongs...");
+    m_searchInput->setID("search-input");
+    m_searchInput->setScale(0.75f);
+    m_searchInput->setCallback([this](const std::string& query) {
+        m_searchQuery = query;
+        this->build();
+    });
+    m_searchInput->setVisible(false);
+    this->addChildAtPosition(m_searchInput, Anchor::Top, CCPoint{0.0f, -(s_searchBarHeight / 2 + s_padding / 2)});
+
     m_list = ScrollLayer::create({size.width, size.height - s_padding});
     m_list->m_contentLayer->setLayout(SimpleColumnLayout::create()
                                           ->setMainAxisDirection(AxisDirection::TopToBottom)
@@ -91,6 +107,17 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
 
     this->build();
     return true;
+}
+
+bool NongList::matchesSearch(const std::string_view name) const {
+    if (m_searchQuery.empty()) {
+        return true;
+    }
+
+    auto it = std::search(name.begin(), name.end(), m_searchQuery.begin(), m_searchQuery.end(),
+                          [](unsigned char u1, unsigned char u2) { return std::tolower(u1) == std::tolower(u2); });
+
+    return it != name.end();
 }
 
 void NongList::build() {
@@ -109,6 +136,12 @@ void NongList::build() {
     }
 
     if (!m_currentSong) {
+        // Multi-song view
+
+        m_searchInput->setVisible(false);
+        m_list->setContentSize({m_list->getContentSize().width, this->getContentSize().height - s_padding});
+        m_list->updateAnchoredPosition(Anchor::Center, -m_list->getScaledContentSize() / 2);
+
         for (int id : m_songIds) {
             std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
 
@@ -123,6 +156,13 @@ void NongList::build() {
         }
     } else {
         // Single item
+
+        m_searchInput->setVisible(true);
+        float listHeight = this->getContentSize().height - s_padding - s_searchBarHeight;
+        m_list->setContentSize({m_list->getContentSize().width, listHeight});
+        m_list->updateAnchoredPosition(Anchor::Center,
+                                       CCPoint{0.0f, -(s_searchBarHeight / 2)} - m_list->getScaledContentSize() / 2);
+
         int id = m_currentSong.value();
 
         std::optional<Nongs*> optNongs = NongManager::get().getNongs(id);
@@ -189,9 +229,9 @@ void NongList::build() {
             };
 
             bool aVerified =
-                std::ranges::find(verifiedNongs, a->metadata()->uniqueID) != verifiedNongs.end();
+                asp::iter::from(verifiedNongs).any([a](auto& i) { return i.get() == a->metadata()->uniqueID; });
             bool bVerified =
-                std::ranges::find(verifiedNongs, b->metadata()->uniqueID) != verifiedNongs.end();
+                asp::iter::from(verifiedNongs).any([b](auto& i) { return i.get() == b->metadata()->uniqueID; });
 
             // Sort by Verified
             if (aVerified != bVerified) {
@@ -210,6 +250,9 @@ void NongList::build() {
         });
 
         for (Song* nong : allLocalNongs) {
+            if (!this->matchesSearch(nong->metadata()->name) && !this->matchesSearch(nong->metadata()->artist)) {
+                continue;
+            }
             this->addSongToList(nong, nongs);
         }
 
@@ -276,6 +319,9 @@ void NongList::build() {
                   });
 
         for (index::IndexSongMetadata* indexNong : allIndexNongs) {
+            if (!this->matchesSearch(indexNong->name) && !this->matchesSearch(indexNong->artist)) {
+                continue;
+            }
             this->addIndexSongToList(indexNong, nongs);
         }
     }
@@ -342,6 +388,12 @@ void NongList::scrollToTop() {
 void NongList::onBack(cocos2d::CCObject* target) {
     if (!m_currentSong.has_value() || m_songIds.size() < 2) {
         return;
+    }
+
+    // Multi-song view has no search
+    m_searchQuery = "";
+    if (m_searchInput) {
+        m_searchInput->setString("");
     }
 
     m_currentSong = std::nullopt;

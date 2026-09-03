@@ -2,15 +2,18 @@
 
 #include <Geode/utils/function.hpp>
 #include <optional>
+#include <string>
 #include <vector>
 
-#include <Geode/ui/NineSlice.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/loader/Event.hpp>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
+#include <Geode/ui/TextInput.hpp>
+#include <Geode/utils/cocos.hpp>
 
 #include <jukebox/events/manual_song_added.hpp>
 #include <jukebox/events/nong_deleted.hpp>
@@ -39,8 +42,12 @@ protected:
     geode::ListenerHandle m_nongDeletedListener;
     geode::ListenerHandle m_nongAddedListener;
 
+    geode::Ref<geode::TextInput> m_searchInput;
+    std::string m_searchQuery = "";
+
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
+    static constexpr float s_searchBarHeight = 30.0f;
 
     void addNoLocalSongsNotice(bool liveInsert = false);
     void addSongToList(Song* nong, Nongs* parent, bool liveInsert = false);
@@ -50,6 +57,8 @@ protected:
     geode::ListenerResult onSongAdded(const event::ManualSongAddedData& e);
     // This just moves the list up by 0.00001. That's it. Don't ask.
     void updateLayoutAndFixWeirdDisplay() const;
+
+    bool matchesSearch(std::string_view search) const;
 
 public:
     void scrollToTop();
