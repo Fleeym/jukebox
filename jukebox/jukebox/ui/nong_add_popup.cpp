@@ -3,12 +3,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <filesystem>
-#include <functional>
+#include <asp/fs/fs.hpp>
+#include <Geode/utils/function.hpp>
 #include <memory>
 #include <optional>
 #include <regex>
-#include <sstream>
-#include <system_error>
 #include <utility>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
@@ -24,6 +23,7 @@
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/binding/FMODAudioEngine.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
@@ -65,14 +65,14 @@ std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
 
 class IndexDisclaimerPopup : public FLAlertLayer, public FLAlertLayerProtocol {
 protected:
-    std::function<void(FLAlertLayer*, bool)> m_selected;
+    geode::Function<void(FLAlertLayer*, bool)> m_selected;
 
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override { m_selected(layer, btn2); }
 
 public:
     static IndexDisclaimerPopup* create(char const* title, std::string const& content, char const* btn1,
                                         char const* btn2, float width,
-                                        std::function<void(FLAlertLayer*, bool)> selected) {
+                                        geode::Function<void(FLAlertLayer*, bool)> selected) {
         auto inst = new IndexDisclaimerPopup();
         inst->m_selected = std::move(selected);
         if (inst->init(inst, title, content, btn1, btn2, width, true, .0f, 1.0f)) {
@@ -98,7 +98,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     if (replacedNong.has_value() && replacedNong.value()->type() == NongType::YOUTUBE) {
         m_mainLayer->addChildAtPosition(
-            CCLabelBMFont::create("Sorry, YouTube songs are not available at the moment.", "bigFont.fnt"),
+            geode::Label::create("Sorry, YouTube songs are not available at the moment.", "bigFont.fnt"),
             Anchor::Center);
         return true;
     }
@@ -280,7 +280,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
     if (edit->metadata()->level.has_value()) {
         m_levelNameInput->setString(edit->metadata()->level.value());
     }
-    m_startOffsetInput->setString(std::to_string(edit->metadata()->startOffset));
+    m_startOffsetInput->setString(fmt::to_string(edit->metadata()->startOffset));
 
     switch (edit->type()) {
         case NongType::LOCAL:
@@ -397,7 +397,7 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
     auto path = pathOpt.value();
 
     std::string strPath = string::pathToString(path);
-    std::string extension = path.extension().string();
+    std::string extension = string::pathToString(path.extension());
     std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
     if (!this->isPathValidSong(path)) {
@@ -415,19 +415,16 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
 
             if (!artistName.empty() || !songName.empty()) {
                 // We should ask before replacing stuff
-                std::stringstream ss;
-
-                ss << "Found metadata for the imported song: ";
+                std::string msg = "Found metadata for the imported song: ";
                 if (meta->name.has_value()) {
-                    ss << fmt::format("Name: \"{}\". ", meta->name.value());
+                    msg += fmt::format("Name: \"{}\". ", meta->name.value());
                 }
                 if (meta->artist.has_value()) {
-                    ss << fmt::format("Artist: \"{}\". ", meta->artist.value());
+                    msg += fmt::format("Artist: \"{}\". ", meta->artist.value());
                 }
+                msg += "Do you want to set those values for the song?";
 
-                ss << "Do you want to set those values for the song?";
-
-                createQuickPopup("Metadata found", ss.str(), "No", "Yes", [this, meta](auto, bool btn2) {
+                createQuickPopup("Metadata found", msg, "No", "Yes", [this, meta](auto, bool btn2) {
                     if (!btn2) {
                         return;
                     }
@@ -561,7 +558,8 @@ void NongAddPopup::onPublish(CCObject* target) {
         if (submit.m_preSubmitMessage.has_value()) {
             const auto popup =
                 IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(),
-                                             submit.m_preSubmitMessage.value(), "Back", "Continue", 420.f, submitFunc);
+                                             submit.m_preSubmitMessage.value(), "Back", "Continue", 420.f,
+                                             std::move(submitFunc));
             if (popup) {
                 popup->m_scene = this;
                 popup->show();
@@ -616,7 +614,7 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
                                     const std::optional<std::string> levelName, int offset) {
     if (!m_localPath.has_value()) {
         std::filesystem::path path = std::string(std::move(m_specialInput->getString()));
-        if (std::filesystem::exists(path)) {
+        if (asp::fs::exists(path)) {
             m_localPath = path;
         }
     }
@@ -627,16 +625,15 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
 
     std::filesystem::path path = m_localPath.value();
 
-    if (!std::filesystem::exists(path)) {
-        return Err(fmt::format("The selected file ({}) does not exist.", path));
+    if (!asp::fs::exists(path)) {
+        return Err("The selected file ({}) does not exist.", path);
     }
 
-    if (std::filesystem::is_directory(path)) {
+    if (asp::fs::isDirectory(path)) {
         return Err("You selected a directory.");
     }
 
-    std::string extension = path.extension().string();
-
+    std::string extension = geode::utils::string::pathToString(path.extension());
     if (songName.empty()) {
         return Err("Song name is empty");
     }
@@ -649,27 +646,20 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         m_replacedNong.has_value() ? m_replacedNong.value()->metadata()->uniqueID : jukebox::random_string(16);
     std::string unique = fmt::format("{}{}", id, extension);
     std::filesystem::path destination = Mod::get()->getSaveDir() / "nongs";
-    std::error_code error_code;
-    if (!std::filesystem::exists(destination, error_code)) {
-        if (!std::filesystem::create_directory(destination, error_code)) {
+    if (!asp::fs::exists(destination)) {
+        auto createDirRes = geode::utils::file::createDirectory(destination);
+        if (createDirRes.isErr()) {
             return Err("Failed to create nongs directory.");
         }
     }
     destination /= unique;
 
     if (destination.compare(path) != 0) {
-        bool result = std::filesystem::copy_file(path, destination, std::filesystem::copy_options::overwrite_existing,
-                                                 error_code);
-        if (error_code) {
+        auto copyFileRes = asp::fs::copy(path, destination, std::filesystem::copy_options::overwrite_existing);
+        if (copyFileRes.isErr()) {
+            auto err = copyFileRes.unwrapErr();
             return Err(
-                fmt::format("Failed to save song. Please try again! Error category: {}, "
-                            "message: {}",
-                            error_code.category().name(), error_code.category().message(error_code.value())));
-        }
-        if (!result) {
-            return Err(
-                "Failed to copy song to Jukebox's songs folder. Please try "
-                "again.");
+                "Failed to save song. Please try again! Code: {}, message: {}", err.getCode(), err.message());
         }
     }
 
@@ -681,18 +671,20 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         Result<> res = nongs->replaceSong(m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
+            return Err("Failed to add song: {}", res.unwrapErr());
         }
     } else {
         Result<LocalSong*> res = nongs->add(std::move(song));
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
+            return Err("Failed to add song: {}", res.unwrapErr());
         }
 
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
     }
 
-    (void)nongs->commit();
+    if (auto commitRes = nongs->commit(); commitRes.isErr()) {
+        return Err("Failed to save song data: {}", commitRes.unwrapErr());
+    }
 
     return Ok();
 }
@@ -750,13 +742,13 @@ geode::Result<> NongAddPopup::addYTSong(const std::string& songName, const std::
         auto res = nongs->replaceSong(m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to update song: {}", res.unwrapErr()));
+            return Err("Failed to update song: {}", res.unwrapErr());
         }
     } else {
         auto res = nongs->add(std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to add song: {}", res.unwrapErr()));
+            return Err("Failed to add song: {}", res.unwrapErr());
         }
 
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
@@ -803,16 +795,18 @@ geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const s
         auto res = nongs->replaceSong(id, std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to update song: {}", res.unwrapErr()));
+            return Err("Failed to update song: {}", res.unwrapErr());
         }
     } else {
         auto res = nongs->add(std::move(song));
 
         if (res.isErr()) {
-            return Err(fmt::format("Failed to create song: {}", res.unwrapErr()));
+            return Err("Failed to create song: {}", res.unwrapErr());
         }
 
-        (void)nongs->commit();
+        if (auto commitRes = nongs->commit(); commitRes.isErr()) {
+            return Err("Failed to save song data: {}", commitRes.unwrapErr());
+        }
 
         event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
     }
@@ -852,7 +846,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD::Sound* sound;
     FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
 
-    system->createSound(path.string().c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
+    system->createSound(geode::utils::string::pathToString(path).c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
 
     if (!sound) {
         return std::nullopt;
@@ -863,7 +857,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD_RESULT nameResult = FMOD_OK;
     FMOD_RESULT artistResult = FMOD_OK;
 
-    const std::string extension = path.extension().string();
+    const std::string extension = geode::utils::string::pathToString(path.extension());
     if (extension == ".mp3") {
         nameResult = sound->getTag(MP3_NAME_TAG, 0, &nameTag);
         artistResult = sound->getTag(MP3_ARTIST_TAG, 0, &artistTag);

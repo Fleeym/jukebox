@@ -13,7 +13,7 @@ namespace compat {
 namespace v2 {
 
 bool manifestExists();
-void backupManifest(bool deleteOrig = false);
+geode::Result<> backupManifest(bool deleteOrig = false);
 std::filesystem::path manifestPath();
 geode::Result<std::unordered_map<int, CompatManifest>> parseManifest();
 

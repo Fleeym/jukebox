@@ -1,12 +1,14 @@
 #pragma once
 
 #include <filesystem>
+#include <asp/fs.hpp>
 #include <memory>
 #include <optional>
 #include <string_view>
-#include <system_error>
 
 #include <Geode/Result.hpp>
+#include <Geode/loader/Log.hpp>
+#include <Geode/utils/file.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/Task.hpp>
 
@@ -24,10 +26,11 @@ protected:
     void setupManifestPath() {
         const std::filesystem::path path = this->baseManifestPath();
 
-        std::error_code ec;
-
-        if (!std::filesystem::exists(path, ec)) {
-            std::filesystem::create_directory(path);
+        if (!asp::fs::exists(path)) {
+            auto createDirRes = geode::utils::file::createDirectory(path);
+            if (createDirRes.isErr()) {
+                geode::log::error("Failed to create manifest path {}: {}", path, createDirRes.unwrapErr());
+            }
         }
     }
 

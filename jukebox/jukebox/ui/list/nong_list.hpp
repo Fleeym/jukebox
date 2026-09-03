@@ -1,10 +1,10 @@
 #pragma once
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 #include <optional>
 #include <vector>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
@@ -27,13 +27,13 @@ public:
 protected:
     std::vector<int> m_songIds;
     geode::Ref<geode::ScrollLayer> m_list = nullptr;
-    geode::Ref<cocos2d::extension::CCScale9Sprite> m_bg = nullptr;
+    geode::Ref<geode::NineSlice> m_bg = nullptr;
     std::optional<int> m_currentSong = std::nullopt;
     std::optional<int> m_levelID;
 
     geode::Ref<CCMenuItemSpriteExtra> m_backBtn = nullptr;
 
-    std::function<void(std::optional<int>)> m_onListTypeChange;
+    geode::Function<void(std::optional<int>)> m_onListTypeChange;
 
     geode::ListenerHandle m_downloadFinishedListener;
     geode::ListenerHandle m_nongDeletedListener;
@@ -59,11 +59,11 @@ public:
     void onSelectSong(int songId);
 
     static NongList* create(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-                            std::function<void(std::optional<int>)> onListTypeChange = {});
+                            geode::Function<void(std::optional<int>)> onListTypeChange = {});
 
 protected:
     bool init(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-              std::function<void(std::optional<int>)> onListTypeChange = {});
+              geode::Function<void(std::optional<int>)> onListTypeChange = {});
 };
 
 }  // namespace jukebox

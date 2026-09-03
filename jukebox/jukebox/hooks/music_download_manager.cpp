@@ -8,6 +8,7 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
+#include <asp/fs/fs.hpp>
 
 #include <jukebox/events/get_song_info.hpp>
 #include <jukebox/managers/nong_manager.hpp>
@@ -23,7 +24,7 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
     }
     Nongs* value = nongs.value();
     Song* active = value->active();
-    if (!std::filesystem::exists(active->path().value())) {
+    if (!asp::fs::exists(active->path().value())) {
         return MusicDownloadManager::pathForSong(id);
     }
     NongManager::get().m_currentlyPreparingNong = value;
