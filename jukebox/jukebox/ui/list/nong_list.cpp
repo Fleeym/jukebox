@@ -69,18 +69,19 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     m_bg->setID("background");
     this->addChildAtPosition(m_bg, Anchor::Center);
 
-    CCMenu* menu = CCMenu::create();
+    m_backMenu = CCMenu::create();
     auto spr = CCSprite::createWithSpriteFrameName("backArrowPlain_01_001.png");
     auto backBtn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(NongList::onBack));
     m_backBtn = backBtn;
     m_backBtn->setID("back-btn");
     m_backBtn->setVisible(false);
-    menu->addChild(backBtn);
-    menu->setContentHeight(size.height);
-    menu->setLayout(SimpleColumnLayout::create()->setGap(1.0f)->setMainAxisScaling(AxisScaling::ScaleDown));
-    menu->setZOrder(1);
-    menu->setID("back-menu");
-    this->addChildAtPosition(menu, Anchor::Left, CCPoint{-10.0f, 0.0f});
+    m_backMenu->addChild(backBtn);
+    m_backMenu->setContentWidth(backBtn->getContentWidth());
+    m_backMenu->setContentHeight(size.height);
+    m_backMenu->setLayout(SimpleColumnLayout::create()->setGap(1.0f)->setMainAxisScaling(AxisScaling::ScaleDown));
+    m_backMenu->setZOrder(1);
+    m_backMenu->setID("back-menu");
+    this->addChildAtPosition(m_backMenu, Anchor::Left, CCPoint{-10.0f, 0.0f});
 
     m_searchInput = TextInput::create(size.width - s_padding * 2, "Search nongs...");
     m_searchInput->setID("search-input");
@@ -400,6 +401,7 @@ void NongList::onBack(cocos2d::CCObject* target) {
     this->build();
     this->scrollToTop();
     m_backBtn->setVisible(false);
+    m_backMenu->updateLayout();
 }
 
 void NongList::setCurrentSong(int songId) {
@@ -417,6 +419,7 @@ void NongList::onSelectSong(int songId) {
     this->build();
     this->scrollToTop();
     m_backBtn->setVisible(true);
+    m_backMenu->updateLayout();
 }
 
 ListenerResult NongList::onDownloadFinish(const event::SongDownloadFinishedData& e) {

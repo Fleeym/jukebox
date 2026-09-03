@@ -8,6 +8,7 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/ui/NineSlice.hpp>
@@ -34,6 +35,7 @@ protected:
     std::optional<int> m_currentSong = std::nullopt;
     std::optional<int> m_levelID;
 
+    geode::Ref<cocos2d::CCMenu> m_backMenu = nullptr;
     geode::Ref<CCMenuItemSpriteExtra> m_backBtn = nullptr;
 
     geode::Function<void(std::optional<int>)> m_onListTypeChange;
