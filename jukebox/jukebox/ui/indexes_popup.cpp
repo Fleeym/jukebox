@@ -1,6 +1,6 @@
 #include <jukebox/ui/indexes_popup.hpp>
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 #include <vector>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
@@ -20,7 +20,7 @@ namespace jukebox {
 using namespace jukebox::index;
 
 bool IndexesPopup::init(std::vector<IndexSource> indexes,
-                        std::function<void(std::vector<IndexSource>)> setIndexesCallback) {
+                        geode::Function<void(std::vector<IndexSource>)> setIndexesCallback) {
     const CCSize size = this->getPopupSize();
     if (!Popup::init(size.width, size.height)) {
         return false;
@@ -59,7 +59,7 @@ void IndexesPopup::onAdd(CCObject*) {
 }
 
 IndexesPopup* IndexesPopup::create(std::vector<IndexSource> indexes,
-                                   std::function<void(std::vector<IndexSource>)> setIndexesCallback) {
+                                   geode::Function<void(std::vector<IndexSource>)> setIndexesCallback) {
     auto ret = new IndexesPopup();
     if (ret->init(std::move(indexes), std::move(setIndexesCallback))) {
         ret->autorelease();

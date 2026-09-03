@@ -1,16 +1,20 @@
 #pragma once
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 #include <optional>
+#include <string>
 #include <vector>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/loader/Event.hpp>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
+#include <Geode/ui/TextInput.hpp>
+#include <Geode/utils/cocos.hpp>
 
 #include <jukebox/events/manual_song_added.hpp>
 #include <jukebox/events/nong_deleted.hpp>
@@ -27,20 +31,25 @@ public:
 protected:
     std::vector<int> m_songIds;
     geode::Ref<geode::ScrollLayer> m_list = nullptr;
-    geode::Ref<cocos2d::extension::CCScale9Sprite> m_bg = nullptr;
+    geode::Ref<geode::NineSlice> m_bg = nullptr;
     std::optional<int> m_currentSong = std::nullopt;
     std::optional<int> m_levelID;
 
+    geode::Ref<cocos2d::CCMenu> m_backMenu = nullptr;
     geode::Ref<CCMenuItemSpriteExtra> m_backBtn = nullptr;
 
-    std::function<void(std::optional<int>)> m_onListTypeChange;
+    geode::Function<void(std::optional<int>)> m_onListTypeChange;
 
     geode::ListenerHandle m_downloadFinishedListener;
     geode::ListenerHandle m_nongDeletedListener;
     geode::ListenerHandle m_nongAddedListener;
 
+    geode::Ref<geode::TextInput> m_searchInput;
+    std::string m_searchQuery = "";
+
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
+    static constexpr float s_searchBarHeight = 30.0f;
 
     void addNoLocalSongsNotice(bool liveInsert = false);
     void addSongToList(Song* nong, Nongs* parent, bool liveInsert = false);
@@ -51,6 +60,8 @@ protected:
     // This just moves the list up by 0.00001. That's it. Don't ask.
     void updateLayoutAndFixWeirdDisplay() const;
 
+    bool matchesSearch(std::string_view search) const;
+
 public:
     void scrollToTop();
     void setCurrentSong(int songId);
@@ -59,11 +70,11 @@ public:
     void onSelectSong(int songId);
 
     static NongList* create(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-                            std::function<void(std::optional<int>)> onListTypeChange = {});
+                            geode::Function<void(std::optional<int>)> onListTypeChange = {});
 
 protected:
     bool init(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-              std::function<void(std::optional<int>)> onListTypeChange = {});
+              geode::Function<void(std::optional<int>)> onListTypeChange = {});
 };
 
 }  // namespace jukebox

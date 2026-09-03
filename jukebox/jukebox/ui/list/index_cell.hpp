@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
@@ -21,15 +21,15 @@ class IndexCell : public cocos2d::CCNode {
 protected:
     geode::Ref<IndexesPopup> m_parentPopup;
     IndexSource* m_index = nullptr;
-    std::function<void()> m_onDelete;
+    geode::Function<void()> m_onDelete;
 
     geode::Ref<CCMenuItemToggler> m_toggleButton;
 
-    bool init(IndexesPopup* parentPopup, IndexSource* index, std::function<void()> onDelete,
+    bool init(IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete,
               cocos2d::CCSize const& size);
 
 public:
-    static IndexCell* create(IndexesPopup* parentPopup, IndexSource* index, std::function<void()> onDelete,
+    static IndexCell* create(IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete,
                              cocos2d::CCSize const& size);
     void updateUI();
     void onToggle(CCObject*);

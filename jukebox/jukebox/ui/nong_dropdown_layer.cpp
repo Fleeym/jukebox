@@ -6,7 +6,7 @@
 
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <ccTypes.h>
@@ -55,9 +55,9 @@ bool NongDropdownLayer::init(float width, float height, std::vector<int> ids, Cu
     int manifest = NongManager::get().getCurrentManifestVersion();
     int count = NongManager::get().getStoredIDCount();
     const std::string label = fmt::format("Manifest v{}, storing {} unique song IDs.", manifest, count);
-    CCLabelBMFont* manifestLabel = CCLabelBMFont::create(label.c_str(), "chatFont.fnt");
+    geode::Label* manifestLabel = geode::Label::create(label, "chatFont.fnt");
     manifestLabel->setPosition(contentSize.width / 2, 12.f);
-    manifestLabel->limitLabelWidth(140.f, 0.9f, 0.1f);
+    manifestLabel->setLimitLabelWidth(140.f, 0.9f, 0.1f);
     manifestLabel->setColor(ccColor3B{220, 220, 220});
     manifestLabel->setID("manifest-label");
     m_mainLayer->addChild(manifestLabel);

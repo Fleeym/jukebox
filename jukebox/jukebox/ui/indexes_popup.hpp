@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <Geode/utils/function.hpp>
 #include <vector>
 
 #include <Geode/cocos/cocoa/CCObject.h>
@@ -11,7 +11,7 @@
 
 namespace jukebox {
 
-using IndexesCallback = std::function<void(std::vector<index::IndexSource>)>;
+using IndexesCallback = geode::Function<void(std::vector<index::IndexSource>)>;
 
 class IndexesPopup : public geode::Popup {
 protected:

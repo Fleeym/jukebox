@@ -1,10 +1,10 @@
-#include <filesystem>
 #include <optional>
 
 #include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/modify/GJGameLevel.hpp>  // IWYU pragma: keep
 #include <Geode/modify/Modify.hpp>
 #include <Geode/utils/string.hpp>
+#include <asp/fs/fs.hpp>
 
 #include <jukebox/managers/nong_manager.hpp>
 
@@ -24,14 +24,11 @@ class $modify(GJGameLevel) {
             return GJGameLevel::getAudioFileName();
         }
         Song* active = res.value()->active();
-        if (!std::filesystem::exists(active->path().value())) {
+        if (!asp::fs::exists(active->path().value())) {
             return GJGameLevel::getAudioFileName();
         }
         jukebox::NongManager::get().m_currentlyPreparingNong = res.value();
-#ifdef GEODE_IS_WINDOWS
-        return geode::utils::string::wideToUtf8(active->path().value().c_str());
-#else
-        return active->path().value().string();
-#endif
+
+        return geode::utils::string::pathToString(active->path().value());
     }
 };

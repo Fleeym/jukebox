@@ -9,14 +9,15 @@
 #include <unordered_map>
 #include <utility>
 
-#include <asp/iter.hpp>
 #include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Log.hpp>
-#include <Geode/utils/general.hpp>
+#include <Geode/utils/file.hpp>
+#include <asp/iter.hpp>
+#include <asp/fs/fs.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/compat/compat.hpp>
@@ -146,7 +147,9 @@ bool NongManager::init() {
             defaultSongMetadata->name = event.songName();
             defaultSongMetadata->artist = event.artistName();
 
-            (void)this->saveNongs(event.gdId());
+            if (auto saveRes = this->saveNongs(event.gdId()); saveRes.isErr()) {
+                log::error("Failed to save song {} metadata update: {}", event.gdId(), saveRes.unwrapErr());
+            }
 
             return ListenerResult::Propagate;
         })
@@ -174,15 +177,28 @@ bool NongManager::init() {
     log::info("Starting NONG read");
 
     const std::filesystem::path path = this->baseManifestPath();
-    if (!std::filesystem::exists(path)) {
+    if (!asp::fs::exists(path)) {
         log::info("No manifest directory found. Creating...");
-        std::filesystem::create_directory(path);
+        auto createDirRes = geode::utils::file::createDirectory(path);
+        if (createDirRes.isErr()) {
+            log::error("Failed to create the manifest directory: {}", createDirRes.unwrapErr());
+        }
     }
-    if (const std::filesystem::path nongsPath = this->baseNongsPath(); !std::filesystem::exists(nongsPath)) {
-        std::filesystem::create_directory(nongsPath);
+    if (const std::filesystem::path nongsPath = this->baseNongsPath(); !asp::fs::exists(nongsPath)) {
+        auto createDirRes = geode::utils::file::createDirectory(nongsPath);
+        if (createDirRes.isErr()) {
+            log::error("Failed to create nongs directory {}: {}", nongsPath, createDirRes.unwrapErr());
+        }
     }
 
-    for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(path)) {
+    auto iterRes = asp::fs::iterdir(path);
+    if (iterRes.isErr()) {
+        auto err = iterRes.unwrapErr();
+        log::error("Failed to iterate directory {}. Code: {}, message: {}", path, err.getCode(), err.message());
+        return false;
+    }
+
+    for (const auto& entry : iterRes.unwrap()) {
         if (entry.path().extension() != ".json") {
             continue;
         }
@@ -190,7 +206,11 @@ bool NongManager::init() {
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
             log::error("Failed to read file {}: {}", entry.path().filename(), res.unwrapErr());
-            std::filesystem::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename().string()));
+            auto renameRes = asp::fs::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename()));
+            if (renameRes.isErr()) {
+                auto err = renameRes.unwrapErr();
+                log::error("Failed to rename file {}: Code: {}, message: {}", entry.path(), err.getCode(), err.message());
+            }
             continue;
         }
 
@@ -257,13 +277,18 @@ Result<> NongManager::migrateV2() {
             }
         }
 
-        (void)nongs->setActive(compatManifest.active.metadata()->uniqueID);
-        (void)nongs->commit();
+        if (auto setActiveRes = nongs->setActive(compatManifest.active.metadata()->uniqueID); setActiveRes.isErr()) {
+            log::error("Failed to set migrated active song for id {}: {}", id, setActiveRes.unwrapErr());
+        }
+
+        if (auto commitRes = nongs->commit(); commitRes.isErr()) {
+            log::error("Failed to commit migrated songs for id {}: {}", id, commitRes.unwrapErr());
+        }
         i++;
     }
 
     log::info("Migrated {} ids from v2", i);
-    (void)compat::v2::backupManifest(true);
+    GEODE_UNWRAP(compat::v2::backupManifest(true));
 
     return Ok();
 }
@@ -271,8 +296,11 @@ Result<> NongManager::migrateV2() {
 Result<> NongManager::saveNongs(std::optional<int> saveID) {
     const std::filesystem::path path = this->baseManifestPath();
 
-    if (!std::filesystem::exists(path)) {
-        std::filesystem::create_directory(path);
+    if (!asp::fs::exists(path)) {
+        auto createDirRes = geode::utils::file::createDirectory(path);
+        if (createDirRes.isErr()) {
+            return Err("Failed to create the manifest directory: {}", createDirRes.unwrapErr());
+        }
     }
 
     for (const auto& entry : m_manifest.m_nongs) {
@@ -289,19 +317,14 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
 }
 
 Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(const std::filesystem::path& path) {
-    auto stem = path.stem().string();
+    auto stem = string::pathToString(path.stem());
     GEODE_UNWRAP_INTO(int id, geode::utils::numFromString<int>(stem));
 
     if (id == 0) {
-        return Err(fmt::format("Invalid filename {}", path.filename().string()));
+        return Err("Invalid filename {}", path.filename());
     }
 
-    std::ifstream input(path);
-    if (!input.is_open()) {
-        return Err(fmt::format("Couldn't open file: {}", path.filename().string()));
-    }
-
-    GEODE_UNWRAP_INTO(matjson::Value json, matjson::parse(input).mapErr([id](std::string err) {
+    GEODE_UNWRAP_INTO(matjson::Value json, geode::utils::file::readJson(path).mapErr([id](std::string err) {
         return fmt::format("Couldn't parse JSON from file: {}", err);
     }));
 
@@ -345,9 +368,8 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         }
         auto nongs = result.value();
         if (nongs->isDefaultActive()) {
-            auto songObj = co_await async::waitForMainThread<SongInfoObject*>([id]() {
-                return MusicDownloadManager::sharedState()->getSongInfoObject(id);
-            });
+            auto songObj = co_await async::waitForMainThread<SongInfoObject*>(
+                [id]() { return MusicDownloadManager::sharedState()->getSongInfoObject(id); });
             if (songObj && songObj.value() && songObj.value()->m_fileSize > 0.f) {
                 double filesizeMB = songObj.value()->m_fileSize;
                 sum += static_cast<uintmax_t>(filesizeMB * 1000000.f);
@@ -356,10 +378,10 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         }
 
         auto path = nongs->active()->path().value();
-        if (path.string().starts_with("songs/")) {
+        if (string::pathToString(path).starts_with("songs/")) {
             path = resourcesDir / path;
         }
-        if (std::filesystem::exists(path, _ec)) {
+        if (asp::fs::exists(path)) {
             sum += std::filesystem::file_size(path, _ec);
         }
     }
@@ -368,12 +390,12 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         std::string filename = fmt::format("s{}.ogg", s);
         auto localPath = resourcesDir / "sfx" / filename;
 
-        if (std::filesystem::exists(localPath, _ec)) {
+        if (asp::fs::exists(localPath)) {
             sum += std::filesystem::file_size(localPath, _ec);
             continue;
         }
         auto path = songDir / filename;
-        if (std::filesystem::exists(path, _ec)) {
+        if (asp::fs::exists(path)) {
             sum += std::filesystem::file_size(path, _ec);
         }
     }
@@ -449,8 +471,12 @@ std::filesystem::path NongManager::generateSongFilePath(const std::string& exten
                                                         std::optional<std::string> filename) {
     auto unique = filename.value_or(jukebox::random_string(16));
     auto destination = Mod::get()->getSaveDir() / "nongs";
-    if (!std::filesystem::exists(destination)) {
-        std::filesystem::create_directory(destination);
+    if (!asp::fs::exists(destination)) {
+        auto createDirRes = asp::fs::createDir(destination);
+        if (createDirRes.isErr()) {
+            log::error("Failed to create nongs save directory {}: Code {}, message {}", destination,
+                       createDirRes.unwrapErr().getCode(), createDirRes.unwrapErr().message());
+        }
     }
     unique += extension;
     destination = destination / unique;

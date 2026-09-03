@@ -1,15 +1,15 @@
 #include <Geode/Result.hpp>
 #include <filesystem>
 #include <optional>
-#include <sstream>
 
 #include <Geode/cocos/actions/CCActionInterval.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <fmt/format.h>
+#include <asp/fs/fs.hpp>
 
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CustomSongWidget.hpp>
@@ -24,7 +24,6 @@
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
-#include <ranges>
 
 #include <jukebox/events/song_state_changed.hpp>
 #include <jukebox/managers/nong_manager.hpp>
@@ -39,7 +38,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         Nongs* nongs = nullptr;
         CCMenu* labelMenu = nullptr;
         CCMenu* pinMenu = nullptr;
-        CCLabelBMFont* sizeIdLabel = nullptr;
+        geode::Label* sizeIdLabel = nullptr;
         std::string songIds;
         std::string sfxIds;
         bool firstRun = true;
@@ -148,7 +147,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             if (!optPath) {
                 found->second = false;
             } else {
-                found->second = std::filesystem::exists(std::move(optPath).value());
+                found->second = asp::fs::exists(std::move(optPath).value());
             }
         }
     }
@@ -444,7 +443,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         const std::filesystem::path activePath = std::move(activePathOpt).value();
 
         std::string sizeText;
-        if (std::filesystem::exists(activePath)) {
+        if (asp::fs::exists(activePath)) {
             sizeText = NongManager::get().getFormattedSize(activePath);
         } else if (m_songInfoObject) {
             sizeText = fmt::format("{:.2f}MB", m_songInfoObject->m_fileSize);
@@ -455,18 +454,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
         std::string labelText;
         std::string idDisplay;
         if (nongs->isDefaultActive()) {
-            std::stringstream ss;
-            int displayId = songID;
-            if (displayId < 0) {
-                displayId = (-displayId) - 1;
-                ss << "(R) ";
-            }
-            ss << displayId;
-            idDisplay = ss.str();
-        } else if (songID < 0) {
-            idDisplay = "(R) NONG";
-        } else {
-            idDisplay = "NONG";
+            int displayId = songID < 0 ? - songID - 1 : songID;
+            idDisplay = fmt::format("{}{}", songID < 0 ? "(R) " : "", displayId);
+        }
+        else {
+            idDisplay = songID < 0 ? "(R) NONG" : "NONG";
         }
 
         if (m_isMusicLibrary) {
@@ -498,7 +490,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             m_fields->labelMenu->setID("nong-menu"_spr);
             m_fields->labelMenu->ignoreAnchorPointForPosition(false);
             m_fields->labelMenu->setTouchPriority(m_buttonMenu->getTouchPriority());
-            CCLabelBMFont* label = CCLabelBMFont::create(active->metadata()->name.c_str(), "bigFont.fnt");
+            geode::Label* label = geode::Label::create(active->metadata()->name, "bigFont.fnt");
             label->setID("song-name-label"_spr);
             CCMenuItemSpriteExtra* btn =
                 CCMenuItemSpriteExtra::create(label, this, menu_selector(JBSongWidget::addNongLayer));

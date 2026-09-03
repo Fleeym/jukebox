@@ -1,23 +1,28 @@
 #include <jukebox/ui/list/nong_list.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <unordered_set>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <fmt/core.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
+#include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/cocos.hpp>
+#include <asp/iter/std.hpp>
 
 #include <jukebox/events/nong_deleted.hpp>
 #include <jukebox/events/song_download_finished.hpp>
@@ -32,7 +37,7 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::optional<int> levelID,
-                    std::function<void(std::optional<int>)> onListTypeChange) {
+                    geode::Function<void(std::optional<int>)> onListTypeChange) {
     if (!CCNode::init()) {
         return false;
     }
@@ -56,7 +61,7 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     this->setAnchorPoint({0.5f, 0.5f});
     this->setID("NongList");
 
-    m_bg = CCScale9Sprite::create("square02b_001.png");
+    m_bg = NineSlice::create("square02b_001.png");
     m_bg->setColor({0, 0, 0});
     m_bg->setOpacity(75);
     m_bg->setScale(0.3f);
@@ -64,18 +69,29 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     m_bg->setID("background");
     this->addChildAtPosition(m_bg, Anchor::Center);
 
-    CCMenu* menu = CCMenu::create();
+    m_backMenu = CCMenu::create();
     auto spr = CCSprite::createWithSpriteFrameName("backArrowPlain_01_001.png");
     auto backBtn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(NongList::onBack));
     m_backBtn = backBtn;
     m_backBtn->setID("back-btn");
     m_backBtn->setVisible(false);
-    menu->addChild(backBtn);
-    menu->setContentHeight(size.height);
-    menu->setLayout(SimpleColumnLayout::create()->setGap(1.0f)->setMainAxisScaling(AxisScaling::ScaleDown));
-    menu->setZOrder(1);
-    menu->setID("back-menu");
-    this->addChildAtPosition(menu, Anchor::Left, CCPoint{-10.0f, 0.0f});
+    m_backMenu->addChild(backBtn);
+    m_backMenu->setContentWidth(backBtn->getContentWidth());
+    m_backMenu->setContentHeight(size.height);
+    m_backMenu->setLayout(SimpleColumnLayout::create()->setGap(1.0f)->setMainAxisScaling(AxisScaling::ScaleDown));
+    m_backMenu->setZOrder(1);
+    m_backMenu->setID("back-menu");
+    this->addChildAtPosition(m_backMenu, Anchor::Left, CCPoint{-10.0f, 0.0f});
+
+    m_searchInput = TextInput::create(size.width - s_padding * 2, "Search nongs...");
+    m_searchInput->setID("search-input");
+    m_searchInput->setScale(0.75f);
+    m_searchInput->setCallback([this](const std::string& query) {
+        m_searchQuery = query;
+        this->build();
+    });
+    m_searchInput->setVisible(false);
+    this->addChildAtPosition(m_searchInput, Anchor::Top, CCPoint{0.0f, -(s_searchBarHeight / 2 + s_padding / 2)});
 
     m_list = ScrollLayer::create({size.width, size.height - s_padding});
     m_list->m_contentLayer->setLayout(SimpleColumnLayout::create()
@@ -94,6 +110,17 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     return true;
 }
 
+bool NongList::matchesSearch(const std::string_view name) const {
+    if (m_searchQuery.empty()) {
+        return true;
+    }
+
+    auto it = std::search(name.begin(), name.end(), m_searchQuery.begin(), m_searchQuery.end(),
+                          [](unsigned char u1, unsigned char u2) { return std::tolower(u1) == std::tolower(u2); });
+
+    return it != name.end();
+}
+
 void NongList::build() {
     if (m_list->m_contentLayer->getChildrenCount() > 0) {
         m_list->m_contentLayer->removeAllChildrenWithCleanup(true);
@@ -110,6 +137,12 @@ void NongList::build() {
     }
 
     if (!m_currentSong) {
+        // Multi-song view
+
+        m_searchInput->setVisible(false);
+        m_list->setContentSize({m_list->getContentSize().width, this->getContentSize().height - s_padding});
+        m_list->updateAnchoredPosition(Anchor::Center, -m_list->getScaledContentSize() / 2);
+
         for (int id : m_songIds) {
             std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
 
@@ -124,6 +157,13 @@ void NongList::build() {
         }
     } else {
         // Single item
+
+        m_searchInput->setVisible(true);
+        float listHeight = this->getContentSize().height - s_padding - s_searchBarHeight;
+        m_list->setContentSize({m_list->getContentSize().width, listHeight});
+        m_list->updateAnchoredPosition(Anchor::Center,
+                                       CCPoint{0.0f, -(s_searchBarHeight / 2)} - m_list->getScaledContentSize() / 2);
+
         int id = m_currentSong.value();
 
         std::optional<Nongs*> optNongs = NongManager::get().getNongs(id);
@@ -138,7 +178,7 @@ void NongList::build() {
 
         m_list->m_contentLayer->addChild(NongCell::create(id, defaultID, itemSize, m_levelID, std::nullopt));
 
-        CCLabelBMFont* localSongs = CCLabelBMFont::create("Stored nongs", "goldFont.fnt");
+        geode::Label* localSongs = geode::Label::create("Stored nongs", "goldFont.fnt");
         localSongs->setID("local-section");
         localSongs->setScale(0.5f);
         m_list->m_contentLayer->addChild(localSongs);
@@ -190,9 +230,9 @@ void NongList::build() {
             };
 
             bool aVerified =
-                std::ranges::find(verifiedNongs, a->metadata()->uniqueID) != verifiedNongs.end();
+                asp::iter::from(verifiedNongs).any([a](auto& i) { return i.get() == a->metadata()->uniqueID; });
             bool bVerified =
-                std::ranges::find(verifiedNongs, b->metadata()->uniqueID) != verifiedNongs.end();
+                asp::iter::from(verifiedNongs).any([b](auto& i) { return i.get() == b->metadata()->uniqueID; });
 
             // Sort by Verified
             if (aVerified != bVerified) {
@@ -211,11 +251,14 @@ void NongList::build() {
         });
 
         for (Song* nong : allLocalNongs) {
+            if (!this->matchesSearch(nong->metadata()->name) && !this->matchesSearch(nong->metadata()->artist)) {
+                continue;
+            }
             this->addSongToList(nong, nongs);
         }
 
         if (!nongs->indexSongs().empty()) {
-            CCLabelBMFont* indexLabel = CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            geode::Label* indexLabel = geode::Label::create("Download nongs", "goldFont.fnt");
             indexLabel->setID("index-section");
             indexLabel->setScale(0.5f);
             m_list->m_contentLayer->addChild(indexLabel);
@@ -277,6 +320,9 @@ void NongList::build() {
                   });
 
         for (index::IndexSongMetadata* indexNong : allIndexNongs) {
+            if (!this->matchesSearch(indexNong->name) && !this->matchesSearch(indexNong->artist)) {
+                continue;
+            }
             this->addIndexSongToList(indexNong, nongs);
         }
     }
@@ -294,7 +340,7 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     std::string uniqueID = nong->metadata()->uniqueID;
     std::optional<std::filesystem::path> path = nong->path();
     bool isFromIndex = nong->indexID().has_value();
-    bool isDownloaded = path.has_value() && std::filesystem::exists(path.value());
+    bool isDownloaded = path.has_value() && asp::fs::exists(path.value());
     NongCell* cell = NongCell::create(id, uniqueID, itemSize, m_levelID, std::nullopt);
     cell->setID(uniqueID);
 
@@ -320,9 +366,9 @@ void NongList::addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent)
 }
 
 void NongList::addNoLocalSongsNotice(bool liveInsert) {
-    CCLabelBMFont* label = CCLabelBMFont::create("You have no stored nongs :(", "bigFont.fnt");
+    geode::Label* label = geode::Label::create("You have no stored nongs :(", "bigFont.fnt");
     label->setID("no-local-songs");
-    label->limitLabelWidth(150.0f, 0.7f, 0.1f);
+    label->setLimitLabelWidth(150.0f, 0.7f, 0.1f);
 
     if (!liveInsert) {
         m_list->m_contentLayer->addChild(label);
@@ -345,10 +391,17 @@ void NongList::onBack(cocos2d::CCObject* target) {
         return;
     }
 
+    // Multi-song view has no search
+    m_searchQuery = "";
+    if (m_searchInput) {
+        m_searchInput->setString("");
+    }
+
     m_currentSong = std::nullopt;
     this->build();
     this->scrollToTop();
     m_backBtn->setVisible(false);
+    m_backMenu->updateLayout();
 }
 
 void NongList::setCurrentSong(int songId) {
@@ -366,6 +419,7 @@ void NongList::onSelectSong(int songId) {
     this->build();
     this->scrollToTop();
     m_backBtn->setVisible(true);
+    m_backMenu->updateLayout();
 }
 
 ListenerResult NongList::onDownloadFinish(const event::SongDownloadFinishedData& e) {
@@ -426,7 +480,7 @@ ListenerResult NongList::onNongDeleted(const event::NongDeletedData& e) {
         }
 
         if (!m_list->m_contentLayer->getChildByID("index-section")) {
-            CCLabelBMFont* indexLabel = CCLabelBMFont::create("Download nongs", "goldFont.fnt");
+            geode::Label* indexLabel = geode::Label::create("Download nongs", "goldFont.fnt");
             indexLabel->setID("index-section");
             indexLabel->setScale(0.5f);
             m_list->m_contentLayer->addChild(indexLabel);
@@ -462,7 +516,7 @@ void NongList::updateLayoutAndFixWeirdDisplay() const {
 }
 
 NongList* NongList::create(std::vector<int> songIds, const cocos2d::CCSize& size, std::optional<int> levelID,
-                           std::function<void(std::optional<int>)> onListTypeChange) {
+                           geode::Function<void(std::optional<int>)> onListTypeChange) {
     auto ret = new NongList();
     if (ret->init(std::move(songIds), size, levelID, std::move(onListTypeChange))) {
         ret->autorelease();

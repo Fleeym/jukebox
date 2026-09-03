@@ -1,11 +1,9 @@
 #include <jukebox/nong/nong.hpp>
 
 #include <filesystem>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -15,6 +13,8 @@
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/general.hpp>
+#include <Geode/utils/file.hpp>
+#include <asp/fs/fs.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/download/cobalt.hpp>
@@ -124,8 +124,8 @@ public:
     [[nodiscard]] std::string youtubeID() const { return m_youtubeID; }
     [[nodiscard]] std::optional<std::string> indexID() const { return m_indexID; }
     Future<Result<ByteVector>> startDownload() const {
-        if (std::error_code ec; m_path.has_value() && std::filesystem::exists(m_path.value(), ec)) {
-            co_return Err("Song already is downloaded");
+        if (m_path.has_value() && asp::fs::exists(m_path.value())) {
+            co_return Err("Song is already downloaded");
         }
 
         co_return Err("unimplemented");
@@ -202,8 +202,8 @@ public:
     [[nodiscard]] std::optional<std::string> indexID() const noexcept { return m_indexID; }
     [[nodiscard]] std::optional<std::filesystem::path> path() const noexcept { return m_path; }
     Future<Result<ByteVector>> startDownload() const {
-        if (std::error_code ec; m_path.has_value() && std::filesystem::exists(m_path.value(), ec)) {
-            co_return Err("Song already is downloaded");
+        if (m_path.has_value() && asp::fs::exists(m_path.value())) {
+            co_return Err("Song is already downloaded");
         }
 
         co_return co_await download::startHostedDownload(m_url);
@@ -256,12 +256,11 @@ private:
     std::vector<IndexSongMetadata*> m_indexSongs;
 
     void deletePath(const std::optional<std::filesystem::path>& path) {
-        std::error_code ec;
-        if (path.has_value() && std::filesystem::exists(path.value(), ec)) {
-            std::filesystem::remove(path.value(), ec);
-            if (ec) {
-                log::error("Couldn't delete nong. Category: {}, message: {}", ec.category().name(),
-                           ec.category().message(ec.value()));
+        if (path.has_value() && asp::fs::exists(path.value())) {
+            auto removeRes = asp::fs::remove(path.value());
+            if (removeRes.isErr()) {
+                auto err = removeRes.unwrapErr();
+                log::error("Couldn't delete NONG. Code: {}, message: {}", err.getCode(), err.message());
             }
         }
     }
@@ -277,8 +276,12 @@ public:
 
         // Don't save manifest for songs with no nongs
         if (m_locals.empty() && m_youtube.empty() && m_hosted.empty()) {
-            if (std::error_code ec; std::filesystem::exists(path, ec)) {
-                std::filesystem::remove(path, ec);
+            if (asp::fs::exists(path)) {
+                auto removeRes = asp::fs::remove(path);
+                if (removeRes.isErr()) {
+                    auto err = removeRes.unwrapErr();
+                    return Err("Failed to remove file. Code: {}, message: {}", err.getCode(), err.message());
+                }
             }
 
             return Ok();
@@ -286,13 +289,10 @@ public:
 
         matjson::Value json = matjson::Serialize<Nongs>::toJson(*self);
 
-        std::ofstream output(path);
-        if (!output.is_open()) {
-            return Err(fmt::format("Couldn't open file: {}", path));
+        auto writeRes = geode::utils::file::writeString(path, json.dump(matjson::NO_INDENTATION));
+        if (writeRes.isErr()) {
+            return Err("Couldn't write manifest: {}", writeRes.unwrapErr());
         }
-
-        output << json.dump(matjson::NO_INDENTATION);
-        output.close();
 
         return Ok();
     }
@@ -304,7 +304,7 @@ public:
             return Ok();
         }
 
-        if (std::error_code ec; !std::filesystem::exists(path, ec)) {
+        if (!asp::fs::exists(path)) {
             return Err("Song doesn't exist on disk");
         }
 
@@ -413,7 +413,8 @@ public:
         }
 
         if (m_active->metadata()->uniqueID == uniqueID) {
-            (void)this->setActive(m_default->metadata()->uniqueID, self);
+            GEODE_UNWRAP(this->setActive(m_default->metadata()->uniqueID, self)
+                             .mapErr([](std::string err) { return fmt::format("Failed to reset active song: {}", err); }));
         }
 
         for (auto i = m_locals.begin(); i != m_locals.end(); ++i) {
@@ -554,7 +555,7 @@ public:
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
-            return Err(fmt::format("NONG ID {} not found", id));
+            return Err("NONG ID {} not found", id);
         }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
@@ -578,7 +579,7 @@ public:
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
-            return Err(fmt::format("NONG ID {} not found", id));
+            return Err("NONG ID {} not found", id);
         }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
@@ -604,7 +605,7 @@ public:
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) {
-            return Err(fmt::format("NONG ID {} not found", id));
+            return Err("NONG ID {} not found", id);
         }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();

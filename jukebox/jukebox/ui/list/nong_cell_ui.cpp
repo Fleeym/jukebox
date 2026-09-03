@@ -1,10 +1,10 @@
 #include <jukebox/ui/list/nong_cell_ui.hpp>
 
-#include <GUI/CCControlExtension/CCScale9Sprite.h>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/ui/Label.hpp>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
@@ -19,9 +19,9 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool NongCellUI::init(const cocos2d::CCSize& size, std::function<void()> onSelect, std::function<void()> onTrash,
-                      std::function<void()> onFixDefault, std::function<void()> onDownload,
-                      std::function<void()> onEdit) {
+bool NongCellUI::init(const cocos2d::CCSize& size, geode::Function<void()> onSelect, geode::Function<void()> onTrash,
+                      geode::Function<void()> onFixDefault, geode::Function<void()> onDownload,
+                      geode::Function<void()> onEdit) {
     if (!CCNode::init()) {
         return false;
     }
@@ -53,17 +53,17 @@ void NongCellUI::build() {
     // Create outline around the song if it's verified
     if (m_isVerified) {
         // Create the "Verified For Level" text
-        CCLabelBMFont* verifiedLabel = CCLabelBMFont::create("Verified For Level", "goldFont.fnt");
+        geode::Label* verifiedLabel = geode::Label::create("Verified For Level", "goldFont.fnt");
         verifiedLabel->setScale(0.35f);
         verifiedLabel->setID("verified-label");
 
         // Create outline shape
-        CCScale9Sprite* outlineStencil = CCScale9Sprite::create("square02b_001.png");
+        NineSlice* outlineStencil = NineSlice::create("square02b_001.png");
         outlineStencil->setScale(0.4f);
         outlineStencil->setContentSize((m_size + CCPoint{OUTLINE_SIZE, OUTLINE_SIZE}) / outlineStencil->getScale());
 
         // Create text background shape
-        CCScale9Sprite* textBgStencil = CCScale9Sprite::create("square02b_001.png");
+        NineSlice* textBgStencil = NineSlice::create("square02b_001.png");
         textBgStencil->setScale(0.4f);
         textBgStencil->setContentSize(
             (CCPoint{verifiedLabel->getScaledContentWidth() + 5, verifiedLabel->getScaledContentHeight() * 2 + 4}) /
@@ -97,7 +97,7 @@ void NongCellUI::build() {
         this->addChildAtPosition(verifiedLabel, Anchor::Center, textBgStencil->getPosition() + CCPoint(0.f, 7.f));
     }
 
-    CCScale9Sprite* bg = CCScale9Sprite::create("square02b_001.png");
+    NineSlice* bg = NineSlice::create("square02b_001.png");
     bg->setColor({76, 42, 25});
     bg->setScale(0.3f);
     bg->setContentSize(m_size / bg->getScale());
@@ -109,7 +109,7 @@ void NongCellUI::build() {
     m_songInfoNode->setContentSize({songInfoWidth, maxSize.height});
     m_songInfoNode->setID("song-info-node");
 
-    m_songNameLabel = CCLabelBMFont::create(m_songName.c_str(), "bigFont.fnt");
+    m_songNameLabel = geode::Label::create(m_songName, "bigFont.fnt");
     m_songNameLabel->setAnchorPoint({0.0f, 0.5f});
     m_songNameLabel->setScale(0.6f);
     m_songNameLabel->setID("song-info-label");
@@ -118,12 +118,12 @@ void NongCellUI::build() {
         m_songNameLabel->setColor({188, 254, 206});
     }
 
-    m_authorNameLabel = CCLabelBMFont::create(m_authorName.c_str(), "goldFont.fnt");
+    m_authorNameLabel = geode::Label::create(m_authorName, "goldFont.fnt");
     m_authorNameLabel->setAnchorPoint({0.0f, 0.5f});
     m_authorNameLabel->setScale(0.5f);
     m_authorNameLabel->setID("artist-label");
 
-    m_metadataLabel = CCLabelBMFont::create(m_metadata.c_str(), "bigFont.fnt");
+    m_metadataLabel = geode::Label::create(m_metadata, "bigFont.fnt");
     m_metadataLabel->setAnchorPoint({0.0f, 0.5f});
     m_metadataLabel->setColor({.r = 162, .g = 191, .b = 255});
     m_metadataLabel->setScale(0.4f);
@@ -259,9 +259,9 @@ void NongCellUI::onFixDefault(CCObject*) { m_onFixDefault(); }
 void NongCellUI::onDownload(CCObject*) { m_onDownload(); }
 void NongCellUI::onEdit(CCObject*) { m_onEdit(); }
 
-NongCellUI* NongCellUI::create(const cocos2d::CCSize& size, std::function<void()> onSelect,
-                               std::function<void()> onTrash, std::function<void()> onFixDefault,
-                               std::function<void()> onDownload, std::function<void()> onEdit) {
+NongCellUI* NongCellUI::create(const cocos2d::CCSize& size, geode::Function<void()> onSelect,
+                               geode::Function<void()> onTrash, geode::Function<void()> onFixDefault,
+                               geode::Function<void()> onDownload, geode::Function<void()> onEdit) {
     auto ret = new NongCellUI();
     if (ret->init(size, std::move(onSelect), std::move(onTrash), std::move(onFixDefault), std::move(onDownload),
                   std::move(onEdit))) {

@@ -1,11 +1,9 @@
 #include <jukebox/ui/list/nong_cell.hpp>
 
-#include <functional>
-#include <utility>
-
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
@@ -121,21 +119,18 @@ bool NongCell::initLocal() {
     m_nongCell->m_songName = songInfo->metadata()->name;
     m_nongCell->m_authorName = songInfo->metadata()->artist;
 
-    std::ostringstream oss;
+    std::vector<std::string> pairs;
     for (size_t i = 0; i + 1 < metadataList.size(); i += 2) {
-        if (i > 0) {
-            oss << " | ";
-        }
-        oss << metadataList[i] << ": " << metadataList[i + 1];
+        pairs.push_back(fmt::format("{}: {}", metadataList[i], metadataList[i + 1]));
     }
-    m_nongCell->m_metadata = oss.str();
+    m_nongCell->m_metadata = fmt::format("{}", fmt::join(pairs, " | "));
 
     m_isVerified = m_levelID.has_value()
                        ? NongManager::get().isNongVerifiedForLevelSong(m_levelID.value(), m_songID, m_uniqueID)
                        : false;
     m_isDefault = nongs.value()->defaultSong()->metadata()->uniqueID == m_uniqueID;
     m_isActive = nongs.value()->active()->metadata()->uniqueID == m_uniqueID;
-    m_isDownloaded = songInfo->path().has_value() && std::filesystem::exists(songInfo->path().value());
+    m_isDownloaded = songInfo->path().has_value() && asp::fs::exists(songInfo->path().value());
     m_isDownloadable = songInfo->type() != NongType::LOCAL;
     m_isDownloading = false;
     m_nongCell->m_showEditButton = !m_isDefault && !songInfo->indexID().has_value();
@@ -159,14 +154,11 @@ bool NongCell::initIndex() {
 
     metadataList.push_back(indexSongMetadata->parentID->m_name);
 
-    std::ostringstream oss;
+    std::vector<std::string> pairs;
     for (size_t i = 0; i + 1 < metadataList.size(); i += 2) {
-        if (i > 0) {
-            oss << " | ";
-        }
-        oss << metadataList[i] << ": " << metadataList[i + 1];
+        pairs.push_back(fmt::format("{}: {}", metadataList[i], metadataList[i + 1]));
     }
-    m_nongCell->m_metadata = oss.str();
+    m_nongCell->m_metadata = fmt::format("{}", fmt::join(pairs, " | "));
 
     m_nongCell->m_songName = indexSongMetadata->name;
     m_nongCell->m_authorName = indexSongMetadata->artist;
