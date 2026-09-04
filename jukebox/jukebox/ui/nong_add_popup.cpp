@@ -17,6 +17,7 @@
 #include <fmod_common.h>
 #include <fmod_errors.h>
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
@@ -618,7 +619,7 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         return Err("The selected file ({}) does not exist.", path);
     }
 
-    if (asp::fs::isDirectory(path)) {
+    if (asp::fs::isDirectory(path).unwrapOr(false)) {
         return Err("You selected a directory.");
     }
 
@@ -644,11 +645,11 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
     destination /= unique;
 
     if (destination.compare(path) != 0) {
-        auto copyFileRes = asp::fs::copy(path, destination, std::filesystem::copy_options::overwrite_existing);
-        if (copyFileRes.isErr()) {
-            auto err = copyFileRes.unwrapErr();
-            return Err("Failed to save song. Please try again! Code: {}, message: {}", err.getCode(), err.message());
-        }
+        GEODE_UNWRAP(
+            asp::fs::copy(path, destination, std::filesystem::copy_options::overwrite_existing).mapErr([](auto err) {
+                return fmt::format("Failed to save song. Please try again! Code: {}, message: {}", err.getCode(),
+                                   err.message());
+            }));
     }
 
     LocalSong song = LocalSong{SongMetadata{m_songID, id, songName, artistName, levelName, offset}, destination};
