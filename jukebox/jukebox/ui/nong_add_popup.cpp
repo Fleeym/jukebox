@@ -1,10 +1,10 @@
 #include <jukebox/ui/nong_add_popup.hpp>
 
+#include <Geode/utils/function.hpp>
 #include <algorithm>
+#include <asp/fs/fs.hpp>
 #include <cstddef>
 #include <filesystem>
-#include <asp/fs/fs.hpp>
-#include <Geode/utils/function.hpp>
 #include <memory>
 #include <optional>
 #include <regex>
@@ -15,6 +15,7 @@
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <fmod_common.h>
+#include <fmod_errors.h>
 #include <fmt/core.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
@@ -39,6 +40,7 @@
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/index_choose_popup.hpp>
 #include <jukebox/utils/random_string.hpp>
+#include "Geode/loader/Log.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox::index;
@@ -352,17 +354,8 @@ CCSize NongAddPopup::getPopupSize() { return {320.f, 240.f}; }
 void NongAddPopup::openFile(CCObject* target) {
     file::FilePickOptions::Filter filter = {
         .description = "Songs",
-        .files = {
-            "*.mp3", "*.mp2",
-            "*.ogg",
-            "*.wav",
-            "*.aiff", "*.aif",
-            "*.flac",
-            "*.aac", "*.m4a",
-            "*.mid", "*.midi",
-            "*.mod", "*.s3m", "*.xm", "*.it"
-        }
-    };
+        .files = {"*.mp3", "*.mp2", "*.ogg", "*.wav", "*.aiff", "*.aif", "*.flac", "*.aac", "*.m4a", "*.mid", "*.midi",
+                  "*.mod", "*.s3m", "*.xm", "*.it"}};
     file::FilePickOptions options = {std::nullopt, {filter}};
     async::spawn(file::pick(file::PickMode::OpenFile, options),
                  [this](Result<std::optional<std::filesystem::path>> result) { this->onFileOpen(std::move(result)); });
@@ -401,10 +394,7 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
     std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
     if (!this->isPathValidSong(path)) {
-        FLAlertLayer::create("Error",
-                             "The selected file is not a valid song",
-                             "Ok")
-            ->show();
+        FLAlertLayer::create("Error", "The selected file is not a valid song", "Ok")->show();
         return;
     }
 
@@ -556,10 +546,9 @@ void NongAddPopup::onPublish(CCObject* target) {
         };
 
         if (submit.m_preSubmitMessage.has_value()) {
-            const auto popup =
-                IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(),
-                                             submit.m_preSubmitMessage.value(), "Back", "Continue", 420.f,
-                                             std::move(submitFunc));
+            const auto popup = IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(),
+                                                            submit.m_preSubmitMessage.value(), "Back", "Continue",
+                                                            420.f, std::move(submitFunc));
             if (popup) {
                 popup->m_scene = this;
                 popup->show();
@@ -658,8 +647,7 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         auto copyFileRes = asp::fs::copy(path, destination, std::filesystem::copy_options::overwrite_existing);
         if (copyFileRes.isErr()) {
             auto err = copyFileRes.unwrapErr();
-            return Err(
-                "Failed to save song. Please try again! Code: {}, message: {}", err.getCode(), err.message());
+            return Err("Failed to save song. Please try again! Code: {}, message: {}", err.getCode(), err.message());
         }
     }
 
@@ -818,13 +806,14 @@ bool NongAddPopup::isPathValidSong(const std::filesystem::path& song) const {
 
     FMOD::Sound* sound = nullptr;
     const FMOD_RESULT result = FMODAudioEngine::sharedEngine()->m_system->createSound(
-        stringPath.c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound
-    );
+        stringPath.c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
 
     if (result == FMOD_OK) {
         sound->release();
         return true;
     }
+
+    geode::log::warn("FMOD error when reading file {}: {}", song, FMOD_ErrorString(result));
 
     return false;
 }
@@ -846,9 +835,11 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD::Sound* sound;
     FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
 
-    system->createSound(geode::utils::string::pathToString(path).c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
+    FMOD_RESULT result = system->createSound(geode::utils::string::pathToString(path).c_str(),
+                                             FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
 
-    if (!sound) {
+    if (!sound || result != FMOD_OK) {
+        geode::log::warn("FMOD error when reading file {}: {}", path, FMOD_ErrorString(result));
         return std::nullopt;
     }
 
