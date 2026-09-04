@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.7.1
+
+* Fix 'You selected a directory' bug
+* Update `about.md` Discord invite link
+* Add configurable timeout for non-download web requests
+* Log some FMOD related issues in the console
+* Temporarily disable autocomplete metadata, as it is quite broken
+
 ## v3.7.0
 
 * Add simple NONG search (thanks to @MalikHw for the implementation)
