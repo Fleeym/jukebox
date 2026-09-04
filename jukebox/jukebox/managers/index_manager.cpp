@@ -1,10 +1,7 @@
 #include <jukebox/managers/index_manager.hpp>
 
 #include <filesystem>
-#include <asp/fs/fs.hpp>
-
 #include <functional>
-#include <Geode/utils/function.hpp>
 #include <memory>
 #include <optional>
 #include <string>
@@ -19,9 +16,11 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/file.hpp>
+#include <Geode/utils/function.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/web.hpp>
 #include <arc/future/Future.hpp>
+#include <asp/fs/fs.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/download/hosted.hpp>
@@ -229,7 +228,10 @@ Future<Result<>> IndexManager::fetchIndexes() {
 }
 
 Future<Result<matjson::Value>> IndexManager::fetchIndex(const IndexSource& index) {
-    const web::WebResponse response = co_await web::WebRequest().timeout(std::chrono::seconds(30)).get(index.m_url);
+    int timeout = Mod::get()->getSettingValue<bool>("request-timeout");
+
+    const web::WebResponse response =
+        co_await web::WebRequest().timeout(std::chrono::seconds(timeout)).get(index.m_url);
 
     if (!response.ok()) {
         co_return Err(utils::web::getErrorFromResponse(response));

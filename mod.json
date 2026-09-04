@@ -51,6 +51,13 @@
         }
       ]
     },
+    "request-timeout": {
+      "name": "Request timeout (s)",
+      "description": "How many seconds to wait for non-download web requests to finish until cancelling",
+      "type": "int",
+      "default": 60,
+      "min": 30
+    },
     "download-timeout": {
       "name": "Download timeout (s)",
       "description": "How many seconds to wait when downloading a song until the download cancels",
