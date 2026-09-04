@@ -399,43 +399,43 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
         return;
     }
 
-    if (Mod::get()->getSettingValue<bool>("autocomplete-metadata")) {
-        if (auto meta = this->tryParseMetadata(path); meta && (meta->artist.has_value() || meta->name.has_value())) {
-            auto artistName = m_artistNameInput->getString();
-            auto songName = m_songNameInput->getString();
-
-            if (!artistName.empty() || !songName.empty()) {
-                // We should ask before replacing stuff
-                std::string msg = "Found metadata for the imported song: ";
-                if (meta->name.has_value()) {
-                    msg += fmt::format("Name: \"{}\". ", meta->name.value());
-                }
-                if (meta->artist.has_value()) {
-                    msg += fmt::format("Artist: \"{}\". ", meta->artist.value());
-                }
-                msg += "Do you want to set those values for the song?";
-
-                createQuickPopup("Metadata found", msg, "No", "Yes", [this, meta](auto, bool btn2) {
-                    if (!btn2) {
-                        return;
-                    }
-                    if (meta->artist.has_value()) {
-                        m_artistNameInput->setString(meta->artist.value());
-                    }
-                    if (meta->name.has_value()) {
-                        m_songNameInput->setString(meta->name.value());
-                    }
-                });
-            } else {
-                if (meta->artist.has_value()) {
-                    m_artistNameInput->setString(meta->artist.value());
-                }
-                if (meta->name.has_value()) {
-                    m_songNameInput->setString(meta->name.value());
-                }
-            }
-        }
-    }
+    // if (Mod::get()->getSettingValue<bool>("autocomplete-metadata")) {
+    //     if (auto meta = this->tryParseMetadata(path); meta && (meta->artist.has_value() || meta->name.has_value())) {
+    //         auto artistName = m_artistNameInput->getString();
+    //         auto songName = m_songNameInput->getString();
+    //
+    //         if (!artistName.empty() || !songName.empty()) {
+    //             // We should ask before replacing stuff
+    //             std::string msg = "Found metadata for the imported song: ";
+    //             if (meta->name.has_value()) {
+    //                 msg += fmt::format("Name: \"{}\". ", meta->name.value());
+    //             }
+    //             if (meta->artist.has_value()) {
+    //                 msg += fmt::format("Artist: \"{}\". ", meta->artist.value());
+    //             }
+    //             msg += "Do you want to set those values for the song?";
+    //
+    //             createQuickPopup("Metadata found", msg, "No", "Yes", [this, meta](auto, bool btn2) {
+    //                 if (!btn2) {
+    //                     return;
+    //                 }
+    //                 if (meta->artist.has_value()) {
+    //                     m_artistNameInput->setString(meta->artist.value());
+    //                 }
+    //                 if (meta->name.has_value()) {
+    //                     m_songNameInput->setString(meta->name.value());
+    //                 }
+    //             });
+    //         } else {
+    //             if (meta->artist.has_value()) {
+    //                 m_artistNameInput->setString(meta->artist.value());
+    //             }
+    //             if (meta->name.has_value()) {
+    //                 m_songNameInput->setString(meta->name.value());
+    //             }
+    //         }
+    //     }
+    // }
 
     m_localPath = path;
     m_specialInput->setString(strPath);
