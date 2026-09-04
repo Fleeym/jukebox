@@ -24,7 +24,7 @@ You can open up the Jukebox menu from any level page. Just click on the disc ico
 
 ## Reporting bugs
 
-You can report bugs on the [Song File Hub Discord server](https://discord.gg/SFE7qxYFyU)
+You can report bugs on the [Song File Hub Discord server](https://discord.gg/maSgd4zpEF)
 
 ## Credits
 
