@@ -87,9 +87,9 @@
       "description": "Settings that may improve your life, or crash your game. Have fun! :)"
     },
     "autocomplete-metadata": {
-      "name": "Autocomplete metadata",
+      "name": "Autocomplete metadata (unavailable)",
       "type": "bool",
-      "description": "Try to autocomplete song info from metadata when adding. Causes a tiny bit of lag after picking a song file. Doesn't play nice with UTF-8, at the moment",
+      "description": "(TEMPORARILY UNAVAILABLE) Try to autocomplete song info from metadata when adding. Causes a tiny bit of lag after picking a song file. Doesn't play nice with UTF-8, at the moment",
       "default": false
     }
   },
