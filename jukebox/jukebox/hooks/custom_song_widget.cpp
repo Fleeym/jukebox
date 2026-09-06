@@ -29,6 +29,7 @@
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/nong_dropdown_layer.hpp>
+#include <jukebox/events/indexes_loaded.hpp>
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -109,6 +110,22 @@ class $modify(JBSongWidget, CustomSongWidget) {
 
         this->setupJBSW();
         m_fields->firstRun = false;
+
+        this->addEventListener("indexes-loaded"_spr, event::IndexesLoaded(), [this]() {
+            if (!m_songInfoObject) {
+                return ListenerResult::Propagate;
+            }
+
+            std::optional<Nongs*> nongs = NongManager::get().getNongs(m_songInfoObject->m_songID);
+
+            if (!nongs) {
+                return ListenerResult::Propagate;
+            }
+
+            this->addPopupOpener(nongs.value());
+
+            return ListenerResult::Propagate;
+        });
 
         this->addEventListener("CSW-song-state"_spr, event::SongStateChanged(),
                                [this](const event::SongStateChangedData& event) {

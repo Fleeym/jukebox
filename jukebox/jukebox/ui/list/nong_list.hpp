@@ -38,6 +38,8 @@ protected:
     geode::Ref<cocos2d::CCMenu> m_backMenu = nullptr;
     geode::Ref<CCMenuItemSpriteExtra> m_backBtn = nullptr;
 
+    geode::Ref<cocos2d::CCNode> m_indexFetchingNode = nullptr;
+
     geode::Function<void(std::optional<int>)> m_onListTypeChange;
 
     geode::ListenerHandle m_downloadFinishedListener;
@@ -57,6 +59,7 @@ protected:
     geode::ListenerResult onDownloadFinish(const event::SongDownloadFinishedData& e);
     geode::ListenerResult onNongDeleted(const event::NongDeletedData& e);
     geode::ListenerResult onSongAdded(const event::ManualSongAddedData& e);
+    geode::ListenerResult onIndexesLoaded();
     // This just moves the list up by 0.00001. That's it. Don't ask.
     void updateLayoutAndFixWeirdDisplay() const;
 

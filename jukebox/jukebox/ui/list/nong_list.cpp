@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -18,14 +19,17 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/LoadingSpinner.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/cocos.hpp>
 #include <asp/iter/std.hpp>
 
+#include <jukebox/events/indexes_loaded.hpp>
 #include <jukebox/events/nong_deleted.hpp>
 #include <jukebox/events/song_download_finished.hpp>
+#include <jukebox/managers/index_manager.hpp>
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/index.hpp>
 #include <jukebox/nong/nong.hpp>
@@ -41,6 +45,8 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     if (!CCNode::init()) {
         return false;
     }
+
+    this->addEventListener(event::IndexesLoaded(), [&]() { return this->onIndexesLoaded(); });
 
     m_songIds = std::move(songIds);
     m_levelID = levelID;
@@ -83,7 +89,7 @@ bool NongList::init(std::vector<int> songIds, const CCSize& size, const std::opt
     m_backMenu->setID("back-menu");
     this->addChildAtPosition(m_backMenu, Anchor::Left, CCPoint{-10.0f, 0.0f});
 
-    m_searchInput = TextInput::create(size.width - s_padding * 2, "Search nongs...");
+    m_searchInput = TextInput::create(size.width - s_padding * 2, "Search NONGs...");
     m_searchInput->setID("search-input");
     m_searchInput->setScale(0.75f);
     m_searchInput->setCallback([this](const std::string& query) {
@@ -178,7 +184,7 @@ void NongList::build() {
 
         m_list->m_contentLayer->addChild(NongCell::create(id, defaultID, itemSize, m_levelID, std::nullopt));
 
-        geode::Label* localSongs = geode::Label::create("Stored nongs", "goldFont.fnt");
+        geode::Label* localSongs = geode::Label::create("Stored NONGs", "goldFont.fnt");
         localSongs->setID("local-section");
         localSongs->setScale(0.5f);
         m_list->m_contentLayer->addChild(localSongs);
@@ -257,73 +263,100 @@ void NongList::build() {
             this->addSongToList(nong, nongs);
         }
 
-        if (!nongs->indexSongs().empty()) {
-            geode::Label* indexLabel = geode::Label::create("Download nongs", "goldFont.fnt");
-            indexLabel->setID("index-section");
-            indexLabel->setScale(0.5f);
-            m_list->m_contentLayer->addChild(indexLabel);
-        }
+        geode::Label* indexLabel = geode::Label::create("Download nongs", "goldFont.fnt");
+        indexLabel->setID("index-section");
+        indexLabel->setScale(0.5f);
+        m_list->m_contentLayer->addChild(indexLabel);
 
-        std::vector<index::IndexSongMetadata*> allIndexNongs;
-        // Might reserve more than needed, still fine imo
-        allIndexNongs.reserve(nongs->indexSongs().size());
+        if (IndexManager::get().fetchingIndexes()) {
+            CCNode* indexFetchingNode = CCNode::create();
+            indexFetchingNode->setID("index-fetching-node");
+            indexFetchingNode->setContentSize({178.0f, 20.0f});
+            indexFetchingNode->addChild(LoadingSpinner::create(25.0f));
+            Label* label = Label::create("Fetching indexes...", "bigFont.fnt");
+            indexFetchingNode->addChild(label);
+            indexFetchingNode->setLayout(SimpleRowLayout::create()
+                                             ->setGap(3.0f)
+                                             ->setMainAxisScaling(AxisScaling::Scale)
+                                             ->setCrossAxisScaling(AxisScaling::Scale));
 
-        for (index::IndexSongMetadata* index : nongs->indexSongs()) {
-            const std::string id = fmt::format("{}|{}", index->parentID->m_id, index->uniqueID);
+            m_list->m_contentLayer->addChild(indexFetchingNode);
+        } else {
+            std::vector<index::IndexSongMetadata*> allIndexNongs;
+            // Might reserve more than needed, still fine imo
+            allIndexNongs.reserve(nongs->indexSongs().size());
 
-            if (index->ytId.has_value() && localYt.contains(id)) {
-                continue;
+            for (index::IndexSongMetadata* index : nongs->indexSongs()) {
+                const std::string id = fmt::format("{}|{}", index->parentID->m_id, index->uniqueID);
+
+                if (index->ytId.has_value() && localYt.contains(id)) {
+                    continue;
+                }
+
+                if (index->url.has_value() && localHosted.contains(id)) {
+                    continue;
+                }
+
+                allIndexNongs.push_back(index);
             }
 
-            if (index->url.has_value() && localHosted.contains(id)) {
-                continue;
-            }
+            std::sort(allIndexNongs.begin(), allIndexNongs.end(),
+                      [this](index::IndexSongMetadata* a, index::IndexSongMetadata* b) {
+                          auto sourcePriority = [](index::IndexSongMetadata* s) {
+                              if (s->url.has_value()) {
+                                  return 0;
+                              }
+                              if (s->ytId.has_value()) {
+                                  return 1;
+                              }
+                              return 2;
+                          };
 
-            allIndexNongs.push_back(index);
-        }
+                          bool aVerified = m_levelID.has_value()
+                                               ? std::find(a->verifiedLevelIDs.begin(), a->verifiedLevelIDs.end(),
+                                                           m_levelID.value()) != a->verifiedLevelIDs.end()
+                                               : false;
+                          bool bVerified = m_levelID.has_value()
+                                               ? std::find(b->verifiedLevelIDs.begin(), b->verifiedLevelIDs.end(),
+                                                           m_levelID.value()) != b->verifiedLevelIDs.end()
+                                               : false;
 
-        std::sort(allIndexNongs.begin(), allIndexNongs.end(),
-                  [this](index::IndexSongMetadata* a, index::IndexSongMetadata* b) {
-                      auto sourcePriority = [](index::IndexSongMetadata* s) {
-                          if (s->url.has_value()) {
-                              return 0;
+                          // Sort by Verified
+                          if (aVerified != bVerified) {
+                              return aVerified;
                           }
-                          if (s->ytId.has_value()) {
-                              return 1;
+
+                          // Then by source priority
+                          int sourceA = sourcePriority(a);
+                          int sourceB = sourcePriority(b);
+                          if (sourceA != sourceB) {
+                              return sourceA < sourceB;
                           }
-                          return 2;
-                      };
 
-                      bool aVerified = m_levelID.has_value()
-                                           ? std::find(a->verifiedLevelIDs.begin(), a->verifiedLevelIDs.end(),
-                                                       m_levelID.value()) != a->verifiedLevelIDs.end()
-                                           : false;
-                      bool bVerified = m_levelID.has_value()
-                                           ? std::find(b->verifiedLevelIDs.begin(), b->verifiedLevelIDs.end(),
-                                                       m_levelID.value()) != b->verifiedLevelIDs.end()
-                                           : false;
+                          // Then by name
+                          return a->name < b->name;
+                      });
 
-                      // Sort by Verified
-                      if (aVerified != bVerified) {
-                          return aVerified;
-                      }
-
-                      // Then by source priority
-                      int sourceA = sourcePriority(a);
-                      int sourceB = sourcePriority(b);
-                      if (sourceA != sourceB) {
-                          return sourceA < sourceB;
-                      }
-
-                      // Then by name
-                      return a->name < b->name;
-                  });
-
-        for (index::IndexSongMetadata* indexNong : allIndexNongs) {
-            if (!this->matchesSearch(indexNong->name) && !this->matchesSearch(indexNong->artist)) {
-                continue;
+            uint32_t inserted = 0;
+            for (index::IndexSongMetadata* indexNong : allIndexNongs) {
+                if (!this->matchesSearch(indexNong->name) && !this->matchesSearch(indexNong->artist)) {
+                    continue;
+                }
+                inserted++;
+                this->addIndexSongToList(indexNong, nongs);
             }
-            this->addIndexSongToList(indexNong, nongs);
+
+            if (inserted == 0) {
+                std::string message = "No downloadable NONGs for this song";
+                if (!m_searchQuery.empty() && !allIndexNongs.empty()) {
+                    message = "No NONGs match this search query";
+                }
+
+                geode::Label* label = geode::Label::create(message.c_str(), "bigFont.fnt");
+                label->setID("no-index-songs");
+                label->setLimitLabelWidth(150.0f, 0.7f, 0.1f);
+                m_list->m_contentLayer->addChild(label);
+            }
         }
     }
     m_list->m_contentLayer->updateLayout();
@@ -366,7 +399,7 @@ void NongList::addIndexSongToList(index::IndexSongMetadata* song, Nongs* parent)
 }
 
 void NongList::addNoLocalSongsNotice(bool liveInsert) {
-    geode::Label* label = geode::Label::create("You have no stored nongs :(", "bigFont.fnt");
+    geode::Label* label = geode::Label::create("You have no stored NONGs :(", "bigFont.fnt");
     label->setID("no-local-songs");
     label->setLimitLabelWidth(150.0f, 0.7f, 0.1f);
 
@@ -480,7 +513,7 @@ ListenerResult NongList::onNongDeleted(const event::NongDeletedData& e) {
         }
 
         if (!m_list->m_contentLayer->getChildByID("index-section")) {
-            geode::Label* indexLabel = geode::Label::create("Download nongs", "goldFont.fnt");
+            geode::Label* indexLabel = geode::Label::create("Download NONGs", "goldFont.fnt");
             indexLabel->setID("index-section");
             indexLabel->setScale(0.5f);
             m_list->m_contentLayer->addChild(indexLabel);
@@ -491,6 +524,15 @@ ListenerResult NongList::onNongDeleted(const event::NongDeletedData& e) {
 
     this->updateLayoutAndFixWeirdDisplay();
 
+    return ListenerResult::Propagate;
+}
+
+ListenerResult NongList::onIndexesLoaded() {
+    if (!m_list || !m_currentSong.has_value()) {
+        return ListenerResult::Propagate;
+    }
+
+    this->build();
     return ListenerResult::Propagate;
 }
 

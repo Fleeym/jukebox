@@ -25,6 +25,7 @@
 
 #include <jukebox/download/hosted.hpp>
 #include <jukebox/events/file_download_progress.hpp>
+#include <jukebox/events/indexes_loaded.hpp>
 #include <jukebox/events/song_download_failed.hpp>
 #include <jukebox/events/song_download_finished.hpp>
 #include <jukebox/events/song_download_progress.hpp>
@@ -196,6 +197,8 @@ Result<> IndexManager::loadIndex(matjson::Value&& jsonObj) {
 }
 
 Future<Result<>> IndexManager::fetchIndexes() {
+    m_fetchingIndexes = true;
+
     ARC_CO_UNWRAP_INTO(const std::vector<IndexSource> indexes, this->getIndexes());
 
     for (const IndexSource& index : indexes) {
@@ -223,6 +226,9 @@ Future<Result<>> IndexManager::fetchIndexes() {
             log::error("Failed to fetch index {}: {}", index.m_url, err);
         }
     }
+
+    m_fetchingIndexes = false;
+    Loader::get()->queueInMainThread([]() { event::IndexesLoaded().send(); });
 
     co_return Ok();
 }
