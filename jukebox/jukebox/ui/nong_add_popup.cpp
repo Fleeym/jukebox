@@ -389,10 +389,7 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
     }
 
     auto path = pathOpt.value();
-
     std::string strPath = string::pathToString(path);
-    std::string extension = string::pathToString(path.extension());
-    std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
     if (!this->isPathValidSong(path)) {
         FLAlertLayer::create("Error", "The selected file is not a valid song", "Ok")->show();
@@ -438,6 +435,9 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
     // }
 
     m_localPath = path;
+
+    std::erase_if(strPath, [](unsigned char u) { return u == 0x00; });
+    std::replace_if(strPath.begin(), strPath.end(), [](unsigned char u) { return u < ' ' || u > '~'; }, '?');
     m_specialInput->setString(strPath);
 }
 
@@ -803,11 +803,11 @@ geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const s
 }
 
 bool NongAddPopup::isPathValidSong(const std::filesystem::path& song) const {
-    const auto stringPath = string::pathToString(song);
+    // const std::string stringPath = geode::utils::string::pathToString(song);
 
     FMOD::Sound* sound = nullptr;
     const FMOD_RESULT result = FMODAudioEngine::sharedEngine()->m_system->createSound(
-        stringPath.c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
+        song.string().c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
 
     if (result == FMOD_OK) {
         sound->release();
