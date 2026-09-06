@@ -1,16 +1,15 @@
 #pragma once
 
-#include <filesystem>
 #include <asp/fs.hpp>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string_view>
 
 #include <Geode/Result.hpp>
 #include <Geode/loader/Log.hpp>
-#include <Geode/utils/file.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <Geode/utils/Task.hpp>
+#include <Geode/utils/file.hpp>
 
 #include <jukebox/nong/nong.hpp>
 
@@ -46,7 +45,6 @@ public:
     NongManager& operator=(const NongManager&) = delete;
     NongManager& operator=(NongManager&&) = delete;
 
-    using MultiAssetSizeTask = geode::Task<std::string>;
     std::optional<Nongs*> m_currentlyPreparingNong = std::nullopt;
 
     bool init();
@@ -145,8 +143,7 @@ public:
      * @param resourcesDir CCFileUtils::get()->getWritablePath2() / "Resources"
      * @param songDir CCFileUtils::get()->getWritablePath()
      */
-    arc::Future<std::string> getMultiAssetSizes(std::string songs, std::string sfx,
-                                                std::filesystem::path resourcesDir,
+    arc::Future<std::string> getMultiAssetSizes(std::string songs, std::string sfx, std::filesystem::path resourcesDir,
                                                 std::filesystem::path songDir);
 
     /**

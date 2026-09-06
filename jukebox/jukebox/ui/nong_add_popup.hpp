@@ -14,7 +14,6 @@
 #include <Geode/loader/Event.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/TextInput.hpp>
-#include <Geode/utils/Task.hpp>
 
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/nong_dropdown_layer.hpp>
@@ -71,8 +70,6 @@ protected:
     CCMenuItemSpriteExtra* m_publishSongButton = nullptr;
 
     SongType m_songType = SongType::LOCAL;
-
-    // geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_pickListener;
 
     std::optional<Song*> m_replacedNong;
 
