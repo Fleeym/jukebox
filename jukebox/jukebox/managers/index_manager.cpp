@@ -305,16 +305,6 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string_view uniqueI
         }
 
         return Err("YouTube song downloads will be enabled in a future release!");
-
-        /*Result<DownloadSongTask> t = song->startDownload();*/
-        /*if (t.isErr()) {*/
-        /*    return Err("Failed to start download: {}", t.error());*/
-        /*}*/
-        /**/
-        /*task = t.unwrap();*/
-        /*found = true;*/
-        /*local = song.get();*/
-        /*break;*/
     }
 
     for (const std::unique_ptr<HostedSong>& song : nongs->hosted()) {

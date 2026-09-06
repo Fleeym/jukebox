@@ -9,7 +9,6 @@
 #include <fmt/core.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
-#include <Geode/utils/Task.hpp>
 #include <Geode/utils/general.hpp>
 #include <arc/future/Future.hpp>
 #include <matjson.hpp>

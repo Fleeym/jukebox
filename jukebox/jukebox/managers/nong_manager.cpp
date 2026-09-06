@@ -16,8 +16,8 @@
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/file.hpp>
-#include <asp/iter.hpp>
 #include <asp/fs/fs.hpp>
+#include <asp/iter.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/compat/compat.hpp>
@@ -209,7 +209,8 @@ bool NongManager::init() {
             auto renameRes = asp::fs::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename()));
             if (renameRes.isErr()) {
                 auto err = renameRes.unwrapErr();
-                log::error("Failed to rename file {}: Code: {}, message: {}", entry.path(), err.getCode(), err.message());
+                log::error("Failed to rename file {}: Code: {}, message: {}", entry.path(), err.getCode(),
+                           err.message());
             }
             continue;
         }
