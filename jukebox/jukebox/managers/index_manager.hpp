@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -20,11 +21,12 @@ namespace jukebox {
 class IndexManager {
 protected:
     bool m_initialized = false;
+    std::atomic_bool m_fetchingIndexes = false;
 
     IndexManager() = default;
 
-    std::unordered_map<int, std::vector<index::IndexSongMetadata*>> m_nongsForId {};
-    std::unordered_map<std::string, std::tuple<int, std::string>> m_urlToIDs {};
+    std::unordered_map<int, std::vector<index::IndexSongMetadata*>> m_nongsForId{};
+    std::unordered_map<std::string, std::tuple<int, std::string>> m_urlToIDs{};
 
     void onDownloadProgress(int gdSongID, const std::string& uniqueId, float progress);
     void onDownloadFinish(std::variant<index::IndexSongMetadata*, Song*>&& source, Nongs* destination,
@@ -40,10 +42,10 @@ public:
     IndexManager& operator=(IndexManager&&) = delete;
 
     bool init();
-    // index id -> index metadata
-    std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>> m_loadedIndexes {};
+    std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>> m_loadedIndexes{};
 
     [[nodiscard]] bool initialized() const { return m_initialized; }
+    [[nodiscard]] bool fetchingIndexes() const { return m_fetchingIndexes; }
 
     arc::Future<geode::Result<>> fetchIndexes();
 
