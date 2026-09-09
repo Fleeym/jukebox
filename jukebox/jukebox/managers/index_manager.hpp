@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <unordered_map>
 #include <variant>
 
@@ -32,7 +33,11 @@ protected:
     void onDownloadFinish(std::variant<index::IndexSongMetadata*, Song*>&& source, Nongs* destination,
                           geode::ByteVector&& data);
     arc::Future<geode::Result<matjson::Value>> fetchIndex(const index::IndexSource& index);
-    arc::Future<> onIndexFetched(const std::string& url, matjson::Value&& json);
+    arc::Future<geode::Result<matjson::Value>> fetchIndexFromCache(const index::IndexSource& index);
+
+    std::filesystem::path pathToCachedIndex(const std::string_view path);
+
+    arc::Future<> onIndexFetched(const std::string& url, matjson::Value&& json, bool cache);
 
 public:
     IndexManager(const IndexManager&) = delete;
