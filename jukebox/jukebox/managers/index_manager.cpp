@@ -218,10 +218,19 @@ Future<Result<>> IndexManager::fetchIndexes() {
 
         log::info("Starting fetch for index {}", index.m_url);
 
+        bool cache = true;
         Result<matjson::Value> fetchedIndex = co_await this->fetchIndex(index);
 
+        if (GEODE_UNWRAP_IF_ERR(err, fetchedIndex)) {
+            log::error("Failed to fetch index {}: {}", index.m_url, err);
+            log::info("Attemping to fetch index {} from cache", index.m_url);
+
+            cache = false;
+            fetchedIndex = co_await this->fetchIndexFromCache(index);
+        }
+
         if (GEODE_UNWRAP_EITHER(value, err, fetchedIndex)) {
-            co_await this->onIndexFetched(url, std::move(value));
+            co_await this->onIndexFetched(url, std::move(value), cache);
         } else {
             log::error("Failed to fetch index {}: {}", index.m_url, err);
         }
@@ -252,18 +261,29 @@ Future<Result<matjson::Value>> IndexManager::fetchIndex(const IndexSource& index
     co_return Ok(std::move(jsonObj));
 }
 
-Future<> IndexManager::onIndexFetched(const std::string& url, matjson::Value&& json) {
-    static constexpr std::hash<std::string> hasher;
-    std::size_t hashValue = hasher(url);
+Future<Result<matjson::Value>> IndexManager::fetchIndexFromCache(const IndexSource& index) {
+    const std::filesystem::path filepath = this->pathToCachedIndex(std::string_view(index.m_url));
 
-    const std::filesystem::path filepath = this->baseIndexesPath() / fmt::format("{0:x}.json", hashValue);
+    if (!asp::fs::exists(filepath)) {
+        co_return Err("No cached entry for index");
+    }
 
+    co_return geode::utils::file::readJson(filepath).mapErr(
+        [](std::string err) { return fmt::format("Failed to read JSON: {}", err); });
+}
+
+Future<> IndexManager::onIndexFetched(const std::string& url, matjson::Value&& json, bool cache) {
     log::info("Fetched index: {}", url);
-    auto success = geode::utils::file::writeString(filepath, json.dump(matjson::NO_INDENTATION));
-    if (success.isErr()) {
-        log::error("Failed to cache index: {}", std::move(success).unwrapErr());
-    } else {
-        log::info("Cached index: {}", url);
+
+    if (cache) {
+        const std::filesystem::path filepath = this->pathToCachedIndex(std::string_view(url));
+
+        auto success = geode::utils::file::writeString(filepath, json.dump(matjson::NO_INDENTATION));
+        if (success.isErr()) {
+            log::error("Failed to cache index: {}", std::move(success).unwrapErr());
+        } else {
+            log::info("Cached index: {}", url);
+        }
     }
 
     this->loadIndex(std::move(json)).inspectErr([url](const std::string& err) {
@@ -491,6 +511,13 @@ void IndexManager::registerIndexNongs(Nongs* destination) {
     for (IndexSongMetadata* s : m_nongsForId[destination->songID()]) {
         destination->indexSongs().push_back(s);
     }
+}
+
+std::filesystem::path IndexManager::pathToCachedIndex(const std::string_view url) {
+    static constexpr std::hash<std::string_view> hasher;
+    std::size_t hashValue = hasher(url);
+
+    return this->baseIndexesPath() / fmt::format("{0:x}.json", hashValue);
 }
 
 };  // namespace jukebox
