@@ -218,22 +218,49 @@ Future<Result<>> IndexManager::fetchIndexes() {
 
         log::info("Starting fetch for index {}", index.m_url);
 
-        bool cache = true;
-        Result<matjson::Value> fetchedIndex = co_await this->fetchIndex(index);
+        Result<std::optional<matjson::Value>> fetchedIndex = co_await this->fetchIndex(index);
 
         if (GEODE_UNWRAP_IF_ERR(err, fetchedIndex)) {
             log::error("Failed to fetch index {}: {}", index.m_url, err);
             log::info("Attemping to fetch index {} from cache", index.m_url);
 
-            cache = false;
-            fetchedIndex = co_await this->fetchIndexFromCache(index);
+            Result<matjson::Value> cached = co_await this->fetchIndexFromCache(index);
+            if (GEODE_UNWRAP_IF_ERR(cacheErr, cached)) {
+                log::error("Failed to fetch index {} from cache: {}", index.m_url, cacheErr);
+            } else {
+                co_await this->onIndexFetched(url, std::move(cached).unwrap(), false);
+            }
+
+            continue;
         }
 
-        if (GEODE_UNWRAP_EITHER(value, err, fetchedIndex)) {
-            co_await this->onIndexFetched(url, std::move(value), cache);
-        } else {
-            log::error("Failed to fetch index {}: {}", index.m_url, err);
+        if (std::optional<matjson::Value> value = std::move(fetchedIndex).unwrap(); value.has_value()) {
+            co_await this->onIndexFetched(url, std::move(value).value(), true);
+            continue;
         }
+
+        Result<matjson::Value> cached = co_await this->fetchIndexFromCache(index);
+        if (GEODE_UNWRAP_IF_ERR(cacheErr, cached)) {
+            // this is awkward...
+            log::warn("Cached index {} is unavailable: {}. Forcing a fresh fetch", index.m_url, cacheErr);
+
+            Result<std::optional<matjson::Value>> refetchedRes = co_await this->fetchIndex(index, true);
+            if (GEODE_UNWRAP_IF_ERR(refetchErr, refetchedRes)) {
+                log::error("Failed to fetch index {}: {}", index.m_url, refetchErr);
+                continue;
+            }
+
+            if (std::optional<matjson::Value> refetched = std::move(refetchedRes).unwrap(); refetched.has_value()) {
+                co_await this->onIndexFetched(url, std::move(refetched).value(), true);
+            } else {
+                // this should never fail
+                log::error("Index {} return std::nullopt even with forceFresh = true. You are very lucky!",
+                           index.m_url);
+            }
+            continue;
+        }
+
+        co_await this->onIndexFetched(url, std::move(cached).unwrap(), false);
     }
 
     m_fetchingIndexes = false;
@@ -242,11 +269,28 @@ Future<Result<>> IndexManager::fetchIndexes() {
     co_return Ok();
 }
 
-Future<Result<matjson::Value>> IndexManager::fetchIndex(const IndexSource& index) {
+Future<Result<std::optional<matjson::Value>>> IndexManager::fetchIndex(const IndexSource& index, bool forceFresh) {
     int timeout = Mod::get()->getSettingValue<bool>("request-timeout");
 
-    const web::WebResponse response =
-        co_await web::WebRequest().timeout(std::chrono::seconds(timeout)).get(index.m_url);
+    web::WebRequest request = web::WebRequest().timeout(std::chrono::seconds(timeout));
+
+    if (!forceFresh) {
+        if (auto etag = this->etagForIndex(index.m_url)) {
+            log::debug("Attempting If-None-Match for index {} (header={})", index.m_url, *etag);
+            request.header("If-None-Match", *etag);
+        }
+        if (auto lastModified = this->lastModifiedForIndex(index.m_url)) {
+            log::debug("Attempting If-Modified-Since for index {} (header={})", index.m_url, *lastModified);
+            request.header("If-Modified-Since", *lastModified);
+        }
+    }
+
+    const web::WebResponse response = co_await request.get(index.m_url);
+
+    if (response.code() == 304) {
+        log::info("Index {} not modified", index.m_url);
+        co_return Ok(std::nullopt);
+    }
 
     if (!response.ok()) {
         co_return Err(utils::web::getErrorFromResponse(response));
@@ -257,6 +301,10 @@ Future<Result<matjson::Value>> IndexManager::fetchIndex(const IndexSource& index
     jsonObj.set("url", index.m_url);
 
     ARC_CO_UNWRAP(matjson::Serialize<IndexMetadata>::fromJson(jsonObj));
+
+    this->setLastModifiedForIndex(index.m_url,
+                                  response.header("Last-Modified").transform([](auto v) { return std::string(v); }));
+    this->setEtagForIndex(index.m_url, response.header("etag").transform([](auto v) { return std::string(v); }));
 
     co_return Ok(std::move(jsonObj));
 }
@@ -518,6 +566,48 @@ std::filesystem::path IndexManager::pathToCachedIndex(const std::string_view url
     std::size_t hashValue = hasher(url);
 
     return this->baseIndexesPath() / fmt::format("{0:x}.json", hashValue);
+}
+
+std::optional<std::string> IndexManager::lastModifiedForIndex(const std::string_view url) {
+    auto json = Mod::get()->getSavedValue<matjson::Value>("cached-index-last-modified");
+    if (!json.contains(url)) {
+        return std::nullopt;
+    }
+    return json[url].asString().mapOr<std::optional<std::string>>(std::nullopt,
+                                                                  [](auto i) { return std::optional(std::move(i)); });
+}
+
+void IndexManager::setLastModifiedForIndex(const std::string_view url, std::optional<std::string> value) {
+    auto json = Mod::get()->getSavedValue<matjson::Value>("cached-index-last-modified");
+    if (value.has_value()) {
+        log::debug("Setting Last-Modified for index {}: {}", url, *value);
+        json.set(url, *value);
+    } else {
+        log::debug("Removing Last-Modified for index {}", url);
+        json.erase(url);
+    }
+    Mod::get()->setSavedValue("cached-index-last-modified", json);
+}
+
+std::optional<std::string> IndexManager::etagForIndex(const std::string_view url) {
+    auto json = Mod::get()->getSavedValue<matjson::Value>("cached-index-etag");
+    if (!json.contains(url)) {
+        return std::nullopt;
+    }
+    return json[url].asString().mapOr<std::optional<std::string>>(std::nullopt,
+                                                                  [](auto i) { return std::optional(std::move(i)); });
+}
+
+void IndexManager::setEtagForIndex(const std::string_view url, std::optional<std::string> value) {
+    auto json = Mod::get()->getSavedValue<matjson::Value>("cached-index-etag");
+    if (value.has_value()) {
+        log::debug("Setting etag for index {}: {}", url, *value);
+        json.set(url, *value);
+    } else {
+        log::debug("Removing etag for index {}", url);
+        json.erase(url);
+    }
+    Mod::get()->setSavedValue("cached-index-etag", json);
 }
 
 };  // namespace jukebox
