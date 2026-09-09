@@ -610,4 +610,16 @@ void IndexManager::setEtagForIndex(const std::string_view url, std::optional<std
     Mod::get()->setSavedValue("cached-index-etag", json);
 }
 
+void IndexManager::clearCaches() {
+    for (auto& entry : std::filesystem::directory_iterator(this->baseIndexesPath())) {
+        auto res = asp::fs::remove(entry.path());
+        if (res.isErr()) {
+            log::warn("Failed to remove cached index: {}", res.unwrapErr().message());
+        }
+    }
+
+    Mod::get()->setSavedValue("cached-index-etag", matjson::makeObject({}));
+    Mod::get()->setSavedValue("cached-index-last-modified", matjson::makeObject({}));
+}
+
 };  // namespace jukebox

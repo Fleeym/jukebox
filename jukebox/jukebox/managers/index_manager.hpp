@@ -75,6 +75,8 @@ public:
 
     void registerIndexNongs(Nongs* destination);
 
+    void clearCaches();
+
     static IndexManager& get() {
         static IndexManager instance;
         return instance;
