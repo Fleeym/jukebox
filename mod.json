@@ -65,6 +65,12 @@
       "default": 60,
       "min": 30
     },
+    "clear-cache": {
+      "type": "button",
+      "buttons": {
+        "clear-index-cache": "Clear index cache"
+      }
+    },
     "visual-title": {
       "name": "Visual",
       "type": "title"

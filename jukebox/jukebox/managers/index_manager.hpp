@@ -32,8 +32,15 @@ protected:
     void onDownloadProgress(int gdSongID, const std::string& uniqueId, float progress);
     void onDownloadFinish(std::variant<index::IndexSongMetadata*, Song*>&& source, Nongs* destination,
                           geode::ByteVector&& data);
-    arc::Future<geode::Result<matjson::Value>> fetchIndex(const index::IndexSource& index);
+    arc::Future<geode::Result<std::optional<matjson::Value>>> fetchIndex(const index::IndexSource& index,
+                                                                         bool forceFresh = false);
     arc::Future<geode::Result<matjson::Value>> fetchIndexFromCache(const index::IndexSource& index);
+
+    std::optional<std::string> lastModifiedForIndex(const std::string_view url);
+    void setLastModifiedForIndex(const std::string_view url, std::optional<std::string> value);
+
+    std::optional<std::string> etagForIndex(const std::string_view url);
+    void setEtagForIndex(const std::string_view url, std::optional<std::string> value);
 
     std::filesystem::path pathToCachedIndex(const std::string_view path);
 
@@ -67,6 +74,8 @@ public:
     geode::Result<> downloadSong(int gdSongID, std::string_view uniqueID);
 
     void registerIndexNongs(Nongs* destination);
+
+    void clearCaches();
 
     static IndexManager& get() {
         static IndexManager instance;
