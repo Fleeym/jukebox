@@ -636,7 +636,8 @@ Rebranding! This release is only available on Windows, next one should be availa
 
 - Initial version
 
-[3.7.1]: https://github.com/Fleeym/jukebox/compare/v3.7.1...v3.8.0
+[3.8.0]: https://github.com/Fleeym/jukebox/compare/v3.7.1...v3.8.0
+[3.7.1]: https://github.com/Fleeym/jukebox/compare/v3.7.0...v3.7.1
 [3.7.0]: https://github.com/Fleeym/jukebox/compare/v3.6.2...v3.7.0
 [3.6.2]: https://github.com/Fleeym/jukebox/compare/v3.6.1...v3.6.2
 [3.6.1]: https://github.com/Fleeym/jukebox/compare/v3.6.0...v3.6.1
