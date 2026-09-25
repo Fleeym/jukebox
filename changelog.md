@@ -4,7 +4,7 @@ All notable changes to this mod will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [3.8.0] - 2026-09-26
 
 ### Added
 
@@ -636,8 +636,7 @@ Rebranding! This release is only available on Windows, next one should be availa
 
 - Initial version
 
-[Unreleased]: https://github.com/Fleeym/jukebox/compare/v3.7.1...HEAD
-[3.7.1]: https://github.com/Fleeym/jukebox/compare/v3.7.0...v3.7.1
+[3.7.1]: https://github.com/Fleeym/jukebox/compare/v3.7.1...v3.8.0
 [3.7.0]: https://github.com/Fleeym/jukebox/compare/v3.6.2...v3.7.0
 [3.6.2]: https://github.com/Fleeym/jukebox/compare/v3.6.1...v3.6.2
 [3.6.1]: https://github.com/Fleeym/jukebox/compare/v3.6.0...v3.6.1
