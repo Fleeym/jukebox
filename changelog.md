@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Internal code cleanup
 - Improve index loading UX in the NONG popup
 - Use "Keep a Changelog" format for the changelog
+- Reduce mod filesize (filesize is the same after Geode loads it, but the initial download is smaller)
 
 ## [3.7.1] - 2026-09-04
 
