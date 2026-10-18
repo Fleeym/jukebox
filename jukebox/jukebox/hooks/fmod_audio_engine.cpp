@@ -6,7 +6,7 @@
 using namespace jukebox;
 
 class $modify(FMODAudioEngine) {
-    void queueStartMusic(gd::string audioFilename, float p1, float p2, float p3,
+    void queueStartMusic(std::string audioFilename, float p1, float p2, float p3,
                          bool p4, int ms, int p6, int p7, int p8, int p9,
                          bool p10, int p11, bool p12, bool p13) {
         if (NongManager::get().m_currentlyPreparingNong) {

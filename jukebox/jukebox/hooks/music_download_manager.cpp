@@ -4,7 +4,7 @@
 
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
-#include <Geode/c++stl/string.hpp>
+#include <string>
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
@@ -16,7 +16,7 @@
 
 using namespace jukebox;
 
-gd::string JBMusicDownloadManager::pathForSong(int id) {
+std::string JBMusicDownloadManager::pathForSong(int id) {
     NongManager::get().m_currentlyPreparingNong = std::nullopt;
     std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
     if (!nongs.has_value()) {
@@ -32,7 +32,7 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
     return geode::utils::string::pathToString(active->path().value());
 }
 
-void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1, gd::string p2) {
+void JBMusicDownloadManager::onGetSongInfoCompleted(std::string p1, std::string p2) {
     m_fields->overrideSongInfo = true;
     MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
     geode::Result<int> songIDRes = geode::utils::numFromString<int>(p2);

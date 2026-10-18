@@ -101,10 +101,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     bool init(SongInfoObject* songInfo, CustomSongDelegate* songDelegate, bool showSongSelect, bool showPlayMusic,
-              bool showDownload, bool isRobtopSong, bool unk, bool isMusicLibrary, int unkInt) {
+              bool showDownload, bool isRobtopSong, bool unk, bool isMusicLibrary, int unkInt,
+              bool showFavorite, bool showUsage) {
         this->adjustSongInfoObject(songInfo);
         if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect, showPlayMusic, showDownload, isRobtopSong,
-                                    unk, isMusicLibrary, unkInt)) {
+                                    unk, isMusicLibrary, unkInt, showFavorite, showUsage)) {
             return false;
         }
 
@@ -186,7 +187,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         object->m_artistName = nongs->active()->metadata()->artist;
     }
 
-    void updateWithMultiAssets(gd::string p1, gd::string p2, int p3) {
+    void updateWithMultiAssets(std::string p1, std::string p2, int p3) {
         CustomSongWidget::updateWithMultiAssets(p1, p2, p3);
         m_fields->songIds = std::string(p1);
         m_fields->sfxIds = std::string(p2);
