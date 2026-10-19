@@ -12,6 +12,7 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/loader/Event.hpp>
+#include <Geode/utils/file.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/TextInput.hpp>
 
@@ -75,7 +76,7 @@ protected:
 
     bool init(int songID, std::optional<Song*> replacedNong);
     void addPathLabel(std::string const& path);
-    void onFileOpen(geode::Result<std::optional<std::filesystem::path>> result);
+    void onFileOpen(geode::utils::file::PickResult result);
     void setSongType(SongType type, bool memorizePrevious);
     void onSwitchToLocal(cocos2d::CCObject*);
     void onSwitchToYT(cocos2d::CCObject*);

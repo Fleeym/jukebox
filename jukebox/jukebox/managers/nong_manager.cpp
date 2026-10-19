@@ -1,4 +1,5 @@
 #include <jukebox/managers/nong_manager.hpp>
+#include <asp/fs/std.hpp>
 
 #include <filesystem>
 #include <memory>
@@ -177,28 +178,28 @@ bool NongManager::init() {
     log::info("Starting NONG read");
 
     const std::filesystem::path path = this->baseManifestPath();
-    if (!asp::fs::exists(path)) {
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
         log::info("No manifest directory found. Creating...");
-        auto createDirRes = geode::utils::file::createDirectory(path);
+        auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
         if (createDirRes.isErr()) {
             log::error("Failed to create the manifest directory: {}", createDirRes.unwrapErr());
         }
     }
-    if (const std::filesystem::path nongsPath = this->baseNongsPath(); !asp::fs::exists(nongsPath)) {
-        auto createDirRes = geode::utils::file::createDirectory(nongsPath);
+    if (const std::filesystem::path nongsPath = this->baseNongsPath(); !asp::fs::exists(asp::fs::Path::fromStdPath(nongsPath))) {
+        auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(nongsPath));
         if (createDirRes.isErr()) {
             log::error("Failed to create nongs directory {}: {}", nongsPath, createDirRes.unwrapErr());
         }
     }
 
-    auto iterRes = asp::fs::iterdir(path);
-    if (iterRes.isErr()) {
-        auto err = iterRes.unwrapErr();
-        log::error("Failed to iterate directory {}. Code: {}, message: {}", path, err.getCode(), err.message());
+    std::error_code ec;
+    auto entries = std::filesystem::directory_iterator(path, ec);
+    if (ec) {
+        log::error("Failed to iterate directory {}: {}", path, ec.message());
         return false;
     }
 
-    for (const auto& entry : iterRes.unwrap()) {
+    for (const auto& entry : entries) {
         if (entry.path().extension() != ".json") {
             continue;
         }
@@ -206,11 +207,10 @@ bool NongManager::init() {
         auto res = this->loadNongsFromPath(entry.path());
         if (res.isErr()) {
             log::error("Failed to read file {}: {}", entry.path().filename(), res.unwrapErr());
-            auto renameRes = asp::fs::rename(entry.path(), path / fmt::format("{}.bak", entry.path().filename()));
+            auto renameRes = asp::fs::rename(asp::fs::Path::fromStdPath(entry.path()), asp::fs::Path::fromStdPath(path / fmt::format("{}.bak", entry.path().filename())));
             if (renameRes.isErr()) {
                 auto err = renameRes.unwrapErr();
-                log::error("Failed to rename file {}: Code: {}, message: {}", entry.path(), err.getCode(),
-                           err.message());
+                log::error("Failed to rename file {}: {}", entry.path(), err);
             }
             continue;
         }
@@ -297,8 +297,8 @@ Result<> NongManager::migrateV2() {
 Result<> NongManager::saveNongs(std::optional<int> saveID) {
     const std::filesystem::path path = this->baseManifestPath();
 
-    if (!asp::fs::exists(path)) {
-        auto createDirRes = geode::utils::file::createDirectory(path);
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
+        auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
         if (createDirRes.isErr()) {
             return Err("Failed to create the manifest directory: {}", createDirRes.unwrapErr());
         }
@@ -318,14 +318,14 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
 }
 
 Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(const std::filesystem::path& path) {
-    auto stem = string::pathToString(path.stem());
+    auto stem = asp::fs::Path::fromStdPath(path.stem()).string();
     GEODE_UNWRAP_INTO(int id, geode::utils::numFromString<int>(stem));
 
     if (id == 0) {
         return Err("Invalid filename {}", path.filename());
     }
 
-    GEODE_UNWRAP_INTO(matjson::Value json, geode::utils::file::readJson(path).mapErr([id](std::string err) {
+    GEODE_UNWRAP_INTO(matjson::Value json, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)).mapErr([id](std::string err) {
         return fmt::format("Couldn't parse JSON from file: {}", err);
     }));
 
@@ -379,10 +379,10 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         }
 
         auto path = nongs->active()->path().value();
-        if (string::pathToString(path).starts_with("songs/")) {
+        if (asp::fs::Path::fromStdPath(path).string().starts_with("songs/")) {
             path = resourcesDir / path;
         }
-        if (asp::fs::exists(path)) {
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
             sum += std::filesystem::file_size(path, _ec);
         }
     }
@@ -391,12 +391,12 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(std::string songs, std:
         std::string filename = fmt::format("s{}.ogg", s);
         auto localPath = resourcesDir / "sfx" / filename;
 
-        if (asp::fs::exists(localPath)) {
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(localPath))) {
             sum += std::filesystem::file_size(localPath, _ec);
             continue;
         }
         auto path = songDir / filename;
-        if (asp::fs::exists(path)) {
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
             sum += std::filesystem::file_size(path, _ec);
         }
     }
@@ -471,12 +471,11 @@ Result<> NongManager::deleteAllSongs(int gdSongID) {
 std::filesystem::path NongManager::generateSongFilePath(const std::string& extension,
                                                         std::optional<std::string> filename) {
     auto unique = filename.value_or(jukebox::random_string(16));
-    auto destination = Mod::get()->getSaveDir() / "nongs";
-    if (!asp::fs::exists(destination)) {
-        auto createDirRes = asp::fs::createDir(destination);
+    auto destination = std::filesystem::path(Mod::get()->getSaveDir().native()) / "nongs";
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(destination))) {
+        auto createDirRes = asp::fs::createDir(asp::fs::Path::fromStdPath(destination));
         if (createDirRes.isErr()) {
-            log::error("Failed to create nongs save directory {}: Code {}, message {}", destination,
-                       createDirRes.unwrapErr().getCode(), createDirRes.unwrapErr().message());
+            log::error("Failed to create nongs save directory {}: {}", destination, createDirRes.unwrapErr());
         }
     }
     unique += extension;

@@ -2,6 +2,7 @@
 
 #include <fmt/core.h>
 #include <filesystem>
+#include <asp/fs/std.hpp>
 #include <matjson.hpp>
 #include <memory>
 #include <optional>
@@ -54,9 +55,9 @@ struct matjson::Serialize<jukebox::LocalSong> {
             return geode::Err("Local Song {} is invalid. Reason: invalid path", value.dump(matjson::NO_INDENTATION));
         }
 
-        GEODE_UNWRAP_INTO(std::filesystem::path path, value["path"].as<std::filesystem::path>());
+        GEODE_UNWRAP_INTO(auto path, value["path"].as<asp::fs::Path>());
 
-        return geode::Ok(jukebox::LocalSong{std::move(metadata), path});
+        return geode::Ok(jukebox::LocalSong{std::move(metadata), path.native()});
     }
 
     static matjson::Value toJson(const jukebox::LocalSong& value) {
@@ -64,8 +65,8 @@ struct matjson::Serialize<jukebox::LocalSong> {
             {"name", value.metadata()->name},
             {"unique_id", value.metadata()->uniqueID},
             {"artist", value.metadata()->artist},
-            {"filename", value.path()->filename()},
-            {"path", value.path().value()},
+            {"filename", asp::fs::Path::fromStdPath(value.path()->filename())},
+            {"path", asp::fs::Path::fromStdPath(value.path().value())},
             {"offset", value.metadata()->startOffset},
         });
         if (value.metadata()->level.has_value()) {
@@ -93,18 +94,18 @@ struct matjson::Serialize<jukebox::YTSong> {
                               value.dump(matjson::NO_INDENTATION));
         }
 
-        GEODE_UNWRAP_INTO(std::filesystem::path path, value["path"].as<std::filesystem::path>());
+        GEODE_UNWRAP_INTO(auto path, value["path"].as<asp::fs::Path>());
 
         return geode::Ok(jukebox::YTSong{
             std::move(metadata), value["youtube_id"].asString().unwrap(),
-            value["index_id"].asString().map([](auto i) { return std::optional(i); }).unwrapOr(std::nullopt), path});
+            value["index_id"].asString().map([](auto i) { return std::optional(i); }).unwrapOr(std::nullopt), path.native()});
     }
 
     static matjson::Value toJson(const jukebox::YTSong& value) {
         matjson::Value ret = matjson::makeObject({{"name", value.metadata()->name},
                                                   {"unique_id", value.metadata()->uniqueID},
                                                   {"artist", value.metadata()->artist},
-                                                  {"path", value.path().value()},
+                                                  {"path", asp::fs::Path::fromStdPath(value.path().value())},
                                                   {"offset", value.metadata()->startOffset},
                                                   {"youtube_id", value.youtubeID()}});
         if (value.indexID().has_value()) {
@@ -146,19 +147,19 @@ struct matjson::Serialize<jukebox::HostedSong> {
             return geode::Err("Hosted song {} is invalid. Reason: invalid path", value.dump(matjson::NO_INDENTATION));
         }
 
-        GEODE_UNWRAP_INTO(std::filesystem::path path, value["path"].as<std::filesystem::path>());
+        GEODE_UNWRAP_INTO(auto path, value["path"].as<asp::fs::Path>());
 
         return geode::Ok(jukebox::HostedSong{
             std::move(metadata), value["url"].asString().unwrap(),
-            value["index_id"].asString().map([](auto i) { return std::optional(i); }).unwrapOr(std::nullopt), path});
+            value["index_id"].asString().map([](auto i) { return std::optional(i); }).unwrapOr(std::nullopt), path.native()});
     }
 
     static matjson::Value toJson(const jukebox::HostedSong& value) {
         matjson::Value ret = matjson::makeObject({{"name", value.metadata()->name},
                                                   {"unique_id", value.metadata()->uniqueID},
                                                   {"artist", value.metadata()->artist},
-                                                  {"path", value.path().value()},
-                                                  {"filename", value.path()->filename()},
+                                                  {"path", asp::fs::Path::fromStdPath(value.path().value())},
+                                                  {"filename", asp::fs::Path::fromStdPath(value.path()->filename())},
                                                   {"offset", value.metadata()->startOffset},
                                                   {"url", value.url()}});
         if (value.indexID().has_value()) {

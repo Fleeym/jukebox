@@ -1,4 +1,5 @@
 #include <string>
+#include <asp/fs/std.hpp>
 
 #include <fmt/core.h>
 #include <Geode/binding/FLAlertLayer.hpp>
@@ -22,7 +23,7 @@ class $modify(JBMenuLayer, MenuLayer) {
                 "none of your saved songs have been loaded. Please check "
                 "<cb>{}</c> for any created backups and report this to me on "
                 "my Discord (fleeym)",
-                Mod::get()->getSaveDir() / "backups");
+                std::filesystem::path(Mod::get()->getSaveDir().native()) / "backups");
             FLAlertLayer* popup =
                 FLAlertLayer::create("Jukebox", content.c_str(), "Ok");
             popup->m_scene = this;

@@ -1,4 +1,5 @@
 #include <Geode/Result.hpp>
+#include <asp/fs/std.hpp>
 #include <filesystem>
 #include <optional>
 
@@ -165,7 +166,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             if (!optPath) {
                 found->second = false;
             } else {
-                found->second = asp::fs::exists(std::move(optPath).value());
+                found->second = asp::fs::exists(asp::fs::Path::fromStdPath(std::move(optPath).value()));
             }
         }
     }
@@ -461,7 +462,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         const std::filesystem::path activePath = std::move(activePathOpt).value();
 
         std::string sizeText;
-        if (asp::fs::exists(activePath)) {
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(activePath))) {
             sizeText = NongManager::get().getFormattedSize(activePath);
         } else if (m_songInfoObject) {
             sizeText = fmt::format("{:.2f}MB", m_songInfoObject->m_fileSize);

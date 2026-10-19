@@ -1,4 +1,5 @@
 #include <jukebox/hooks/music_download_manager.hpp>
+#include <asp/fs/std.hpp>
 
 #include <optional>
 
@@ -24,12 +25,12 @@ std::string JBMusicDownloadManager::pathForSong(int id) {
     }
     Nongs* value = nongs.value();
     Song* active = value->active();
-    if (!asp::fs::exists(active->path().value())) {
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(active->path().value()))) {
         return MusicDownloadManager::pathForSong(id);
     }
     NongManager::get().m_currentlyPreparingNong = value;
 
-    return geode::utils::string::pathToString(active->path().value());
+    return asp::fs::Path::fromStdPath(active->path().value()).string();
 }
 
 void JBMusicDownloadManager::onGetSongInfoCompleted(std::string p1, std::string p2) {
