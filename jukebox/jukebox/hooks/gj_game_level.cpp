@@ -1,4 +1,5 @@
 #include <optional>
+#include <asp/fs/std.hpp>
 
 #include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/modify/GJGameLevel.hpp>  // IWYU pragma: keep
@@ -12,7 +13,7 @@ using namespace geode::prelude;
 using namespace jukebox;
 
 class $modify(GJGameLevel) {
-    gd::string getAudioFileName() {
+    std::string getAudioFileName() {
         NongManager::get().m_currentlyPreparingNong = std::nullopt;
         // If we have a custom song, return
         if (m_songID != 0) {
@@ -24,11 +25,11 @@ class $modify(GJGameLevel) {
             return GJGameLevel::getAudioFileName();
         }
         Song* active = res.value()->active();
-        if (!asp::fs::exists(active->path().value())) {
+        if (!asp::fs::exists(asp::fs::Path::fromStdPath(active->path().value()))) {
             return GJGameLevel::getAudioFileName();
         }
         jukebox::NongManager::get().m_currentlyPreparingNong = res.value();
 
-        return geode::utils::string::pathToString(active->path().value());
+        return asp::fs::Path::fromStdPath(active->path().value()).string();
     }
 };

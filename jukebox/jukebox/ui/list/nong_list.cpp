@@ -1,4 +1,5 @@
 #include <jukebox/ui/list/nong_list.hpp>
+#include <asp/fs/std.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -236,9 +237,9 @@ void NongList::build() {
             };
 
             bool aVerified =
-                asp::iter::from(verifiedNongs).any([a](auto& i) { return i.get() == a->metadata()->uniqueID; });
+                asp::iter::from(verifiedNongs).any([a](auto const& i) { return i == a->metadata()->uniqueID; });
             bool bVerified =
-                asp::iter::from(verifiedNongs).any([b](auto& i) { return i.get() == b->metadata()->uniqueID; });
+                asp::iter::from(verifiedNongs).any([b](auto const& i) { return i == b->metadata()->uniqueID; });
 
             // Sort by Verified
             if (aVerified != bVerified) {
@@ -373,7 +374,7 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     std::string uniqueID = nong->metadata()->uniqueID;
     std::optional<std::filesystem::path> path = nong->path();
     bool isFromIndex = nong->indexID().has_value();
-    bool isDownloaded = path.has_value() && asp::fs::exists(path.value());
+    bool isDownloaded = path.has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(path.value()));
     NongCell* cell = NongCell::create(id, uniqueID, itemSize, m_levelID, std::nullopt);
     cell->setID(uniqueID);
 

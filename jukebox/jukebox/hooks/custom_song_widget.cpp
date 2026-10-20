@@ -1,4 +1,5 @@
 #include <Geode/Result.hpp>
+#include <asp/fs/std.hpp>
 #include <filesystem>
 #include <optional>
 
@@ -101,10 +102,11 @@ class $modify(JBSongWidget, CustomSongWidget) {
     }
 
     bool init(SongInfoObject* songInfo, CustomSongDelegate* songDelegate, bool showSongSelect, bool showPlayMusic,
-              bool showDownload, bool isRobtopSong, bool unk, bool isMusicLibrary, int unkInt) {
+              bool showDownload, bool isRobtopSong, bool unk, bool isMusicLibrary, int unkInt,
+              bool showFavorite, bool showUsage) {
         this->adjustSongInfoObject(songInfo);
         if (!CustomSongWidget::init(songInfo, songDelegate, showSongSelect, showPlayMusic, showDownload, isRobtopSong,
-                                    unk, isMusicLibrary, unkInt)) {
+                                    unk, isMusicLibrary, unkInt, showFavorite, showUsage)) {
             return false;
         }
 
@@ -164,7 +166,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             if (!optPath) {
                 found->second = false;
             } else {
-                found->second = asp::fs::exists(std::move(optPath).value());
+                found->second = asp::fs::exists(asp::fs::Path::fromStdPath(std::move(optPath).value()));
             }
         }
     }
@@ -186,7 +188,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         object->m_artistName = nongs->active()->metadata()->artist;
     }
 
-    void updateWithMultiAssets(gd::string p1, gd::string p2, int p3) {
+    void updateWithMultiAssets(std::string p1, std::string p2, int p3) {
         CustomSongWidget::updateWithMultiAssets(p1, p2, p3);
         m_fields->songIds = std::string(p1);
         m_fields->sfxIds = std::string(p2);
@@ -460,7 +462,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         const std::filesystem::path activePath = std::move(activePathOpt).value();
 
         std::string sizeText;
-        if (asp::fs::exists(activePath)) {
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(activePath))) {
             sizeText = NongManager::get().getFormattedSize(activePath);
         } else if (m_songInfoObject) {
             sizeText = fmt::format("{:.2f}MB", m_songInfoObject->m_fileSize);

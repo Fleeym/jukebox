@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asp/fs.hpp>
+#include <asp/fs/std.hpp>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -25,8 +26,8 @@ protected:
     void setupManifestPath() {
         const std::filesystem::path path = this->baseManifestPath();
 
-        if (!asp::fs::exists(path)) {
-            auto createDirRes = geode::utils::file::createDirectory(path);
+        if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
+            auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
             if (createDirRes.isErr()) {
                 geode::log::error("Failed to create manifest path {}: {}", path, createDirRes.unwrapErr());
             }
@@ -52,12 +53,12 @@ public:
     bool initialized() const { return m_initialized; }
 
     std::filesystem::path baseManifestPath() {
-        static std::filesystem::path path = geode::Mod::get()->getSaveDir() / "manifest";
+        static std::filesystem::path path = std::filesystem::path(geode::Mod::get()->getSaveDir().native()) / "manifest";
         return path;
     }
 
     std::filesystem::path baseNongsPath() {
-        static std::filesystem::path path = geode::Mod::get()->getSaveDir() / "nongs";
+        static std::filesystem::path path = std::filesystem::path(geode::Mod::get()->getSaveDir().native()) / "nongs";
         return path;
     }
 

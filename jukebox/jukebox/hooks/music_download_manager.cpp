@@ -1,10 +1,11 @@
 #include <jukebox/hooks/music_download_manager.hpp>
+#include <asp/fs/std.hpp>
 
 #include <optional>
 
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
-#include <Geode/c++stl/string.hpp>
+#include <string>
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
@@ -16,7 +17,7 @@
 
 using namespace jukebox;
 
-gd::string JBMusicDownloadManager::pathForSong(int id) {
+std::string JBMusicDownloadManager::pathForSong(int id) {
     NongManager::get().m_currentlyPreparingNong = std::nullopt;
     std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
     if (!nongs.has_value()) {
@@ -24,15 +25,15 @@ gd::string JBMusicDownloadManager::pathForSong(int id) {
     }
     Nongs* value = nongs.value();
     Song* active = value->active();
-    if (!asp::fs::exists(active->path().value())) {
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(active->path().value()))) {
         return MusicDownloadManager::pathForSong(id);
     }
     NongManager::get().m_currentlyPreparingNong = value;
 
-    return geode::utils::string::pathToString(active->path().value());
+    return asp::fs::Path::fromStdPath(active->path().value()).string();
 }
 
-void JBMusicDownloadManager::onGetSongInfoCompleted(gd::string p1, gd::string p2) {
+void JBMusicDownloadManager::onGetSongInfoCompleted(std::string p1, std::string p2) {
     m_fields->overrideSongInfo = true;
     MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
     geode::Result<int> songIDRes = geode::utils::numFromString<int>(p2);

@@ -1,7 +1,7 @@
 #include <Geode/binding/LevelSelectLayer.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MenuLayer.hpp>
-#include <Geode/c++stl/string.hpp>
+#include <string>
 #include <Geode/modify/LevelSelectLayer.hpp>  // IWYU pragma: keep
 #include <Geode/modify/LevelTools.hpp>        // IWYU pragma: keep
 #include <Geode/modify/MenuLayer.hpp>         // IWYU pragma: keep
@@ -30,7 +30,7 @@ class $modify(LevelTools) {
     //     return og;
     // }
 
-    static gd::string getAudioTitle(int id) {
+    static std::string getAudioTitle(int id) {
         if (g_disableTitleOverride || !NongManager::get().initialized()) {
             return LevelTools::getAudioTitle(id);
         }

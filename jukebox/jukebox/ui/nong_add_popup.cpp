@@ -1,4 +1,5 @@
 #include <jukebox/ui/nong_add_popup.hpp>
+#include <asp/fs/std.hpp>
 
 #include <Geode/utils/function.hpp>
 #include <algorithm>
@@ -287,7 +288,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     switch (edit->type()) {
         case NongType::LOCAL:
-            m_memoizedLocalInput = geode::utils::string::pathToString(edit->path().value());
+            m_memoizedLocalInput = asp::fs::Path::fromStdPath(edit->path().value()).string();
             m_localPath = edit->path();
             this->setSongType(SongType::LOCAL, false);
             break;
@@ -359,7 +360,7 @@ void NongAddPopup::openFile(CCObject* target) {
                   "*.mod", "*.s3m", "*.xm", "*.it"}};
     file::FilePickOptions options = {std::nullopt, {filter}};
     async::spawn(file::pick(file::PickMode::OpenFile, options),
-                 [this](Result<std::optional<std::filesystem::path>> result) { this->onFileOpen(std::move(result)); });
+                 [this](file::PickResult result) { this->onFileOpen(std::move(result)); });
 }
 
 void NongAddPopup::onPaste(CCObject*) {
@@ -371,7 +372,7 @@ void NongAddPopup::onPaste(CCObject*) {
     m_specialInput->setString(clipboard);
 }
 
-void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> result) {
+void NongAddPopup::onFileOpen(file::PickResult result) {
     if (m_songType != SongType::LOCAL) {
         return;
     }
@@ -381,17 +382,17 @@ void NongAddPopup::onFileOpen(Result<std::optional<std::filesystem::path>> resul
         return;
     }
 
-    std::optional<std::filesystem::path> pathOpt = std::move(result).unwrap();
+    auto pathOpt = std::move(result).unwrap();
 
     if (!pathOpt) {
         FLAlertLayer::create("Error", "No file selected", "Ok")->show();
         return;
     }
 
-    auto path = pathOpt.value();
+    auto path = std::filesystem::path(pathOpt->native());
 
-    std::string strPath = string::pathToString(path);
-    std::string extension = string::pathToString(path.extension());
+    std::string strPath = asp::fs::Path::fromStdPath(path).string();
+    std::string extension = asp::fs::Path::fromStdPath(path.extension()).string();
     std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
     if (!this->isPathValidSong(path)) {
@@ -521,7 +522,7 @@ void NongAddPopup::onPublish(CCObject* target) {
                 Song* replacedNong = m_replacedNong.value();
 
                 std::string songSpecificParams;
-                const auto pathStr = string::pathToString(replacedNong->path().value());
+                const auto pathStr = asp::fs::Path::fromStdPath(replacedNong->path().value()).string();
                 switch (replacedNong->type()) {
                     case NongType::LOCAL:
                         songSpecificParams = fmt::format("&path={}&source=local", pathStr);
@@ -604,7 +605,7 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
                                     const std::optional<std::string> levelName, int offset) {
     if (!m_localPath.has_value()) {
         std::filesystem::path path = std::string(std::move(m_specialInput->getString()));
-        if (asp::fs::exists(path)) {
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
             m_localPath = path;
         }
     }
@@ -615,15 +616,15 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
 
     std::filesystem::path path = m_localPath.value();
 
-    if (!asp::fs::exists(path)) {
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
         return Err("The selected file ({}) does not exist.", path);
     }
 
-    if (asp::fs::isDirectory(path).unwrapOr(false)) {
+    if (asp::fs::Path::fromStdPath(path).isDir()) {
         return Err("You selected a directory.");
     }
 
-    std::string extension = geode::utils::string::pathToString(path.extension());
+    std::string extension = asp::fs::Path::fromStdPath(path.extension()).string();
     if (songName.empty()) {
         return Err("Song name is empty");
     }
@@ -635,9 +636,9 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
     std::string id =
         m_replacedNong.has_value() ? m_replacedNong.value()->metadata()->uniqueID : jukebox::random_string(16);
     std::string unique = fmt::format("{}{}", id, extension);
-    std::filesystem::path destination = Mod::get()->getSaveDir() / "nongs";
-    if (!asp::fs::exists(destination)) {
-        auto createDirRes = geode::utils::file::createDirectory(destination);
+    std::filesystem::path destination = std::filesystem::path(Mod::get()->getSaveDir().native()) / "nongs";
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(destination))) {
+        auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(destination));
         if (createDirRes.isErr()) {
             return Err("Failed to create nongs directory.");
         }
@@ -646,9 +647,8 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
 
     if (destination.compare(path) != 0) {
         GEODE_UNWRAP(
-            asp::fs::copy(path, destination, std::filesystem::copy_options::overwrite_existing).mapErr([](auto err) {
-                return fmt::format("Failed to save song. Please try again! Code: {}, message: {}", err.getCode(),
-                                   err.message());
+            asp::fs::copy(asp::fs::Path::fromStdPath(path), asp::fs::Path::fromStdPath(destination)).mapErr([](auto err) {
+                return fmt::format("Failed to save song. Please try again! {}", err);
             }));
     }
 
@@ -803,7 +803,7 @@ geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const s
 }
 
 bool NongAddPopup::isPathValidSong(const std::filesystem::path& song) const {
-    const auto stringPath = string::pathToString(song);
+    const auto stringPath = asp::fs::Path::fromStdPath(song).string();
 
     FMOD::Sound* sound = nullptr;
     const FMOD_RESULT result = FMODAudioEngine::sharedEngine()->m_system->createSound(
@@ -836,7 +836,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD::Sound* sound;
     FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
 
-    FMOD_RESULT result = system->createSound(geode::utils::string::pathToString(path).c_str(),
+    FMOD_RESULT result = system->createSound(asp::fs::Path::fromStdPath(path).string().c_str(),
                                              FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
 
     if (!sound || result != FMOD_OK) {
@@ -849,7 +849,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD_RESULT nameResult = FMOD_OK;
     FMOD_RESULT artistResult = FMOD_OK;
 
-    const std::string extension = geode::utils::string::pathToString(path.extension());
+    const std::string extension = asp::fs::Path::fromStdPath(path.extension()).string();
     if (extension == ".mp3") {
         nameResult = sound->getTag(MP3_NAME_TAG, 0, &nameTag);
         artistResult = sound->getTag(MP3_ARTIST_TAG, 0, &artistTag);

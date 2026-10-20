@@ -1,4 +1,5 @@
 #include <jukebox/compat/v2.hpp>
+#include <asp/fs/std.hpp>
 
 #include <asp/fs/fs.hpp>
 #include <filesystem>
@@ -31,57 +32,52 @@ bool isSongValid(const matjson::Value& s) {
            s["authorName"].isString() && s.contains("path") && s["path"].isString();
 }
 
-bool manifestExists() { return asp::fs::exists(manifestPath()); }
+bool manifestExists() { return asp::fs::exists(asp::fs::Path::fromStdPath(manifestPath())); }
 
-std::filesystem::path manifestPath() { return Mod::get()->getSaveDir() / "nong_data.json"; }
+std::filesystem::path manifestPath() { return std::filesystem::path(Mod::get()->getSaveDir().native()) / "nong_data.json"; }
 
 Result<> backupManifest(bool deleteOrig) {
     if (!manifestExists()) {
         return Ok();
     }
 
-    const std::filesystem::path backupDir = Mod::get()->getSaveDir() / ".v2-compat-backup";
-    bool exists = asp::fs::exists(backupDir);
-    bool isDir = asp::fs::isDirectory(backupDir).unwrapOr(false);
+    const std::filesystem::path backupDir = std::filesystem::path(Mod::get()->getSaveDir().native()) / ".v2-compat-backup";
+    bool exists = asp::fs::exists(asp::fs::Path::fromStdPath(backupDir));
+    bool isDir = asp::fs::Path::fromStdPath(backupDir).isDir();
 
     if (exists && !isDir) {
-        GEODE_UNWRAP(asp::fs::removeFile(backupDir).mapErr(
+        GEODE_UNWRAP(asp::fs::removeFile(asp::fs::Path::fromStdPath(backupDir)).mapErr(
             [backupDir](const auto& err) {
-                return fmt::format("Failed to remove conflicting backup path {}. Code: {}, message: {}", backupDir,
-                                   err.getCode(), err.message());
+                return fmt::format("Failed to remove conflicting backup path {}: {}", backupDir, err);
             }));
         exists = false;
     }
 
     if (!exists) {
-        GEODE_UNWRAP(asp::fs::createDirAll(backupDir).mapErr(
+        GEODE_UNWRAP(asp::fs::createDirAll(asp::fs::Path::fromStdPath(backupDir)).mapErr(
             [backupDir](const auto& err) {
-                return fmt::format("Failed to create backup directory {}. Code: {}, message: {}", backupDir,
-                                   err.getCode(), err.message());
+                return fmt::format("Failed to create backup directory {}: {}", backupDir, err);
             }));
     }
 
     const std::filesystem::path filepath = backupDir / "nong_data.json";
-    if (asp::fs::exists(filepath)) {
-        GEODE_UNWRAP(asp::fs::remove(filepath).mapErr(
+    if (asp::fs::exists(asp::fs::Path::fromStdPath(filepath))) {
+        GEODE_UNWRAP(asp::fs::remove(asp::fs::Path::fromStdPath(filepath)).mapErr(
             [filepath](const auto& err) {
-                return fmt::format("Failed to replace backup file {}. Code: {}, message: {}", filepath,
-                                   err.getCode(), err.message());
+                return fmt::format("Failed to replace backup file {}: {}", filepath, err);
             }));
     }
 
-    GEODE_UNWRAP(asp::fs::copy(manifestPath(), filepath).mapErr(
+    GEODE_UNWRAP(asp::fs::copy(asp::fs::Path::fromStdPath(manifestPath()), asp::fs::Path::fromStdPath(filepath)).mapErr(
         [filepath](const auto& err) {
-            return fmt::format("Failed to write backup file {}. Code: {}, message: {}", filepath, err.getCode(),
-                               err.message());
+            return fmt::format("Failed to write backup file {}: {}", filepath, err);
         }));
 
     if (deleteOrig) {
         const auto sourcePath = manifestPath();
-        GEODE_UNWRAP(asp::fs::remove(sourcePath).mapErr(
+        GEODE_UNWRAP(asp::fs::remove(asp::fs::Path::fromStdPath(sourcePath)).mapErr(
             [sourcePath](const auto& err) {
-                return fmt::format("Failed to delete original v2 manifest {}. Code: {}, message: {}", sourcePath,
-                                   err.getCode(), err.message());
+                return fmt::format("Failed to delete original v2 manifest {}: {}", sourcePath, err);
             }));
     }
 
@@ -145,7 +141,7 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
 
     std::filesystem::path path = manifestPath();
 
-    GEODE_UNWRAP_INTO(matjson::Value json, geode::utils::file::readJson(path).mapErr([](std::string err) {
+    GEODE_UNWRAP_INTO(matjson::Value json, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)).mapErr([](std::string err) {
         return fmt::format("Couldn't parse JSON from file: {}", err);
     }));
 
