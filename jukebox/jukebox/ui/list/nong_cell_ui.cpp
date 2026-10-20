@@ -10,6 +10,8 @@
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <ccTypes.h>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/mapping/CCClippingNode.hpp>
+#include <Geode/mapping/CCProgressTimer.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Layout.hpp>

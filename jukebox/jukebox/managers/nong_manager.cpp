@@ -15,6 +15,7 @@
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/mapping/CCFileUtils.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/file.hpp>
 #include <asp/fs/fs.hpp>

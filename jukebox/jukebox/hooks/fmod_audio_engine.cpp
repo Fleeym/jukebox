@@ -1,3 +1,6 @@
+#include <array>
+#include <map>
+
 #include <Geode/binding/FMODAudioEngine.hpp>
 #include <Geode/modify/FMODAudioEngine.hpp>  // IWYU pragma: keep
 

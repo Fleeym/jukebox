@@ -21,6 +21,7 @@
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/mapping/CCFileUtils.hpp>
 #include <Geode/modify/CustomSongWidget.hpp>  // IWYU pragma: keep
 #include <Geode/modify/LevelInfoLayer.hpp>    // IWYU pragma: keep
 #include <Geode/ui/Layout.hpp>

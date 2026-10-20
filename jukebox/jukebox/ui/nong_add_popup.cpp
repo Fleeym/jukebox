@@ -25,6 +25,7 @@
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/binding/FMODAudioEngine.hpp>
+#include <Geode/mapping/CCApplication.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
