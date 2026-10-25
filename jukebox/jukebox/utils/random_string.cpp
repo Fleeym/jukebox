@@ -1,4 +1,8 @@
-#include <jukebox/utils/random_string.hpp>
+#include "jukebox/utils/random_string.hpp"
+
+#include <cstddef>
+#include <string>
+#include <string_view>
 
 #include <Geode/utils/random.hpp>
 

@@ -1,5 +1,9 @@
 #include <filesystem>
 #include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <Geode/Result.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
@@ -7,6 +11,7 @@
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/LevelInfoLayer.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/cocos/actions/CCActionInterval.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
@@ -22,15 +27,18 @@
 #include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
+#include <Geode/utils/async.hpp>
+#include <Geode/utils/cocos.hpp>
+#include <asp/fs/Path.hpp>
 #include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/format.h>
 
-#include <jukebox/events/indexes_loaded.hpp>
-#include <jukebox/events/song_state_changed.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/nong_dropdown_layer.hpp>
+#include "jukebox/events/indexes_loaded.hpp"
+#include "jukebox/events/song_state_changed.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/ui/nong_dropdown_layer.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -117,7 +125,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
         this->setupJBSW();
         m_fields->firstRun = false;
 
-        this->addEventListener("indexes-loaded"_spr, event::IndexesLoaded(), [this]() {
+        this->addEventListener("indexes-loaded"_spr, event::IndexesLoaded(), [this] {
             if (!m_songInfoObject) { return ListenerResult::Propagate; }
 
             std::optional<Nongs*> nongs = NongManager::get().getNongs(m_songInfoObject->m_songID);
@@ -585,7 +593,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
             ids.push_back(id);
         }
 
-        const auto layer = NongDropdownLayer::create(ids, this, id, this->getLevelID());
+        auto* const layer = NongDropdownLayer::create(ids, this, id, this->getLevelID());
         if (!layer) { return; }
 
         // Make sure the popup sits above any possible popups
@@ -598,7 +606,7 @@ class $modify(JBLevelInfoLayer, LevelInfoLayer) {
     bool init(GJGameLevel* level, bool p1) {
         if (!LevelInfoLayer::init(level, p1)) { return false; }
         if (Mod::get()->getSavedValue("show-tutorial", true) && GameManager::get()->m_levelEditorLayer == nullptr) {
-            const auto popup = FLAlertLayer::create(
+            auto* const popup = FLAlertLayer::create(
                 "Jukebox",
                 "Thank you for using <co>Jukebox</c>! To "
                 "begin swapping songs, click "

@@ -1,19 +1,23 @@
-#include <jukebox/ui/indexes_setting.hpp>
+#include "jukebox/ui/indexes_setting.hpp"
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Geode/Result.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>  // IWYU pragma: keep
 #include <Geode/loader/SettingV3.hpp>
 #include <Geode/utils/JsonValidation.hpp>
+#include <Geode/utils/cocos.hpp>
 #include <matjson.hpp>
 
-#include <jukebox/ui/indexes_popup.hpp>
+#include "jukebox/nong/index.hpp"
+#include "jukebox/ui/indexes_popup.hpp"
 
 using namespace geode::prelude;
 
@@ -36,9 +40,9 @@ bool IndexSettingNode::init(const std::shared_ptr<IndexSetting>& setting, float 
     menu->setPosition({0.0f, 0.0f});
     menu->setID("inputs-menu");
 
-    auto viewSpr = ButtonSprite::create("View");
+    auto* viewSpr = ButtonSprite::create("View");
     viewSpr->setScale(0.72f);
-    auto viewBtn = CCMenuItemSpriteExtra::create(viewSpr, this, menu_selector(IndexSettingNode::onView));
+    auto* viewBtn = CCMenuItemSpriteExtra::create(viewSpr, this, menu_selector(IndexSettingNode::onView));
     viewBtn->setPosition(width - 40.f, height - 20.f);
     menu->addChild(viewBtn);
 
@@ -58,7 +62,7 @@ void IndexSettingNode::onView(CCObject*) {
 }
 
 IndexSettingNode* IndexSettingNode::create(const std::shared_ptr<IndexSetting>& setting, float width) {
-    const auto ret = new IndexSettingNode();
+    auto* const ret = new IndexSettingNode();
 
     if (ret->init(setting, width)) {
         ret->autorelease();

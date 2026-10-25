@@ -9,9 +9,7 @@
 #include <fmt/core.h>
 #include <matjson.hpp>
 
-namespace jukebox {
-
-namespace index {
+namespace jukebox::index {
 
 class IndexSongMetadata;
 
@@ -92,6 +90,4 @@ struct IndexSongMetadata final {
     IndexMetadata* parentID;
 };
 
-}  // namespace index
-
-}  // namespace jukebox
+}  // namespace jukebox::index

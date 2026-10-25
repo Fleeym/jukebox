@@ -13,7 +13,7 @@
 #include <fmt/core.h>
 #include <matjson.hpp>
 
-#include <jukebox/nong/index.hpp>
+#include "jukebox/nong/index.hpp"
 
 namespace jukebox {
 
@@ -158,7 +158,7 @@ private:
 
 public:
     Nongs(int songID, LocalSong&& defaultSong);
-    Nongs(int songID);
+    explicit Nongs(int songID);
 
     // No copies for this one
     Nongs(const Nongs&) = delete;
@@ -208,7 +208,7 @@ class Manifest {
 
 private:
     int m_version = s_latestVersion;
-    std::unordered_map<int, std::unique_ptr<Nongs>> m_nongs = {};
+    std::unordered_map<int, std::unique_ptr<Nongs>> m_nongs;
 
 public:
     constexpr static int s_latestVersion = 4;

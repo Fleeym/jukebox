@@ -1,4 +1,10 @@
-#include <jukebox/ui/list/nong_cell.hpp>
+#include "jukebox/ui/list/nong_cell.hpp"
+
+#include <algorithm>
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
@@ -7,21 +13,26 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <asp/fs/Path.hpp>
+#include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
 
-#include <jukebox/events/song_download_failed.hpp>
-#include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/events/song_state_changed.hpp>
-#include <jukebox/events/start_download.hpp>
-#include <jukebox/managers/index_manager.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/index.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/list/nong_cell_ui.hpp>
-#include <jukebox/ui/nong_add_popup.hpp>
-#include <jukebox/utils/get_domain_from_url.hpp>
+#include "jukebox/events/get_song_info.hpp"
+#include "jukebox/events/song_download_failed.hpp"
+#include "jukebox/events/song_download_finished.hpp"
+#include "jukebox/events/song_download_progress.hpp"
+#include "jukebox/events/song_state_changed.hpp"
+#include "jukebox/events/start_download.hpp"
+#include "jukebox/managers/index_manager.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/index.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/ui/list/nong_cell_ui.hpp"
+#include "jukebox/ui/nong_add_popup.hpp"
+#include "jukebox/utils/get_domain_from_url.hpp"
 
 using namespace geode::prelude;
 
@@ -223,7 +234,7 @@ void NongCell::onEdit() {
     if (!nongsOpt.has_value()) { return; }
     std::optional<Song*> songInfoOpt = nongsOpt.value()->findSong(m_uniqueID);
     if (!songInfoOpt.has_value()) { return; }
-    NongAddPopup::create(m_songID, songInfoOpt.value())->show();
+    NongAddPopup::create(m_songID, songInfoOpt)->show();
 }
 
 void NongCell::onFixDefault() {
@@ -236,7 +247,7 @@ void NongCell::onFixDefault() {
         "Fix default",
         "Do you want to refetch song info <cb>for the default song</c>? Use "
         "this <cr>ONLY</c> if it gets renamed by accident!",
-        "No", "Yes", [this](FLAlertLayer* alert, bool btn2) {
+        "No", "Yes", [this](FLAlertLayer* /*alert*/, bool btn2) {
             if (btn2) { NongManager::get().refetchDefault(m_songID); }
         }
     );
@@ -303,7 +314,7 @@ ListenerResult NongCell::onGetSongInfo(const event::GetSongInfoData& e) {
 }
 
 void NongCell::deleteSong(bool onlyAudio) {
-    auto func = [this, onlyAudio]() {
+    auto func = [this, onlyAudio] {
         if (onlyAudio) {
             if (auto err = NongManager::get().deleteSongAudio(this->m_songID, this->m_uniqueID); err.isErr()) {
                 log::error("Failed to delete audio for {}: {}", this->m_uniqueID, err.unwrapErr());
@@ -320,7 +331,7 @@ void NongCell::deleteSong(bool onlyAudio) {
 
     createQuickPopup(
         "Are you sure?", fmt::format("Are you sure you want to delete the song from your NONGs?"), "No", "Yes",
-        [func](FLAlertLayer* self, bool btn2) {
+        [func](FLAlertLayer* /*self*/, bool btn2) {
             if (!btn2) { return; }
             func();
         }
@@ -334,7 +345,7 @@ NongCell* NongCell::create(
     std::optional<int> levelID,
     std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
 ) {
-    auto ret = new NongCell();
+    auto* ret = new NongCell();
     if (ret->init(gdSongID, uniqueID, size, levelID, indexSongMetadataOpt)) { return ret; }
 
     delete ret;

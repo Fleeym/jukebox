@@ -1,11 +1,9 @@
-#include <Geode/utils/web.hpp>
+#include "jukebox/utils/web.hpp"
 
 #include <string>
 
-#include <Geode/loader/Log.hpp>
+#include <Geode/utils/web.hpp>
 #include <fmt/format.h>
-
-#include <jukebox/utils/web.hpp>
 
 namespace jukebox::utils::web {
 

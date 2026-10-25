@@ -1,5 +1,4 @@
 #include <Geode/DefaultInclude.hpp>
-#include <Geode/Result.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/loader/ModEvent.hpp>
@@ -7,9 +6,9 @@
 #include <Geode/ui/Notification.hpp>
 #include <Geode/ui/Popup.hpp>
 
-#include <jukebox/managers/index_manager.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/ui/indexes_setting.hpp>
+#include "jukebox/managers/index_manager.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/ui/indexes_setting.hpp"
 
 using namespace geode::prelude;
 

@@ -1,9 +1,10 @@
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/nong/nong.hpp"
 
 #include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -13,19 +14,22 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/general.hpp>
+#include <arc/future/Future.hpp>
+#include <arc/util/Result.hpp>
+#include <asp/fs/Path.hpp>
 #include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/format.h>
 #include <matjson.hpp>
 
-#include <jukebox/download/hosted.hpp>
-#include <jukebox/download/youtube.hpp>
-#include <jukebox/events/nong_deleted.hpp>
-#include <jukebox/events/song_state_changed.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/index.hpp>
-#include <jukebox/nong/nong_serialize.hpp>
-#include <jukebox/utils/random_string.hpp>
+#include "jukebox/download/hosted.hpp"
+#include "jukebox/download/youtube.hpp"
+#include "jukebox/events/nong_deleted.hpp"
+#include "jukebox/events/song_state_changed.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/index.hpp"
+#include "jukebox/nong/nong_serialize.hpp"
+#include "jukebox/utils/random_string.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox::index;
@@ -54,7 +58,7 @@ public:
 
     [[nodiscard]] SongMetadata* metadata() const { return m_metadata.get(); }
     [[nodiscard]] std::filesystem::path path() const { return m_path; }
-    void setPath(std::filesystem::path&& p) { m_path = p; }
+    void setPath(std::filesystem::path&& p) { m_path = std::move(p); }
 };
 
 LocalSong::LocalSong(SongMetadata&& metadata, const std::filesystem::path& path)
@@ -595,7 +599,7 @@ public:
 
     Result<YTSong*> add(YTSong&& song) {
         auto s = std::make_unique<YTSong>(std::move(song));
-        auto ret = s.get();
+        auto* ret = s.get();
         m_youtube.push_back(std::move(s));
 
         return Ok(ret);

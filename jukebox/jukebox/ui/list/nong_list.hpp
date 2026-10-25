@@ -16,11 +16,11 @@
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/function.hpp>
 
-#include <jukebox/events/manual_song_added.hpp>
-#include <jukebox/events/nong_deleted.hpp>
-#include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/list/nong_cell.hpp>
+#include "jukebox/events/manual_song_added.hpp"
+#include "jukebox/events/nong_deleted.hpp"
+#include "jukebox/events/song_download_finished.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/ui/list/nong_cell.hpp"
 
 namespace jukebox {
 
@@ -47,7 +47,7 @@ protected:
     geode::ListenerHandle m_nongAddedListener;
 
     geode::Ref<geode::TextInput> m_searchInput;
-    std::string m_searchQuery = "";
+    std::string m_searchQuery;
 
     static constexpr float s_padding = 10.0f;
     static constexpr float s_itemSize = 60.f;
@@ -63,7 +63,7 @@ protected:
     // This just moves the list up by 0.00001. That's it. Don't ask.
     void updateLayoutAndFixWeirdDisplay() const;
 
-    bool matchesSearch(std::string_view search) const;
+    bool matchesSearch(std::string_view name) const;
 
 public:
     void scrollToTop();

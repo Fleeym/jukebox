@@ -1,33 +1,33 @@
-#include <jukebox/compat/v2.hpp>
+#include "jukebox/compat/v2.hpp"
 
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <Geode/Result.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/general.hpp>
+#include <asp/fs/Path.hpp>
 #include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
+#include <fmt/format.h>
 #include <matjson.hpp>
 
-#include <jukebox/compat/compat.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/utils/random_string.hpp>
+#include "jukebox/compat/compat.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/utils/random_string.hpp"
 
 using namespace geode::prelude;
 
-namespace jukebox {
+namespace jukebox::compat::v2 {
 
-namespace compat {
-
-namespace v2 {
-
-bool isSongValid(const matjson::Value& s) {
+static bool isSongValid(const matjson::Value& s) {
     return s.contains("songName") && s["songName"].isString() && s.contains("authorName") &&
            s["authorName"].isString() && s.contains("path") && s["path"].isString();
 }
@@ -83,7 +83,7 @@ Result<> backupManifest(bool deleteOrig) {
     return Ok();
 }
 
-Result<LocalSong> parseSong(const matjson::Value& i, int id) {
+static Result<LocalSong> parseSong(const matjson::Value& i, int id) {
     if (!isSongValid(i)) { return Err("Invalid JSON"); }
 
     std::filesystem::path path =
@@ -98,7 +98,7 @@ Result<LocalSong> parseSong(const matjson::Value& i, int id) {
     ));
 }
 
-Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath, const matjson::Value& songs) {
+static Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath, const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
         if (!isSongValid(i)) { continue; }
 
@@ -117,7 +117,7 @@ Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath, c
     return Err("Default song not found");
 }
 
-Result<LocalSong> getActive(int id, const std::filesystem::path& activePath, const matjson::Value& songs) {
+static Result<LocalSong> getActive(int id, const std::filesystem::path& activePath, const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
         if (!isSongValid(i)) { continue; }
 
@@ -202,18 +202,21 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
                 unique = jukebox::random_string(16);
             }
 
-            manifestSongs.push_back(LocalSong(
+            manifestSongs.emplace_back(
                 SongMetadata(
                     id, unique, i["songName"].asString().unwrap(), i["authorName"].asString().unwrap(), std::nullopt,
                     i["startOffset"].asInt().unwrapOr(0)
                 ),
                 path
-            ));
+            );
         }
 
         ret.insert(
             {id, CompatManifest {
-                     .id = id, .defaultSong = defaultSong, .active = activeSong, .songs = std::move(manifestSongs)
+                     .id = id,
+                     .defaultSong = defaultSong,
+                     .active = activeSong,
+                     .songs = std::move(manifestSongs),
                  }}
         );
     }
@@ -221,8 +224,4 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
     return Ok(ret);
 }
 
-}  // namespace v2
-
-}  // namespace compat
-
-}  // namespace jukebox
+}  // namespace jukebox::compat::v2

@@ -2,11 +2,9 @@
 
 #include <vector>
 
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/nong/nong.hpp"
 
-namespace jukebox {
-
-namespace compat {
+namespace jukebox::compat {
 
 struct CompatManifest {
     int id;
@@ -15,6 +13,4 @@ struct CompatManifest {
     std::vector<LocalSong> songs;
 };
 
-}  // namespace compat
-
-}  // namespace jukebox
+}  // namespace jukebox::compat

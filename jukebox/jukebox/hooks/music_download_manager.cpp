@@ -1,19 +1,19 @@
-#include <jukebox/hooks/music_download_manager.hpp>
+#include "jukebox/hooks/music_download_manager.hpp"
 
 #include <optional>
 #include <string>
 
+#include <Geode/Result.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
-#include <Geode/loader/Log.hpp>
 #include <Geode/utils/general.hpp>
-#include <Geode/utils/string.hpp>
+#include <asp/fs/Path.hpp>
 #include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 
-#include <jukebox/events/get_song_info.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/events/get_song_info.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/nong.hpp"
 
 using namespace jukebox;
 
@@ -48,7 +48,7 @@ void JBMusicDownloadManager::onGetSongInfoCompleted(std::string p1, std::string 
 }
 
 SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {
-    auto og = MusicDownloadManager::getSongInfoObject(id);
+    auto* og = MusicDownloadManager::getSongInfoObject(id);
     if (og == nullptr) { return og; }
 
     if (m_fields->overrideSongInfo) { return og; }

@@ -6,13 +6,13 @@
 #include <Geode/loader/Event.hpp>
 #include <Geode/utils/cocos.hpp>
 
-#include <jukebox/events/get_song_info.hpp>
-#include <jukebox/events/song_download_failed.hpp>
-#include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/events/song_download_progress.hpp>
-#include <jukebox/events/song_state_changed.hpp>
-#include <jukebox/nong/index.hpp>
-#include <jukebox/ui/list/nong_cell_ui.hpp>
+#include "jukebox/events/get_song_info.hpp"
+#include "jukebox/events/song_download_failed.hpp"
+#include "jukebox/events/song_download_finished.hpp"
+#include "jukebox/events/song_download_progress.hpp"
+#include "jukebox/events/song_state_changed.hpp"
+#include "jukebox/nong/index.hpp"
+#include "jukebox/ui/list/nong_cell_ui.hpp"
 
 namespace jukebox {
 

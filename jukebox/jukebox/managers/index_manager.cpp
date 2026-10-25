@@ -1,43 +1,50 @@
-#include <jukebox/managers/index_manager.hpp>
+#include "jukebox/managers/index_manager.hpp"
 
+#include <chrono>
+#include <cstddef>
 #include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
 #include <Geode/Result.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
+#include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/utils/async.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/function.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/web.hpp>
 #include <arc/future/Future.hpp>
+#include <arc/util/Result.hpp>
+#include <asp/fs/Path.hpp>
 #include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/format.h>
 #include <matjson.hpp>
 
-#include <jukebox/download/hosted.hpp>
-#include <jukebox/events/file_download_progress.hpp>
-#include <jukebox/events/indexes_loaded.hpp>
-#include <jukebox/events/song_download_failed.hpp>
-#include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/events/song_download_progress.hpp>
-#include <jukebox/events/song_error.hpp>
-#include <jukebox/events/start_download.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/index.hpp>
-#include <jukebox/nong/index_serialize.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/indexes_setting.hpp>
-#include <jukebox/utils/web.hpp>
+#include "jukebox/download/hosted.hpp"
+#include "jukebox/events/file_download_progress.hpp"
+#include "jukebox/events/indexes_loaded.hpp"
+#include "jukebox/events/song_download_failed.hpp"
+#include "jukebox/events/song_download_finished.hpp"
+#include "jukebox/events/song_download_progress.hpp"
+#include "jukebox/events/song_error.hpp"
+#include "jukebox/events/start_download.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/index.hpp"
+#include "jukebox/nong/index_serialize.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/ui/indexes_setting.hpp"
+#include "jukebox/utils/web.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox::index;
@@ -263,7 +270,7 @@ Future<Result<>> IndexManager::fetchIndexes() {
     }
 
     m_fetchingIndexes = false;
-    Loader::get()->queueInMainThread([]() { event::IndexesLoaded().send(); });
+    Loader::get()->queueInMainThread([] { event::IndexesLoaded().send(); });
 
     co_return Ok();
 }
@@ -456,12 +463,12 @@ void IndexManager::onDownloadFinish(
     std::filesystem::path path;
 
     if (std::holds_alternative<IndexSongMetadata*>(source)) {
-        auto s = std::get<IndexSongMetadata*>(source);
+        auto* s = std::get<IndexSongMetadata*>(source);
         path = NongManager::get().baseNongsPath() / fmt::format("{}-{}.mp3", s->parentID->m_id, s->uniqueID);
     } else {
         std::string name;
 
-        if (auto song = std::get<Song*>(source); song->indexID().has_value()) {
+        if (auto* song = std::get<Song*>(source); song->indexID().has_value()) {
             name = fmt::format("{}-{}.mp3", song->indexID().value(), song->metadata()->uniqueID);
         } else {
             name = fmt::format("{}.mp3", song->metadata()->uniqueID);
@@ -481,13 +488,13 @@ void IndexManager::onDownloadFinish(
     Song* insertedSong = nullptr;
 
     if (std::holds_alternative<Song*>(source)) {
-        auto localSong = std::get<Song*>(source);
+        auto* localSong = std::get<Song*>(source);
         localSong->setPath(path);
         event::SongDownloadFinished().send(event::SongDownloadFinishedData(std::nullopt, std::get<Song*>(source)));
         return;
     }
 
-    auto metadata = std::get<IndexSongMetadata*>(source);
+    auto* metadata = std::get<IndexSongMetadata*>(source);
 
     geode::Function<void(std::string)> orElse = [destination, uniqueId, path](std::string err) {
         const std::string print = fmt::format("Couldn't store index song. {}", err);
@@ -602,7 +609,7 @@ void IndexManager::setEtagForIndex(const std::string_view url, std::optional<std
 }
 
 void IndexManager::clearCaches() {
-    for (auto& entry : std::filesystem::directory_iterator(this->baseIndexesPath())) {
+    for (const auto& entry : std::filesystem::directory_iterator(this->baseIndexesPath())) {
         auto res = asp::fs::remove(asp::fs::Path::fromStdPath(entry.path()));
         if (res.isErr()) { log::warn("Failed to remove cached index: {}", res.unwrapErr()); }
     }

@@ -1,20 +1,27 @@
-#include <jukebox/download/youtube.hpp>
+#include "jukebox/download/youtube.hpp"
 
+#include <algorithm>
+#include <chrono>
 #include <string>
+#include <utility>
 
 #include <Geode/Result.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/utils/general.hpp>
 #include <Geode/utils/web.hpp>
+#include <arc/future/Future.hpp>
+#include <arc/util/Result.hpp>
+#include <fmt/format.h>
 #include <matjson.hpp>
 
-#include <jukebox/download/hosted.hpp>
+#include "jukebox/download/hosted.hpp"
 
 using namespace geode::prelude;
 using namespace arc;
 
-web::WebFuture getMetadata(const std::string& id);
-Result<std::string> getUrlFromMetadataPayload(web::WebResponse r);
-Future<Result<ByteVector>> onMetadata(web::WebResponse result);
+static web::WebFuture getMetadata(const std::string& id);
+static Result<std::string> getUrlFromMetadataPayload(web::WebResponse r);
+static Future<Result<ByteVector>> onMetadata(web::WebResponse result);
 
 namespace jukebox::download {
 
@@ -33,7 +40,7 @@ Result<std::string> getUrlFromMetadataPayload(web::WebResponse r) {
     Result<matjson::Value> jsonRes = r.json();
     if (jsonRes.isErr()) { return Err("cobalt metadata query returned invalid JSON"); }
 
-    matjson::Value payload = jsonRes.unwrap();
+    const matjson::Value& payload = jsonRes.unwrap();
     if (!payload.contains("status") || !payload["status"].isString() ||
         payload["status"].asString().unwrap() != "stream") {
         return Err("Invalid metadata status");
@@ -47,16 +54,16 @@ Result<std::string> getUrlFromMetadataPayload(web::WebResponse r) {
 web::WebFuture getMetadata(const std::string& id) {
     int timeout = Mod::get()->getSettingValue<int>("download-timeout");
 
-    if (timeout < 30) { timeout = 30; }
+    timeout = std::max(timeout, 30);
 
     return web::WebRequest()
         .timeout(std::chrono::seconds(timeout))
         .bodyJSON(
-            matjson::makeObject(
-                {{"url", fmt::format("https://www.youtube.com/watch?v={}", id)},
-                 {"aFormat", "mp3"},
-                 {"isAudioOnly", "true"}}
-            )
+            matjson::makeObject({
+                {"url", fmt::format("https://www.youtube.com/watch?v={}", id)},
+                {"aFormat", "mp3"},
+                {"isAudioOnly", "true"},
+            })
         )
         .header("Accept", "application/json")
         .header("Content-Type", "application/json")

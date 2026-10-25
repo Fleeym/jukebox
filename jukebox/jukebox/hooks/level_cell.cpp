@@ -1,4 +1,5 @@
 #include <optional>
+#include <string>
 
 #include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/binding/LevelCell.hpp>
@@ -7,8 +8,8 @@
 #include <Geode/loader/Loader.hpp>
 #include <Geode/modify/LevelCell.hpp>  // IWYU pragma: keep
 
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/nong.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox;
@@ -25,7 +26,7 @@ class $modify(JBLevelCell, LevelCell) {
         CCNode* label = main->getChildByID("song-name");
         if (!label) { return; }
 
-        CCLabelBMFont* songName = static_cast<CCLabelBMFont*>(label);
+        auto* songName = static_cast<CCLabelBMFont*>(label);
         std::optional<std::string> nongName = this->getNongSongName();
         if (nongName.has_value()) { songName->setString(nongName.value().c_str()); }
     }

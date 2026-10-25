@@ -7,7 +7,7 @@
 #include <Geode/ui/ScrollLayer.hpp>
 #include <Geode/utils/function.hpp>
 
-#include <jukebox/nong/index.hpp>
+#include "jukebox/nong/index.hpp"
 
 namespace jukebox {
 

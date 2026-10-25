@@ -7,8 +7,8 @@
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/function.hpp>
 
-#include <jukebox/nong/index.hpp>
-#include <jukebox/ui/indexes_popup.hpp>
+#include "jukebox/nong/index.hpp"
+#include "jukebox/ui/indexes_popup.hpp"
 
 namespace jukebox {
 

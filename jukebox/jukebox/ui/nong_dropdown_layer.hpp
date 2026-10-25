@@ -11,9 +11,9 @@
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/cocos.hpp>
 
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/list/nong_list.hpp>
-#include <jukebox/ui/list/song_cell.hpp>
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/ui/list/nong_list.hpp"
+#include "jukebox/ui/list/song_cell.hpp"
 
 namespace jukebox {
 
@@ -62,7 +62,7 @@ public:
     static NongDropdownLayer* create(
         std::vector<int> ids, CustomSongWidget* parent, const int defaultSongID, const std::optional<int> levelID
     ) {
-        auto ret = new NongDropdownLayer;
+        auto* ret = new NongDropdownLayer;
         if (ret->init(420.f, 280.f, std::move(ids), parent, defaultSongID, levelID, "GJ_square01.png")) {
             ret->autorelease();
             return ret;

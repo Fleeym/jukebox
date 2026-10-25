@@ -5,8 +5,8 @@
 #include <Geode/ui/Label.hpp>
 #include <Geode/utils/function.hpp>
 
-#include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/events/song_download_finished.hpp"
+#include "jukebox/nong/nong.hpp"
 
 namespace jukebox {
 
@@ -42,7 +42,7 @@ protected:
 public:
     std::string m_songName = "None";
     std::string m_authorName = "None";
-    std::string m_metadata = "";
+    std::string m_metadata;
 
     cocos2d::CCSize m_size;
 
@@ -61,7 +61,7 @@ public:
     bool m_isDownloaded = false;
     bool m_isSelected = false;
 
-    bool m_isDownloading = 0;
+    bool m_isDownloading = false;
     float m_downloadProgress = 0;
 
     static NongCellUI* create(

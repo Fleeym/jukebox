@@ -1,12 +1,16 @@
-#include <jukebox/ui/nong_add_popup.hpp>
+#include "jukebox/ui/nong_add_popup.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
+#include <cstring>
 #include <filesystem>
 #include <memory>
 #include <optional>
 #include <regex>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "Geode/loader/Log.hpp"
 #include <Geode/Result.hpp>
@@ -26,6 +30,7 @@
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
+#include <Geode/utils/async.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/function.hpp>
 #include <Geode/utils/general.hpp>
@@ -38,28 +43,30 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include <jukebox/events/manual_song_added.hpp>
-#include <jukebox/managers/index_manager.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/index_choose_popup.hpp>
-#include <jukebox/utils/random_string.hpp>
+#include "jukebox/events/manual_song_added.hpp"
+#include "jukebox/managers/index_manager.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/index.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/ui/index_choose_popup.hpp"
+#include "jukebox/utils/random_string.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox::index;
 
-void setInputProps(TextInput* i) {
-    i->getInputNode()->setLabelPlaceholderColor({108, 153, 216});
+static void setInputProps(TextInput* i) {
+    i->getInputNode()->setLabelPlaceholderColor({.r = 108, .g = 153, .b = 216});
     i->getInputNode()->setMaxLabelScale(0.7f);
     i->getInputNode()->setLabelPlaceholderScale(0.7f);
 }
 
-std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
+static std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     std::string ret;
 #ifdef GEODE_IS_WINDOWS
     if (tag.datatype == FMOD_TAGDATATYPE_STRING_UTF16) {
         return string::wideToUtf8(reinterpret_cast<const wchar_t*>(tag.data));
-    } else if (tag.datatype == FMOD_TAGDATATYPE_STRING_UTF16BE) {
+    }
+    if (tag.datatype == FMOD_TAGDATATYPE_STRING_UTF16BE) {
         // I'm a big endian hater, whachu gonna do?
         return std::nullopt;
     }
@@ -83,7 +90,7 @@ public:
         float width,
         geode::Function<void(FLAlertLayer*, bool)> selected
     ) {
-        auto inst = new IndexDisclaimerPopup();
+        auto* inst = new IndexDisclaimerPopup();
         inst->m_selected = std::move(selected);
         if (inst->init(inst, title, content, btn1, btn2, width, true, .0f, 1.0f)) {
             inst->autorelease();
@@ -175,7 +182,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
     setInputProps(levelNameInput);
     m_levelNameInput = levelNameInput;
 
-    auto startOffsetInput = TextInput::create(inputWidth, "Start offset (ms)", "bigFont.fnt");
+    auto* startOffsetInput = TextInput::create(inputWidth, "Start offset (ms)", "bigFont.fnt");
     startOffsetInput->setID("start-offset-input");
     startOffsetInput->setCommonFilter(CommonFilter::Int);
     setInputProps(startOffsetInput);
@@ -235,10 +242,10 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     m_specialInfoNode->addChild(m_specialInput);
     m_specialInfoNode->addChild(m_localSongMenu);
-    auto specialInfoLayout = SimpleRowLayout::create()
-                                 ->setGap(5.0f)
-                                 ->setMainAxisScaling(AxisScaling::ScaleDown)
-                                 ->setCrossAxisScaling(AxisScaling::Fit);
+    auto* specialInfoLayout = SimpleRowLayout::create()
+                                  ->setGap(5.0f)
+                                  ->setMainAxisScaling(AxisScaling::ScaleDown)
+                                  ->setCrossAxisScaling(AxisScaling::Fit);
     specialInfoLayout->ignoreInvisibleChildren(true);
     m_specialInfoNode->setLayout(specialInfoLayout);
 
@@ -265,10 +272,10 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
     m_addSongMenu->addChild(m_addSongButton);
     m_addSongMenu->setAnchorPoint({0.5f, 0.5f});
     m_addSongMenu->setContentSize({m_size.width, 20.0f});
-    auto bottomLayout = SimpleRowLayout::create()
-                            ->setMainAxisAlignment(MainAxisAlignment::Center)
-                            ->setCrossAxisScaling(AxisScaling::Fit)
-                            ->setGap(5.0f);
+    auto* bottomLayout = SimpleRowLayout::create()
+                             ->setMainAxisAlignment(MainAxisAlignment::Center)
+                             ->setCrossAxisScaling(AxisScaling::Fit)
+                             ->setGap(5.0f);
     bottomLayout->ignoreInvisibleChildren(true);
     m_addSongMenu->setLayout(bottomLayout);
 
@@ -337,7 +344,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
         indexIDs.push_back(pair.first);
     }
 
-    std::stable_sort(indexIDs.begin(), indexIDs.end(), [](const std::string& a, const std::string& b) {
+    std::ranges::stable_sort(indexIDs, , [](const std::string& a, const std::string& b) {
         // Ensure "song-file-hub-index" comes first
         if (a == "song-file-hub-index") { return true; }
         if (b == "song-file-hub-index") { return false; }
@@ -351,15 +358,28 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
 CCSize NongAddPopup::getPopupSize() { return {320.f, 240.f}; }
 
-void NongAddPopup::openFile(CCObject* target) {
+void NongAddPopup::openFile(CCObject* /*target*/) {
     file::FilePickOptions::Filter filter = {
         .description = "Songs",
         .files = {
-            "*.mp3", "*.mp2", "*.ogg", "*.wav", "*.aiff", "*.aif", "*.flac", "*.aac", "*.m4a", "*.mid", "*.midi",
-            "*.mod", "*.s3m", "*.xm", "*.it"
-        }
+            "*.mp3",
+            "*.mp2",
+            "*.ogg",
+            "*.wav",
+            "*.aiff",
+            "*.aif",
+            "*.flac",
+            "*.aac",
+            "*.m4a",
+            "*.mid",
+            "*.midi",
+            "*.mod",
+            "*.s3m",
+            "*.xm",
+            "*.it",
+        },
     };
-    file::FilePickOptions options = {std::nullopt, {filter}};
+    file::FilePickOptions options = {.defaultPath = std::nullopt, .filters = {filter}};
     async::spawn(file::pick(file::PickMode::OpenFile, options), [this](file::PickResult result) {
         this->onFileOpen(std::move(result));
     });
@@ -502,13 +522,13 @@ void NongAddPopup::onSwitchToYT(CCObject*) {
 
 void NongAddPopup::onSwitchToHosted(CCObject*) { this->setSongType(SongType::HOSTED, true); }
 
-void NongAddPopup::onPublish(CCObject* target) {
+void NongAddPopup::onPublish(CCObject* /*target*/) {
     IndexChoosePopup::create(m_publishableIndexes, [this](const std::string& id) {
-        auto index = IndexManager::get().m_loadedIndexes.at(id).get();
+        auto* index = IndexManager::get().m_loadedIndexes.at(id).get();
         auto name = IndexManager::get().getIndexName(id).value();
         auto submit = index->m_features.m_submit.value();
 
-        auto submitFunc = [this, submit](FLAlertLayer* _, bool confirmed) {
+        auto submitFunc = [this, submit](FLAlertLayer* /*_*/, bool /*confirmed*/) {
             if (submit.m_requestParams.has_value()) {
                 if (!submit.m_requestParams.value().m_params) {
                     CCApplication::get()->openURL(submit.m_requestParams.value().m_url.c_str());
@@ -533,7 +553,7 @@ void NongAddPopup::onPublish(CCObject* target) {
                         break;
                 }
 
-                auto metadata = replacedNong->metadata();
+                auto* metadata = replacedNong->metadata();
                 CCApplication::get()->openURL(
                     fmt::format(
                         "{}song-name={}&artist-name={}&start-offset={}&"
@@ -547,7 +567,7 @@ void NongAddPopup::onPublish(CCObject* target) {
         };
 
         if (submit.m_preSubmitMessage.has_value()) {
-            const auto popup = IndexDisclaimerPopup::create(
+            auto* const popup = IndexDisclaimerPopup::create(
                 fmt::format("{} Disclaimer", name).c_str(), submit.m_preSubmitMessage.value(), "Back", "Continue",
                 420.f, std::move(submitFunc)
             );
@@ -561,7 +581,7 @@ void NongAddPopup::onPublish(CCObject* target) {
     })->show();
 }
 
-void NongAddPopup::addSong(CCObject* target) {
+void NongAddPopup::addSong(CCObject* /*target*/) {
     auto artistName = std::string(m_artistNameInput->getString());
     auto songName = std::string(m_songNameInput->getString());
     std::optional<std::string> levelName =
@@ -831,7 +851,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
 }
 
 NongAddPopup* NongAddPopup::create(int songID, std::optional<Song*> replacedNong) {
-    auto ret = new NongAddPopup();
+    auto* ret = new NongAddPopup();
     if (ret->init(songID, replacedNong)) {
         ret->autorelease();
         return ret;

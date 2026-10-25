@@ -4,9 +4,9 @@
 
 #include <Geode/loader/Event.hpp>
 
-#include <jukebox/managers/index_manager.hpp>
-#include <jukebox/nong/index.hpp>
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/managers/index_manager.hpp"
+#include "jukebox/nong/index.hpp"
+#include "jukebox/nong/nong.hpp"
 
 namespace jukebox::event {
 

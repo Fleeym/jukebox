@@ -1,17 +1,21 @@
-#include <jukebox/ui/indexes_popup.hpp>
+#include "jukebox/ui/indexes_popup.hpp"
 
+#include <utility>
 #include <vector>
 
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
+#include <Geode/utils/cocos.hpp>
 #include <Geode/utils/function.hpp>
 
-#include <jukebox/nong/index.hpp>
-#include <jukebox/ui/list/index_cell.hpp>
+#include "jukebox/nong/index.hpp"
+#include "jukebox/ui/list/index_cell.hpp"
 
 using namespace geode::prelude;
 
@@ -30,15 +34,15 @@ bool IndexesPopup::init(
 
     this->createList();
 
-    const auto spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
+    auto* const spr = CCSprite::createWithSpriteFrameName("GJ_plusBtn_001.png");
     spr->setScale(0.7f);
-    const auto addBtn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(IndexesPopup::onAdd));
+    auto* const addBtn = CCMenuItemSpriteExtra::create(spr, this, menu_selector(IndexesPopup::onAdd));
     addBtn->setAnchorPoint({0.5f, 0.5f});
-    const auto menu = CCMenu::create();
+    auto* const menu = CCMenu::create();
     menu->addChild(addBtn);
     menu->setZOrder(1);
     m_mainLayer->addChildAtPosition(
-        menu, Anchor::BottomRight, {-5.f - addBtn->getContentWidth() / 2.f, 8.f + addBtn->getContentHeight() / 2.f}
+        menu, Anchor::BottomRight, {-5.f - (addBtn->getContentWidth() / 2.f), 8.f + (addBtn->getContentHeight() / 2.f)}
     );
 
     return true;
@@ -61,7 +65,7 @@ void IndexesPopup::onAdd(CCObject*) {
 IndexesPopup* IndexesPopup::create(
     std::vector<IndexSource> indexes, geode::Function<void(std::vector<IndexSource>)> setIndexesCallback
 ) {
-    auto ret = new IndexesPopup();
+    auto* ret = new IndexesPopup();
     if (ret->init(std::move(indexes), std::move(setIndexesCallback))) {
         ret->autorelease();
         return ret;
@@ -79,22 +83,22 @@ void IndexesPopup::createList() {
 
     if (m_list) { m_list->removeFromParent(); }
 
-    m_list = ScrollLayer::create({size.width - s_padding * 2, size.height - s_padding * 2 - 4.f});
+    m_list = ScrollLayer::create({size.width - (s_padding * 2), size.height - (s_padding * 2) - 4.f});
     m_list->setPosition({s_padding, s_padding + 2.f});
 
     for (int i = 0; i < m_indexes.size(); i++) {
-        const auto cell = IndexCell::create(
+        auto* const cell = IndexCell::create(
             this, &m_indexes[i],
             [this, i] {
                 m_indexes.erase(m_indexes.begin() + i);
                 this->createList();
             },
-            CCSize {this->getPopupSize().width - s_padding * 2, 35.f}
+            CCSize {this->getPopupSize().width - (s_padding * 2), 35.f}
         );
         cell->setAnchorPoint({0.f, 0.f});
         m_list->m_contentLayer->addChild(cell);
     }
-    const auto menu = CCMenu::create();
+    auto* const menu = CCMenu::create();
     menu->setContentSize({0.f, 36.f});
     m_list->m_contentLayer->addChild(menu);
     m_list->m_contentLayer->setLayout(

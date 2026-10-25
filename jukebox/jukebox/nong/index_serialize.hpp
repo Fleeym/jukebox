@@ -6,7 +6,7 @@
 #include <Geode/Result.hpp>
 #include <matjson.hpp>
 
-#include <jukebox/nong/index.hpp>
+#include "jukebox/nong/index.hpp"
 
 template<>
 struct matjson::Serialize<jukebox::index::IndexMetadata::Features::RequestParams> {
@@ -88,10 +88,8 @@ struct matjson::Serialize<jukebox::index::IndexMetadata> {
 
         // Links
         jukebox::index::IndexMetadata::Links links;
-        if (value.contains("links")) {
-            if (value["links"].contains("discord")) {
-                GEODE_UNWRAP_INTO(links.m_discord, value["links"]["discord"].asString());
-            }
+        if ((value.contains("links")) && (value["links"].contains("discord"))) {
+            GEODE_UNWRAP_INTO(links.m_discord, value["links"]["discord"].asString());
         }
 
         // Features
@@ -117,7 +115,7 @@ struct matjson::Serialize<jukebox::index::IndexMetadata> {
                 .m_lastUpdate =
                     value["lastUpdate"].asInt().map([](auto i) { return std::optional(i); }).unwrapOr(std::nullopt),
                 .m_links = std::move(links),
-                .m_features = std::move(features)
+                .m_features = std::move(features),
             }
         );
     }
@@ -159,7 +157,7 @@ struct matjson::Serialize<jukebox::index::IndexSongMetadata> {
                 .songIDs = std::move(songs),
                 .verifiedLevelIDs = std::move(verifiedLevelIDs),
                 .startOffset = static_cast<int>(value["startOffset"].asInt().unwrapOr(0)),
-                .parentID = nullptr
+                .parentID = nullptr,
             }
         );
     }

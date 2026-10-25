@@ -2,7 +2,7 @@
 
 #include <Geode/loader/Event.hpp>
 
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/nong/nong.hpp"
 
 namespace jukebox::event {
 

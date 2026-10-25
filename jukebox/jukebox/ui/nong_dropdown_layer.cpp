@@ -1,7 +1,8 @@
-#include <jukebox/ui/nong_dropdown_layer.hpp>
+#include "jukebox/ui/nong_dropdown_layer.hpp"
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
@@ -11,6 +12,7 @@
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
+#include <Geode/cocos/support/CCPointExtension.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
@@ -19,18 +21,19 @@
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
+#include <Geode/utils/cocos.hpp>
 #include <Geode/utils/web.hpp>
 #include <ccTypes.h>
 #include <fmt/core.h>
+#include <fmt/format.h>
 
-#include <jukebox/events/get_song_info.hpp>
-#include <jukebox/events/song_download_failed.hpp>
-#include <jukebox/events/song_error.hpp>
-#include <jukebox/managers/index_manager.hpp>
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/ui/list/nong_list.hpp>
-#include <jukebox/ui/nong_add_popup.hpp>
+#include "jukebox/events/get_song_info.hpp"
+#include "jukebox/events/song_download_failed.hpp"
+#include "jukebox/events/song_error.hpp"
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/ui/list/nong_list.hpp"
+#include "jukebox/ui/nong_add_popup.hpp"
 
 using namespace geode::prelude;
 
@@ -61,7 +64,7 @@ bool NongDropdownLayer::init(
     geode::Label* manifestLabel = geode::Label::create(label, "chatFont.fnt");
     manifestLabel->setPosition(contentSize.width / 2, 12.f);
     manifestLabel->setLimitLabelWidth(140.f, 0.9f, 0.1f);
-    manifestLabel->setColor(ccColor3B {220, 220, 220});
+    manifestLabel->setColor(ccColor3B {.r = 220, .g = 220, .b = 220});
     manifestLabel->setID("manifest-label");
     m_mainLayer->addChild(manifestLabel);
 
@@ -95,7 +98,7 @@ bool NongDropdownLayer::init(
                                    ->setCrossAxisScaling(AxisScaling::ScaleDown)
                                    ->setGap(5.0f);
     layout->ignoreInvisibleChildren(true);
-    m_bottomRightMenu->setContentSize({40.0f, m_mainLayer->getContentHeight() / 2 - 5.0f});
+    m_bottomRightMenu->setContentSize({40.0f, (m_mainLayer->getContentHeight() / 2) - 5.0f});
     m_bottomRightMenu->setAnchorPoint({1.0f, 0.0f});
     m_bottomRightMenu->setLayout(layout);
     m_bottomRightMenu->setZOrder(2);
@@ -180,11 +183,11 @@ bool NongDropdownLayer::init(
     return true;
 }
 
-void NongDropdownLayer::onSettings(CCObject* sender) { openSettingsPopup(Mod::get()); }
+void NongDropdownLayer::onSettings(CCObject* /*sender*/) { openSettingsPopup(Mod::get()); }
 
 void NongDropdownLayer::onSelectSong(int songID) { m_currentSongID = songID; }
 
-void NongDropdownLayer::openAddPopup(CCObject* target) {
+void NongDropdownLayer::openAddPopup(CCObject* /*target*/) {
     if (!m_currentSongID.has_value()) { return; }
     NongAddPopup::create(m_currentSongID.value())->show();
 }
@@ -218,13 +221,13 @@ void NongDropdownLayer::createList() {
 
 CCSize NongDropdownLayer::getCellSize() const { return {320.f, 60.f}; }
 
-void NongDropdownLayer::onDiscord(CCObject* target) {
+void NongDropdownLayer::onDiscord(CCObject* /*target*/) {
     geode::createQuickPopup(
         "Discord",
         "Do you want to <cb>join the Song File Hub discord "
         "server</c> to receive "
         "updates and submit bug reports?",
-        "No", "Yes", [](FLAlertLayer* alert, bool btn2) {
+        "No", "Yes", [](FLAlertLayer* /*alert*/, bool btn2) {
             if (btn2) { geode::utils::web::openLinkInBrowser("https://discord.gg/maSgd4zpEF"); }
         }
     );

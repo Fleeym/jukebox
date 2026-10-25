@@ -10,8 +10,8 @@
 #include <Geode/loader/SettingV3.hpp>
 #include <matjson.hpp>
 
-#include <jukebox/nong/index.hpp>
-#include <jukebox/nong/index_serialize.hpp>
+#include "jukebox/nong/index.hpp"
+#include "jukebox/nong/index_serialize.hpp"
 
 namespace jukebox {
 

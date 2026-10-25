@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <string>
 
 #include <Geode/binding/FLAlertLayer.hpp>
@@ -7,11 +8,12 @@
 #include <Geode/modify/Modify.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/core.h>
+#include <fmt/format.h>
 
 using namespace geode::prelude;
 
 class $modify(JBMenuLayer, MenuLayer) {
-    bool init() {
+    bool init() override {
         if (!MenuLayer::init()) { return false; }
 
         if (Mod::get()->getSavedValue<bool>("failed-load", false)) {
@@ -23,7 +25,7 @@ class $modify(JBMenuLayer, MenuLayer) {
                 "my Discord (fleeym)",
                 std::filesystem::path(Mod::get()->getSaveDir().native()) / "backups"
             );
-            FLAlertLayer* popup = FLAlertLayer::create("Jukebox", content.c_str(), "Ok");
+            FLAlertLayer* popup = FLAlertLayer::create("Jukebox", content, "Ok");
             popup->m_scene = this;
             popup->show();
         }

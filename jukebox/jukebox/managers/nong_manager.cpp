@@ -1,5 +1,8 @@
-#include <jukebox/managers/nong_manager.hpp>
+#include "jukebox/managers/nong_manager.hpp"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -8,29 +11,36 @@
 #include <system_error>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <Geode/Result.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
+#include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/mapping/CCFileUtils.hpp>
+#include <Geode/utils/async.hpp>
 #include <Geode/utils/file.hpp>
+#include <Geode/utils/general.hpp>
+#include <arc/future/Future.hpp>
+#include <asp/fs/Path.hpp>
 #include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <asp/iter.hpp>
+#include <asp/iter/Split.hpp>
 #include <fmt/format.h>
 #include <matjson.hpp>
 
-#include <jukebox/compat/compat.hpp>
-#include <jukebox/compat/v2.hpp>
-#include <jukebox/events/get_song_info.hpp>
-#include <jukebox/events/song_download_finished.hpp>
-#include <jukebox/events/song_error.hpp>
-#include <jukebox/managers/index_manager.hpp>
-#include <jukebox/nong/nong.hpp>
-#include <jukebox/nong/nong_serialize.hpp>
-#include <jukebox/utils/random_string.hpp>
+#include "jukebox/compat/compat.hpp"
+#include "jukebox/compat/v2.hpp"
+#include "jukebox/events/get_song_info.hpp"
+#include "jukebox/events/song_download_finished.hpp"
+#include "jukebox/events/song_error.hpp"
+#include "jukebox/managers/index_manager.hpp"
+#include "jukebox/nong/nong.hpp"
+#include "jukebox/nong/nong_serialize.hpp"
+#include "jukebox/utils/random_string.hpp"
 
 using namespace geode::prelude;
 
@@ -52,7 +62,7 @@ std::vector<std::string> NongManager::getVerifiedNongsForLevel(int levelID, std:
 
         // For each indexSong, check if it contains the given levelID in its
         // verifiedLevelIDs field.
-        for (const auto indexSong : nongs.value()->indexSongs()) {
+        for (auto* const indexSong : nongs.value()->indexSongs()) {
             if (auto& ids = indexSong->verifiedLevelIDs; std::ranges::find(ids, levelID) != ids.end()) {
                 verifiedNongs.push_back(indexSong->uniqueID);
             }
@@ -350,9 +360,9 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(
         int id = idRes.unwrap();
         auto result = this->getNongs(id);
         if (!result.has_value()) { continue; }
-        auto nongs = result.value();
+        auto* nongs = result.value();
         if (nongs->isDefaultActive()) {
-            auto songObj = co_await async::waitForMainThread<SongInfoObject*>([id]() {
+            auto songObj = co_await async::waitForMainThread<SongInfoObject*>([id] {
                 return MusicDownloadManager::sharedState()->getSongInfoObject(id);
             });
             if (songObj && songObj.value() && songObj.value()->m_fileSize > 0.f) {

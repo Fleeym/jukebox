@@ -1,17 +1,22 @@
-#include <jukebox/ui/list/index_cell.hpp>
+#include "jukebox/ui/list/index_cell.hpp"
+
+#include <utility>
 
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
+#include <Geode/cocos/support/CCPointExtension.h>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/NineSlice.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
+#include <Geode/utils/function.hpp>
 
-#include <jukebox/nong/index.hpp>
+#include "jukebox/nong/index.hpp"
 
 using namespace geode::prelude;
 
@@ -31,8 +36,8 @@ bool IndexCell::init(
     this->setContentSize(size);
     this->setAnchorPoint(CCPoint {0.5f, 0.5f});
 
-    auto bg = NineSlice::create("square02b_001.png");
-    bg->setColor({0, 0, 0});
+    auto* bg = NineSlice::create("square02b_001.png");
+    bg->setColor({.r = 0, .g = 0, .b = 0});
     bg->setOpacity(75);
     bg->setScale(0.3f);
     bg->setContentSize(size / bg->getScale());
@@ -55,14 +60,14 @@ bool IndexCell::init(
 
     m_buttonsSize += m_toggleButton->getContentSize().width;
 
-    auto buttonsMenu = CCMenu::create();
+    auto* buttonsMenu = CCMenu::create();
     buttonsMenu->addChild(m_toggleButton);
     buttonsMenu->setAnchorPoint(CCPoint {1.0f, 0.5f});
     buttonsMenu->setContentSize(CCSize {50.f, 30.f});
 
     if (m_index->m_userAdded) {
-        auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
-        auto deleteButton = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(IndexCell::onDelete));
+        auto* sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
+        auto* deleteButton = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(IndexCell::onDelete));
         deleteButton->setID("delete-button");
         deleteButton->setScale(0.7f);
         buttonsMenu->addChild(deleteButton);
@@ -78,8 +83,8 @@ bool IndexCell::init(
     );
     buttonsMenu->setID("button-menu");
 
-    auto inputNode = TextInput::create(
-        size.width - HORIZONTAL_PADDING * 2 - buttonsMenu->getContentWidth(), "Index url", "chatFont.fnt"
+    auto* inputNode = TextInput::create(
+        size.width - (HORIZONTAL_PADDING * 2) - buttonsMenu->getContentWidth(), "Index url", "chatFont.fnt"
     );
     inputNode->setScale(1.f);
     inputNode->setCommonFilter(CommonFilter::Any);
@@ -88,7 +93,7 @@ bool IndexCell::init(
     inputNode->setTextAlign(TextInputAlign::Left);
     inputNode->setCallback([this](std::string const& str) { m_index->m_url = str; });
 
-    auto menu = CCMenu::create();
+    auto* menu = CCMenu::create();
     menu->addChild(inputNode);
     menu->addChild(buttonsMenu);
 
@@ -100,7 +105,7 @@ bool IndexCell::init(
     );
     menu->setID("menu");
     menu->setAnchorPoint(CCPoint {0.5f, 0.5f});
-    menu->setContentSize(CCSize {size.width - HORIZONTAL_PADDING * 2, size.height});
+    menu->setContentSize(CCSize {size.width - (HORIZONTAL_PADDING * 2), size.height});
     menu->updateLayout();
 
     this->addChildAtPosition(menu, Anchor::Center, CCPoint {0.0f, 0.0f});
@@ -123,7 +128,7 @@ void IndexCell::onDelete(CCObject*) { m_onDelete(); }
 IndexCell* IndexCell::create(
     IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete, CCSize const& size
 ) {
-    auto ret = new IndexCell();
+    auto* ret = new IndexCell();
     if (ret->init(parentPopup, index, std::move(onDelete), size)) { return ret; }
     delete ret;
     return nullptr;

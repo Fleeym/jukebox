@@ -1,15 +1,22 @@
-#include <jukebox/ui/index_choose_popup.hpp>
+#include "jukebox/ui/index_choose_popup.hpp"
 
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/Popup.hpp>
+#include <Geode/utils/function.hpp>
 
-#include <jukebox/managers/index_manager.hpp>
+#include "jukebox/managers/index_manager.hpp"
 
 using namespace geode::prelude;
 
@@ -22,27 +29,27 @@ bool IndexChoosePopup::init(
     m_indexIDs = std::move(indexIDs);
     m_chooseIndex = std::move(chooseIndex);
 
-    auto menu = CCMenu::create();
+    auto* menu = CCMenu::create();
     menu->setContentWidth(m_mainLayer->getContentWidth() - 10.f);
     menu->setContentHeight(m_mainLayer->getContentHeight() - 20.f);
 
-    auto switchMenu = CCMenu::create();
+    auto* switchMenu = CCMenu::create();
     switchMenu->setLayout(RowLayout::create());
     switchMenu->setContentSize({menu->getContentSize().width, 40.f});
 
-    auto spriteLeft = CCSprite::createWithSpriteFrameName("edit_leftBtn_001.png");
+    auto* spriteLeft = CCSprite::createWithSpriteFrameName("edit_leftBtn_001.png");
     spriteLeft->setScale(1.5);
-    auto btnLeft = CCMenuItemSpriteExtra::create(spriteLeft, this, menu_selector(IndexChoosePopup::onLeft));
+    auto* btnLeft = CCMenuItemSpriteExtra::create(spriteLeft, this, menu_selector(IndexChoosePopup::onLeft));
 
-    auto spriteRight = CCSprite::createWithSpriteFrameName("edit_rightBtn_001.png");
+    auto* spriteRight = CCSprite::createWithSpriteFrameName("edit_rightBtn_001.png");
     spriteRight->setScale(1.5);
-    auto btnRight = CCMenuItemSpriteExtra::create(spriteRight, this, menu_selector(IndexChoosePopup::onRight));
+    auto* btnRight = CCMenuItemSpriteExtra::create(spriteRight, this, menu_selector(IndexChoosePopup::onRight));
 
-    auto label = geode::Label::create("", "bigFont.fnt");
+    auto* label = geode::Label::create("", "bigFont.fnt");
     m_label = label;
     label->setLimitLabelWidth(switchMenu->getContentWidth() - 10.f, 0.8f, 0.1f);
     label->setID("index-name");
-    auto labelMenu = CCMenu::create();
+    auto* labelMenu = CCMenu::create();
     labelMenu->addChild(label);
     labelMenu->setContentWidth(switchMenu->getContentWidth());
     labelMenu->addChildAtPosition(label, Anchor::Center);
@@ -52,9 +59,9 @@ bool IndexChoosePopup::init(
     switchMenu->addChild(btnRight);
     switchMenu->updateLayout();
 
-    auto addSongButton =
+    auto* addSongButton =
         CCMenuItemSpriteExtra::create(ButtonSprite::create("OK"), this, menu_selector(IndexChoosePopup::onOK));
-    auto addSongMenu = CCMenu::create();
+    auto* addSongMenu = CCMenu::create();
     addSongMenu->setID("add-song-menu");
     addSongButton->setID("add-song-button");
     addSongMenu->setAnchorPoint({0.5f, 0.5f});
@@ -105,7 +112,7 @@ void IndexChoosePopup::onOK(CCObject*) {
 IndexChoosePopup* IndexChoosePopup::create(
     std::vector<std::string> indexIDs, geode::Function<void(const std::string&)> setIndexesCallback
 ) {
-    auto ret = new IndexChoosePopup();
+    auto* ret = new IndexChoosePopup();
     if (ret->init(std::move(indexIDs), std::move(setIndexesCallback))) {
         ret->autorelease();
         return ret;

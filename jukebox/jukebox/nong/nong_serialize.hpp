@@ -11,8 +11,8 @@
 #include <fmt/core.h>
 #include <matjson.hpp>
 
-#include <jukebox/managers/nong_manager.hpp>
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/nong.hpp"
 
 template<>
 struct matjson::Serialize<jukebox::SongMetadata> {
@@ -104,14 +104,14 @@ struct matjson::Serialize<jukebox::YTSong> {
     }
 
     static matjson::Value toJson(const jukebox::YTSong& value) {
-        matjson::Value ret = matjson::makeObject(
-            {{"name", value.metadata()->name},
-             {"unique_id", value.metadata()->uniqueID},
-             {"artist", value.metadata()->artist},
-             {"path", asp::fs::Path::fromStdPath(value.path().value())},
-             {"offset", value.metadata()->startOffset},
-             {"youtube_id", value.youtubeID()}}
-        );
+        matjson::Value ret = matjson::makeObject({
+            {"name", value.metadata()->name},
+            {"unique_id", value.metadata()->uniqueID},
+            {"artist", value.metadata()->artist},
+            {"path", asp::fs::Path::fromStdPath(value.path().value())},
+            {"offset", value.metadata()->startOffset},
+            {"youtube_id", value.youtubeID()},
+        });
         if (value.indexID().has_value()) { ret["index_id"] = value.indexID().value(); }
         if (value.metadata()->level.has_value()) { ret["level"] = value.metadata()->level.value(); }
 
@@ -141,7 +141,7 @@ struct matjson::Serialize<jukebox::HostedSong> {
             const std::string filename = value["filename"].asString().unwrap();  // if this crashes I blame mat
             const std::filesystem::path path = jukebox::NongManager::get().baseNongsPath() / filename;
 
-            return geode::Ok(jukebox::HostedSong {std::move(metadata), std::move(url), indexId, path});
+            return geode::Ok(jukebox::HostedSong {std::move(metadata), url, indexId, path});
         }
 
         if (!value["path"].isString()) {
@@ -160,15 +160,15 @@ struct matjson::Serialize<jukebox::HostedSong> {
     }
 
     static matjson::Value toJson(const jukebox::HostedSong& value) {
-        matjson::Value ret = matjson::makeObject(
-            {{"name", value.metadata()->name},
-             {"unique_id", value.metadata()->uniqueID},
-             {"artist", value.metadata()->artist},
-             {"path", asp::fs::Path::fromStdPath(value.path().value())},
-             {"filename", asp::fs::Path::fromStdPath(value.path()->filename())},
-             {"offset", value.metadata()->startOffset},
-             {"url", value.url()}}
-        );
+        matjson::Value ret = matjson::makeObject({
+            {"name", value.metadata()->name},
+            {"unique_id", value.metadata()->uniqueID},
+            {"artist", value.metadata()->artist},
+            {"path", asp::fs::Path::fromStdPath(value.path().value())},
+            {"filename", asp::fs::Path::fromStdPath(value.path()->filename())},
+            {"offset", value.metadata()->startOffset},
+            {"url", value.url()},
+        });
         if (value.indexID().has_value()) { ret["index_id"] = value.indexID().value(); }
 
         if (value.metadata()->level.has_value()) { ret["level"] = value.metadata()->level.value(); }
@@ -216,7 +216,7 @@ struct matjson::Serialize<jukebox::Nongs> {
         GEODE_UNWRAP_INTO(
             jukebox::LocalSong defaultSong,
             matjson::Serialize<jukebox::LocalSong>::fromJson(value["default"], songID)
-                .mapErr([songID](std::string err) {
+                .mapErr([songID](std::string /*err*/) {
                     return fmt::format("Failed to parse default song for ID {}", songID);
                 })
         );
@@ -250,7 +250,7 @@ struct matjson::Serialize<jukebox::Nongs> {
         }
 
         if (value["hosted"].isArray()) {
-            for (auto& hosted : value["hosted"]) {
+            for (const auto& hosted : value["hosted"]) {
                 geode::Result<jukebox::HostedSong> res =
                     matjson::Serialize<jukebox::HostedSong>::fromJson(hosted, songID);
 

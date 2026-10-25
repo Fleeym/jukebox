@@ -7,7 +7,7 @@
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/function.hpp>
 
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/nong/nong.hpp"
 
 namespace jukebox {
 
@@ -29,7 +29,7 @@ public:
     static SongCell* create(
         int id, SongMetadata* songInfo, const cocos2d::CCSize& size, geode::Function<void()> selectCallback
     ) {
-        auto ret = new SongCell();
+        auto* ret = new SongCell();
         if (ret->init(id, songInfo, size, std::move(selectCallback))) { return ret; }
 
         delete ret;

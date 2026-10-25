@@ -1,13 +1,17 @@
-#include <jukebox/ui/list/nong_cell_ui.hpp>
+#include "jukebox/ui/list/nong_cell_ui.hpp"
+
+#include <utility>
 
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/layers_scenes_transitions_nodes/CCLayer.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
+#include <Geode/cocos/misc_nodes/CCClippingNode.h>
+#include <Geode/cocos/misc_nodes/CCProgressTimer.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>  // IWYU pragma: keep
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <Geode/loader/Event.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/mapping/CCClippingNode.hpp>
 #include <Geode/mapping/CCProgressTimer.hpp>
@@ -15,6 +19,7 @@
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/NineSlice.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
+#include <Geode/utils/function.hpp>
 #include <ccTypes.h>
 
 using namespace geode::prelude;
@@ -49,7 +54,7 @@ void NongCellUI::build() {
     constexpr float PADDING_X = 12.0f;
     constexpr float PADDING_Y = 6.0f;
     constexpr float OUTLINE_SIZE = 3.f;
-    const CCSize maxSize = {m_size.width - 2 * PADDING_X, m_size.height - 2 * PADDING_Y};
+    const CCSize maxSize = {m_size.width - (2 * PADDING_X), m_size.height - (2 * PADDING_Y)};
     const float songInfoWidth = maxSize.width * (2.0f / 3.0f);
     const float buttonsWidth = maxSize.width - songInfoWidth;
 
@@ -69,7 +74,7 @@ void NongCellUI::build() {
         NineSlice* textBgStencil = NineSlice::create("square02b_001.png");
         textBgStencil->setScale(0.4f);
         textBgStencil->setContentSize(
-            (CCPoint {verifiedLabel->getScaledContentWidth() + 5, verifiedLabel->getScaledContentHeight() * 2 + 4}) /
+            (CCPoint {verifiedLabel->getScaledContentWidth() + 5, (verifiedLabel->getScaledContentHeight() * 2) + 4}) /
             textBgStencil->getScale()
         );
 
@@ -88,7 +93,8 @@ void NongCellUI::build() {
         clipNode->setID("gradient-clipping-node");
 
         // Draw a gradient that will be clipped by the clip node
-        CCLayerGradient* gradientLayer = CCLayerGradient::create({253, 166, 16, 255}, {253, 225, 71, 255});
+        CCLayerGradient* gradientLayer =
+            CCLayerGradient::create({.r = 253, .g = 166, .b = 16, .a = 255}, {.r = 253, .g = 225, .b = 71, .a = 255});
         gradientLayer->setID("gradient");
 
         // The size of the gradient will be larger that this because of the
@@ -103,7 +109,7 @@ void NongCellUI::build() {
     }
 
     NineSlice* bg = NineSlice::create("square02b_001.png");
-    bg->setColor({76, 42, 25});
+    bg->setColor({.r = 76, .g = 42, .b = 25});
     bg->setScale(0.3f);
     bg->setContentSize(m_size / bg->getScale());
     bg->setID("background");
@@ -119,7 +125,7 @@ void NongCellUI::build() {
     m_songNameLabel->setScale(0.6f);
     m_songNameLabel->setID("song-info-label");
 
-    if (m_isSelected) { m_songNameLabel->setColor({188, 254, 206}); }
+    if (m_isSelected) { m_songNameLabel->setColor({.r = 188, .g = 254, .b = 206}); }
 
     m_authorNameLabel = geode::Label::create(m_authorName, "goldFont.fnt");
     m_authorNameLabel->setAnchorPoint({0.0f, 0.5f});
@@ -150,7 +156,7 @@ void NongCellUI::build() {
     m_buttonsMenu->setID("buttons-menu");
     m_buttonsMenu->setAnchorPoint({1.0f, 0.5f});
     m_buttonsMenu->setContentSize({buttonsWidth, maxSize.height});
-    auto buttonsMenuLayout = SimpleRowLayout::create()->setGap(5.0f)->setMainAxisAlignment(MainAxisAlignment::End);
+    auto* buttonsMenuLayout = SimpleRowLayout::create()->setGap(5.0f)->setMainAxisAlignment(MainAxisAlignment::End);
     buttonsMenuLayout->ignoreInvisibleChildren(true);
     m_buttonsMenu->setLayout(buttonsMenuLayout);
 
@@ -181,7 +187,7 @@ void NongCellUI::build() {
     // Fix Default button
     CCSprite* fixDefaultSprite = CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
     fixDefaultSprite->setScale(0.8f);
-    if (!m_isSelected) { fixDefaultSprite->setColor({0x80, 0x80, 0x80}); }
+    if (!m_isSelected) { fixDefaultSprite->setColor({.r = 0x80, .g = 0x80, .b = 0x80}); }
     m_fixButton = CCMenuItemSpriteExtra::create(fixDefaultSprite, this, menu_selector(NongCellUI::onFixDefault));
     m_fixButton->setID("fix-button");
     m_buttonsMenu->addChild(m_fixButton);
@@ -199,11 +205,11 @@ void NongCellUI::build() {
     m_buttonsMenu->addChild(m_downloadButton);
 
     CCSprite* progressBarBack = CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
-    progressBarBack->setColor({50, 50, 50});
+    progressBarBack->setColor({.r = 50, .g = 50, .b = 50});
     progressBarBack->setScale(0.62f);
 
     CCSprite* spr = CCSprite::createWithSpriteFrameName("d_circle_01_001.png");
-    spr->setColor({0, 255, 0});
+    spr->setColor({.r = 0, .g = 255, .b = 0});
 
     m_downloadProgressTimer = CCProgressTimer::create(spr);
     m_downloadProgressTimer->setType(CCProgressTimerType::kCCProgressTimerTypeRadial);
@@ -238,7 +244,7 @@ void NongCellUI::build() {
     if (m_isDownloading) {
         m_downloadButton->setColor(ccc3(105, 105, 105));
     } else {
-        m_downloadButton->setColor({255, 255, 255});
+        m_downloadButton->setColor({.r = 255, .g = 255, .b = 255});
     }
 
     buildOnlyDownloadProgress();
@@ -269,7 +275,7 @@ NongCellUI* NongCellUI::create(
     geode::Function<void()> onDownload,
     geode::Function<void()> onEdit
 ) {
-    auto ret = new NongCellUI();
+    auto* ret = new NongCellUI();
     if (ret->init(
             size, std::move(onSelect), std::move(onTrash), std::move(onFixDefault), std::move(onDownload),
             std::move(onEdit)

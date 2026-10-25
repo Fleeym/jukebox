@@ -25,7 +25,7 @@ protected:
 
 public:
     static IndexChoosePopup* create(
-        std::vector<std::string> indexIDs, geode::Function<void(const std::string& indexID)> chooseIndex
+        std::vector<std::string> indexIDs, geode::Function<void(const std::string& indexID)> setIndexesCallback
     );
 };
 

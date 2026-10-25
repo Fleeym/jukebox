@@ -1,14 +1,21 @@
-#include <jukebox/download/hosted.hpp>
+#include "jukebox/download/hosted.hpp"
 
+#include <algorithm>
+#include <chrono>
+#include <string>
 #include <string_view>
+#include <utility>
 
 #include <Geode/Result.hpp>
+#include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/utils/general.hpp>
 #include <Geode/utils/web.hpp>
+#include <arc/future/Future.hpp>
 #include <fmt/core.h>
 
-#include <jukebox/events/file_download_progress.hpp>
-#include <jukebox/utils/web.hpp>
+#include "jukebox/events/file_download_progress.hpp"
+#include "jukebox/utils/web.hpp"
 
 using namespace geode::prelude;
 
@@ -17,7 +24,7 @@ namespace jukebox::download {
 arc::Future<Result<ByteVector>> startHostedDownload(const std::string_view url) {
     int timeout = Mod::get()->getSettingValue<int>("download-timeout");
 
-    if (timeout < 30) { timeout = 30; }
+    timeout = std::max(timeout, 30);
 
     const web::WebResponse response =
         co_await web::WebRequest()

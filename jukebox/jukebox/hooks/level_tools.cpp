@@ -1,3 +1,4 @@
+#include <optional>
 #include <string>
 
 #include <Geode/binding/LevelSelectLayer.hpp>
@@ -7,12 +8,13 @@
 #include <Geode/modify/LevelTools.hpp>        // IWYU pragma: keep
 #include <Geode/modify/MenuLayer.hpp>         // IWYU pragma: keep
 
-#include <jukebox/managers/nong_manager.hpp>
+#include "jukebox/managers/nong_manager.hpp"
+#include "jukebox/nong/nong.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox;
 
-bool g_disableTitleOverride = false;
+static bool g_disableTitleOverride = false;
 
 class $modify(LevelTools) {
     // Inlined in 2.206, commented for now
@@ -42,7 +44,7 @@ class $modify(LevelTools) {
 
 class $modify(MenuLayer) {
     // Fix for Overcharged Main Menu
-    bool init() {
+    bool init() override {
         g_disableTitleOverride = true;
         bool ret = MenuLayer::init();
         g_disableTitleOverride = false;

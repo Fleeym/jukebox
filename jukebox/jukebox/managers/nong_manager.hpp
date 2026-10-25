@@ -12,7 +12,7 @@
 #include <asp/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
 
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/nong/nong.hpp"
 
 namespace jukebox {
 

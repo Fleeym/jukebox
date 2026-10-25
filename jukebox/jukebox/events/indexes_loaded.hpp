@@ -4,7 +4,7 @@
 
 namespace jukebox::event {
 
-struct IndexesLoaded final : geode::Event<IndexesLoaded, bool(void)> {
+struct IndexesLoaded final : geode::Event<IndexesLoaded, bool()> {
     using Event::Event;
 };
 

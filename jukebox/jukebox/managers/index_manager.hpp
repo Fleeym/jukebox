@@ -13,9 +13,9 @@
 #include <arc/future/Future.hpp>
 #include <matjson.hpp>
 
-#include <jukebox/events/start_download.hpp>
-#include <jukebox/nong/index.hpp>
-#include <jukebox/nong/nong.hpp>
+#include "jukebox/events/start_download.hpp"
+#include "jukebox/nong/index.hpp"
+#include "jukebox/nong/nong.hpp"
 
 namespace jukebox {
 
@@ -26,8 +26,8 @@ protected:
 
     IndexManager() = default;
 
-    std::unordered_map<int, std::vector<index::IndexSongMetadata*>> m_nongsForId {};
-    std::unordered_map<std::string, std::tuple<int, std::string>> m_urlToIDs {};
+    std::unordered_map<int, std::vector<index::IndexSongMetadata*>> m_nongsForId;
+    std::unordered_map<std::string, std::tuple<int, std::string>> m_urlToIDs;
 
     void onDownloadProgress(int gdSongID, const std::string& uniqueId, float progress);
     void onDownloadFinish(
@@ -38,13 +38,13 @@ protected:
     );
     arc::Future<geode::Result<matjson::Value>> fetchIndexFromCache(const index::IndexSource& index);
 
-    std::optional<std::string> lastModifiedForIndex(const std::string_view url);
-    void setLastModifiedForIndex(const std::string_view url, std::optional<std::string> value);
+    std::optional<std::string> lastModifiedForIndex(std::string_view url);
+    void setLastModifiedForIndex(std::string_view url, std::optional<std::string> value);
 
-    std::optional<std::string> etagForIndex(const std::string_view url);
-    void setEtagForIndex(const std::string_view url, std::optional<std::string> value);
+    std::optional<std::string> etagForIndex(std::string_view url);
+    void setEtagForIndex(std::string_view url, std::optional<std::string> value);
 
-    std::filesystem::path pathToCachedIndex(const std::string_view path);
+    std::filesystem::path pathToCachedIndex(std::string_view url);
 
     arc::Future<> onIndexFetched(const std::string& url, matjson::Value&& json, bool cache);
 
@@ -56,7 +56,7 @@ public:
     IndexManager& operator=(IndexManager&&) = delete;
 
     bool init();
-    std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>> m_loadedIndexes {};
+    std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>> m_loadedIndexes;
 
     [[nodiscard]] bool initialized() const { return m_initialized; }
     [[nodiscard]] bool fetchingIndexes() const { return m_fetchingIndexes; }

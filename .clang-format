@@ -6,7 +6,8 @@ AllowShortBlocksOnASingleLine: Always
 AlwaysBreakBeforeMultilineStrings: false
 BinPackParameters: OnePerLine
 CommentPragmas: ""
-DerivePointerAlignment: true
+DerivePointerAlignment: false
+PointerAlignment: Left
 ColumnLimit: 120
 IndentWidth: 4
 RemoveEmptyLinesInUnwrappedLines: true
@@ -17,7 +18,6 @@ SpacesInContainerLiterals: false
 TabWidth: 4
 Language: Cpp
 IncludeBlocks: Regroup
-MainIncludeChar: Any
 IncludeCategories:
   # Standard library: <string>, <cstdint>, ... (no extension, no path)
   - Regex: '^<[a-z_0-9]+>$'
