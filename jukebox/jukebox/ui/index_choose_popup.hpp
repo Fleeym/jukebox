@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Geode/utils/function.hpp>
 #include <string>
 #include <vector>
 
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/ui/Label.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <Geode/utils/function.hpp>
 
 namespace jukebox {
 
@@ -24,8 +24,9 @@ protected:
     void onOK(CCObject*);
 
 public:
-    static IndexChoosePopup* create(std::vector<std::string> indexIDs,
-                                    geode::Function<void(const std::string& indexID)> chooseIndex);
+    static IndexChoosePopup* create(
+        std::vector<std::string> indexIDs, geode::Function<void(const std::string& indexID)> chooseIndex
+    );
 };
 
 }  // namespace jukebox

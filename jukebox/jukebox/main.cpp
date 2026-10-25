@@ -28,12 +28,11 @@ $on_mod(Loaded) {
                     "with "
                     "index songs.",
                     "No", "Yes", [](FLAlertLayer*, bool btn2) {
-                        if (!btn2) {
-                            return;
-                        }
+                        if (!btn2) { return; }
                         jukebox::IndexManager::get().clearCaches();
                         geode::Notification::create("Caches cleared successfully", NotificationIcon::Success)->show();
-                    });
+                    }
+                );
             }  // ... + others
         })
         .leak();

@@ -14,7 +14,7 @@ private:
 
 public:
     FileDownloadProgressData(std::string url, const float progress) noexcept
-        : m_progress{progress}, m_url(std::move(url)) {}
+        : m_progress {progress}, m_url(std::move(url)) {}
 
     [[nodiscard]] float progress() const noexcept { return m_progress; }
     [[nodiscard]] std::string_view url() const noexcept { return m_url; }

@@ -9,4 +9,4 @@ namespace jukebox::download {
 
 arc::Future<geode::Result<geode::ByteVector>> startYoutubeDownload(const std::string& id);
 
-} // namespace jukebox::download
+}  // namespace jukebox::download

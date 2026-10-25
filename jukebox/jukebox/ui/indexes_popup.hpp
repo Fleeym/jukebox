@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Geode/utils/function.hpp>
 #include <vector>
 
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
+#include <Geode/utils/function.hpp>
 
 #include <jukebox/nong/index.hpp>
 

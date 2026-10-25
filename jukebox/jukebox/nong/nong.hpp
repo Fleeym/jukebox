@@ -6,11 +6,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fmt/core.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/utils/general.hpp>
 #include <arc/future/Future.hpp>
+#include <fmt/core.h>
 #include <matjson.hpp>
 
 #include <jukebox/nong/index.hpp>
@@ -25,8 +25,14 @@ struct SongMetadata final {
     std::optional<std::string> level;
     int startOffset;
 
-    SongMetadata(int gdID, std::string uniqueID, std::string name, std::string artist,
-                 std::optional<std::string> level = std::nullopt, int offset = 0)
+    SongMetadata(
+        int gdID,
+        std::string uniqueID,
+        std::string name,
+        std::string artist,
+        std::optional<std::string> level = std::nullopt,
+        int offset = 0
+    )
         : gdID(gdID),
           uniqueID(std::move(uniqueID)),
           name(std::move(name)),
@@ -89,8 +95,12 @@ private:
     std::unique_ptr<Impl> m_impl;
 
 public:
-    YTSong(SongMetadata&& metadata, std::string youtubeID, std::optional<std::string> m_indexID,
-           std::optional<std::filesystem::path> path = std::nullopt);
+    YTSong(
+        SongMetadata&& metadata,
+        std::string youtubeID,
+        std::optional<std::string> m_indexID,
+        std::optional<std::filesystem::path> path = std::nullopt
+    );
     YTSong(const YTSong& other);
     YTSong& operator=(const YTSong& other);
 
@@ -116,8 +126,12 @@ private:
     std::unique_ptr<Impl> m_impl;
 
 public:
-    HostedSong(SongMetadata&& metadata, std::string url, std::optional<std::string> m_indexID,
-               std::optional<std::filesystem::path> path = std::nullopt);
+    HostedSong(
+        SongMetadata&& metadata,
+        std::string url,
+        std::optional<std::string> m_indexID,
+        std::optional<std::filesystem::path> path = std::nullopt
+    );
     HostedSong(const HostedSong& other);
     HostedSong& operator=(const HostedSong& other);
 

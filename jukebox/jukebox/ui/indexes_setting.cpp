@@ -4,11 +4,11 @@
 #include <string>
 #include <vector>
 
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <Geode/loader/SettingV3.hpp>
 #include <Geode/utils/JsonValidation.hpp>
 #include <matjson.hpp>
@@ -28,9 +28,7 @@ SettingNodeV3* IndexSetting::createNode(float width) {
 }
 
 bool IndexSettingNode::init(const std::shared_ptr<IndexSetting>& setting, float width) {
-    if (!SettingValueNodeV3::init(setting, width)) {
-        return false;
-    }
+    if (!SettingValueNodeV3::init(setting, width)) { return false; }
 
     float height = 40.0f;
     this->setContentSize({width, height});
@@ -55,7 +53,7 @@ bool IndexSettingNode::init(const std::shared_ptr<IndexSetting>& setting, float 
 void IndexSettingNode::onView(CCObject*) {
     const std::shared_ptr<IndexSetting> setting = this->getSetting();
     IndexesPopup::create(setting->getValue().indexes, [this](std::vector<IndexSource> indexes) {
-        this->setValue(Indexes{std::move(indexes)}, this);
+        this->setValue(Indexes {std::move(indexes)}, this);
     })->show();
 }
 
@@ -71,16 +69,18 @@ IndexSettingNode* IndexSettingNode::create(const std::shared_ptr<IndexSetting>& 
     return nullptr;
 }
 
-Result<std::shared_ptr<SettingV3>> IndexSetting::parse(const std::string& key, const std::string& modID,
-                                                       const matjson::Value& json) {
+Result<std::shared_ptr<SettingV3>> IndexSetting::parse(
+    const std::string& key, const std::string& modID, const matjson::Value& json
+) {
     const auto ret = std::make_shared<IndexSetting>();
     auto root = checkJson(json, "IndexSetting");
     ret->parseBaseProperties(key, modID, root);
 
     root.checkUnknownKeys();
 
-    return root.ok(ret).map(
-        [](std::shared_ptr<IndexSetting> value) { return std::static_pointer_cast<SettingV3>(value); });
+    return root.ok(ret).map([](std::shared_ptr<IndexSetting> value) {
+        return std::static_pointer_cast<SettingV3>(value);
+    });
 }
 
 }  // namespace jukebox

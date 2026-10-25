@@ -5,16 +5,16 @@
 #include <string>
 #include <vector>
 
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/loader/Event.hpp>
-#include <Geode/utils/file.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/TextInput.hpp>
+#include <Geode/utils/file.hpp>
 
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/nong_dropdown_layer.hpp>
@@ -87,12 +87,15 @@ protected:
     void addSong(cocos2d::CCObject*);
     void onPaste(cocos2d::CCObject*);
     bool isPathValidSong(const std::filesystem::path& song) const;
-    geode::Result<> addLocalSong(const std::string& songName, const std::string& artistName,
-                                 std::optional<std::string> levelName, int offset);
-    geode::Result<> addYTSong(const std::string& songName, const std::string& artistName,
-                              std::optional<std::string> levelName, int offset);
-    geode::Result<> addHostedSong(const std::string& songName, const std::string& artistName,
-                                  std::optional<std::string> levelName, int offset);
+    geode::Result<> addLocalSong(
+        const std::string& songName, const std::string& artistName, std::optional<std::string> levelName, int offset
+    );
+    geode::Result<> addYTSong(
+        const std::string& songName, const std::string& artistName, std::optional<std::string> levelName, int offset
+    );
+    geode::Result<> addHostedSong(
+        const std::string& songName, const std::string& artistName, std::optional<std::string> levelName, int offset
+    );
     void onPublish(cocos2d::CCObject*);
     std::optional<ParsedMetadata> tryParseMetadata(std::filesystem::path path);
 

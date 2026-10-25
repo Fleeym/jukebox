@@ -2,10 +2,10 @@
 
 #include <string_view>
 
-#include <fmt/core.h>
 #include <Geode/Result.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/web.hpp>
+#include <fmt/core.h>
 
 #include <jukebox/events/file_download_progress.hpp>
 #include <jukebox/utils/web.hpp>
@@ -17,9 +17,7 @@ namespace jukebox::download {
 arc::Future<Result<ByteVector>> startHostedDownload(const std::string_view url) {
     int timeout = Mod::get()->getSettingValue<int>("download-timeout");
 
-    if (timeout < 30) {
-        timeout = 30;
-    }
+    if (timeout < 30) { timeout = 30; }
 
     const web::WebResponse response =
         co_await web::WebRequest()
@@ -27,7 +25,7 @@ arc::Future<Result<ByteVector>> startHostedDownload(const std::string_view url) 
             .onProgress([url = std::string(url)](const web::WebProgress& progress) {
                 const float actual = progress.downloadProgress().value_or(0.0f);
 
-                events::FileDownloadProgress(url).send(events::FileDownloadProgressData{url, actual});
+                events::FileDownloadProgress(url).send(events::FileDownloadProgressData {url, actual});
             })
             .get(std::string(url));
 

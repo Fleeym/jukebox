@@ -1,7 +1,5 @@
 #include <jukebox/compat/v2.hpp>
-#include <asp/fs/std.hpp>
 
-#include <asp/fs/fs.hpp>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -13,6 +11,8 @@
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/general.hpp>
+#include <asp/fs/fs.hpp>
+#include <asp/fs/std.hpp>
 #include <matjson.hpp>
 
 #include <jukebox/compat/compat.hpp>
@@ -34,82 +34,83 @@ bool isSongValid(const matjson::Value& s) {
 
 bool manifestExists() { return asp::fs::exists(asp::fs::Path::fromStdPath(manifestPath())); }
 
-std::filesystem::path manifestPath() { return std::filesystem::path(Mod::get()->getSaveDir().native()) / "nong_data.json"; }
+std::filesystem::path manifestPath() {
+    return std::filesystem::path(Mod::get()->getSaveDir().native()) / "nong_data.json";
+}
 
 Result<> backupManifest(bool deleteOrig) {
-    if (!manifestExists()) {
-        return Ok();
-    }
+    if (!manifestExists()) { return Ok(); }
 
-    const std::filesystem::path backupDir = std::filesystem::path(Mod::get()->getSaveDir().native()) / ".v2-compat-backup";
+    const std::filesystem::path backupDir =
+        std::filesystem::path(Mod::get()->getSaveDir().native()) / ".v2-compat-backup";
     bool exists = asp::fs::exists(asp::fs::Path::fromStdPath(backupDir));
     bool isDir = asp::fs::Path::fromStdPath(backupDir).isDir();
 
     if (exists && !isDir) {
-        GEODE_UNWRAP(asp::fs::removeFile(asp::fs::Path::fromStdPath(backupDir)).mapErr(
-            [backupDir](const auto& err) {
-                return fmt::format("Failed to remove conflicting backup path {}: {}", backupDir, err);
-            }));
+        GEODE_UNWRAP(asp::fs::removeFile(asp::fs::Path::fromStdPath(backupDir)).mapErr([backupDir](const auto& err) {
+            return fmt::format("Failed to remove conflicting backup path {}: {}", backupDir, err);
+        }));
         exists = false;
     }
 
     if (!exists) {
-        GEODE_UNWRAP(asp::fs::createDirAll(asp::fs::Path::fromStdPath(backupDir)).mapErr(
-            [backupDir](const auto& err) {
-                return fmt::format("Failed to create backup directory {}: {}", backupDir, err);
-            }));
+        GEODE_UNWRAP(asp::fs::createDirAll(asp::fs::Path::fromStdPath(backupDir)).mapErr([backupDir](const auto& err) {
+            return fmt::format("Failed to create backup directory {}: {}", backupDir, err);
+        }));
     }
 
     const std::filesystem::path filepath = backupDir / "nong_data.json";
     if (asp::fs::exists(asp::fs::Path::fromStdPath(filepath))) {
-        GEODE_UNWRAP(asp::fs::remove(asp::fs::Path::fromStdPath(filepath)).mapErr(
-            [filepath](const auto& err) {
-                return fmt::format("Failed to replace backup file {}: {}", filepath, err);
-            }));
+        GEODE_UNWRAP(asp::fs::remove(asp::fs::Path::fromStdPath(filepath)).mapErr([filepath](const auto& err) {
+            return fmt::format("Failed to replace backup file {}: {}", filepath, err);
+        }));
     }
 
-    GEODE_UNWRAP(asp::fs::copy(asp::fs::Path::fromStdPath(manifestPath()), asp::fs::Path::fromStdPath(filepath)).mapErr(
-        [filepath](const auto& err) {
-            return fmt::format("Failed to write backup file {}: {}", filepath, err);
-        }));
+    GEODE_UNWRAP(
+        asp::fs::copy(asp::fs::Path::fromStdPath(manifestPath()), asp::fs::Path::fromStdPath(filepath))
+            .mapErr([filepath](const auto& err) {
+                return fmt::format("Failed to write backup file {}: {}", filepath, err);
+            })
+    );
 
     if (deleteOrig) {
         const auto sourcePath = manifestPath();
-        GEODE_UNWRAP(asp::fs::remove(asp::fs::Path::fromStdPath(sourcePath)).mapErr(
-            [sourcePath](const auto& err) {
-                return fmt::format("Failed to delete original v2 manifest {}: {}", sourcePath, err);
-            }));
+        GEODE_UNWRAP(asp::fs::remove(asp::fs::Path::fromStdPath(sourcePath)).mapErr([sourcePath](const auto& err) {
+            return fmt::format("Failed to delete original v2 manifest {}: {}", sourcePath, err);
+        }));
     }
 
     return Ok();
 }
 
 Result<LocalSong> parseSong(const matjson::Value& i, int id) {
-    if (!isSongValid(i)) {
-        return Err("Invalid JSON");
-    }
+    if (!isSongValid(i)) { return Err("Invalid JSON"); }
 
     std::filesystem::path path =
         i["path"].asString().map([](std::string v) { return std::filesystem::path(v); }).unwrap();
 
-    return Ok(
-        LocalSong(SongMetadata(id, jukebox::random_string(16), i["songName"].asString().unwrap(),
-                               i["authorName"].asString().unwrap(), std::nullopt, i["startOffset"].asInt().unwrapOr(0)),
-                  path));
+    return Ok(LocalSong(
+        SongMetadata(
+            id, jukebox::random_string(16), i["songName"].asString().unwrap(), i["authorName"].asString().unwrap(),
+            std::nullopt, i["startOffset"].asInt().unwrapOr(0)
+        ),
+        path
+    ));
 }
 
 Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath, const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
-        if (!isSongValid(i)) {
-            continue;
-        }
+        if (!isSongValid(i)) { continue; }
 
         std::filesystem::path path = i["path"].asString().unwrap();
         if (path == defaultPath) {
             return Ok(LocalSong(
-                SongMetadata(id, jukebox::random_string(16), i["songName"].asString().unwrap(),
-                             i["authorName"].asString().unwrap(), std::nullopt, i["startOffset"].asInt().unwrapOr(0)),
-                path));
+                SongMetadata(
+                    id, jukebox::random_string(16), i["songName"].asString().unwrap(),
+                    i["authorName"].asString().unwrap(), std::nullopt, i["startOffset"].asInt().unwrapOr(0)
+                ),
+                path
+            ));
         }
     }
 
@@ -118,16 +119,17 @@ Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath, c
 
 Result<LocalSong> getActive(int id, const std::filesystem::path& activePath, const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
-        if (!isSongValid(i)) {
-            continue;
-        }
+        if (!isSongValid(i)) { continue; }
 
         std::filesystem::path path = i["path"].asString().unwrap();
         if (path == activePath) {
             return Ok(LocalSong(
-                SongMetadata(id, jukebox::random_string(16), i["songName"].asString().unwrap(),
-                             i["authorName"].asString().unwrap(), std::nullopt, i["startOffset"].asInt().unwrapOr(0)),
-                path));
+                SongMetadata(
+                    id, jukebox::random_string(16), i["songName"].asString().unwrap(),
+                    i["authorName"].asString().unwrap(), std::nullopt, i["startOffset"].asInt().unwrapOr(0)
+                ),
+                path
+            ));
         }
     }
 
@@ -135,28 +137,22 @@ Result<LocalSong> getActive(int id, const std::filesystem::path& activePath, con
 }
 
 Result<std::unordered_map<int, CompatManifest>> parseManifest() {
-    if (!manifestExists()) {
-        return Err("No manifest exists for V2");
-    }
+    if (!manifestExists()) { return Err("No manifest exists for V2"); }
 
     std::filesystem::path path = manifestPath();
 
-    GEODE_UNWRAP_INTO(matjson::Value json, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)).mapErr([](std::string err) {
-        return fmt::format("Couldn't parse JSON from file: {}", err);
-    }));
+    GEODE_UNWRAP_INTO(
+        matjson::Value json, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)).mapErr([](std::string err) {
+            return fmt::format("Couldn't parse JSON from file: {}", err);
+        })
+    );
 
-    if (!json.contains("version") || !json["version"].isNumber()) {
-        return Err("Invalid JSON");
-    }
+    if (!json.contains("version") || !json["version"].isNumber()) { return Err("Invalid JSON"); }
 
     int version = json["version"].asInt().unwrap();
-    if (version < 1 || version > 3) {
-        return Err("Invalid JSON");
-    }
+    if (version < 1 || version > 3) { return Err("Invalid JSON"); }
 
-    if (!json.contains("nongs") || !json["nongs"].isObject()) {
-        return Err("Invalid JSON");
-    }
+    if (!json.contains("nongs") || !json["nongs"].isObject()) { return Err("Invalid JSON"); }
 
     std::unordered_map<int, CompatManifest> ret;
 
@@ -207,14 +203,19 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
             }
 
             manifestSongs.push_back(LocalSong(
-                SongMetadata(id, unique, i["songName"].asString().unwrap(), i["authorName"].asString().unwrap(),
-                             std::nullopt, i["startOffset"].asInt().unwrapOr(0)),
-                path));
+                SongMetadata(
+                    id, unique, i["songName"].asString().unwrap(), i["authorName"].asString().unwrap(), std::nullopt,
+                    i["startOffset"].asInt().unwrapOr(0)
+                ),
+                path
+            ));
         }
 
         ret.insert(
-            {id, CompatManifest{
-                     .id = id, .defaultSong = defaultSong, .active = activeSong, .songs = std::move(manifestSongs)}});
+            {id, CompatManifest {
+                     .id = id, .defaultSong = defaultSong, .active = activeSong, .songs = std::move(manifestSongs)
+                 }}
+        );
     }
 
     return Ok(ret);

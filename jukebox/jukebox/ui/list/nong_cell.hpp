@@ -41,8 +41,13 @@ protected:
     geode::ListenerHandle m_downloadFailedListener;
     geode::ListenerHandle m_stateListener;
 
-    bool init(int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size, std::optional<int> levelID,
-              std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
+    bool init(
+        int gdSongID,
+        const std::string& uniqueID,
+        const cocos2d::CCSize& size,
+        std::optional<int> levelID,
+        std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
+    );
 
     geode::ListenerResult onDownloadProgress(const event::SongDownloadProgressData& e);
     geode::ListenerResult onGetSongInfo(const event::GetSongInfoData& e);
@@ -64,8 +69,13 @@ protected:
     bool isIndex();
 
 public:
-    static NongCell* create(int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
-                            std::optional<int> levelID, std::optional<index::IndexSongMetadata*> indexSongMetadataOpt);
+    static NongCell* create(
+        int gdSongID,
+        const std::string& uniqueID,
+        const cocos2d::CCSize& size,
+        std::optional<int> levelID,
+        std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
+    );
 };
 
 }  // namespace jukebox

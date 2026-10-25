@@ -1,15 +1,15 @@
 #include <jukebox/ui/list/nong_cell.hpp>
-#include <asp/fs/std.hpp>
 
+#include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
-#include <fmt/core.h>
-#include <fmt/ranges.h>
-#include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <asp/fs/std.hpp>
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 
 #include <jukebox/events/song_download_failed.hpp>
 #include <jukebox/events/song_download_finished.hpp>
@@ -27,11 +27,14 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool NongCell::init(int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size, std::optional<int> levelID,
-                    std::optional<index::IndexSongMetadata*> indexSongMetadataOpt) {
-    if (!CCNode::init()) {
-        return false;
-    }
+bool NongCell::init(
+    int gdSongID,
+    const std::string& uniqueID,
+    const cocos2d::CCSize& size,
+    std::optional<int> levelID,
+    std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
+) {
+    if (!CCNode::init()) { return false; }
 
     m_songID = gdSongID;
     m_uniqueID = uniqueID;
@@ -40,29 +43,34 @@ bool NongCell::init(int gdSongID, const std::string& uniqueID, const cocos2d::CC
 
     m_nongCell = NongCellUI::create(
         size, [this] { this->onSelect(); }, [this] { this->onTrash(); }, [this] { this->onFixDefault(); },
-        [this] { this->onDownload(); }, [this] { this->onEdit(); });
+        [this] { this->onDownload(); }, [this] { this->onEdit(); }
+    );
 
-    m_progressListener = event::SongDownloadProgress(m_songID).listen(
-        [this](const event::SongDownloadProgressData& event) { return this->onDownloadProgress(event); });
-    m_songInfoListener = event::GetSongInfo(m_songID).listen(
-        [this](const event::GetSongInfoData& event) { return this->onGetSongInfo(event); });
-    m_downloadFailedListener = event::SongDownloadFailed(m_songID).listen(
-        [this](const event::SongDownloadFailedData& event) { return this->onDownloadFailed(event); });
-    m_downloadSuccessListener = event::SongDownloadFinished().listen(
-        [this](const event::SongDownloadFinishedData& event) { return this->onDownloadFinish(event); });
-    m_stateListener = event::SongStateChanged().listen(
-        [this](const event::SongStateChangedData& event) { return this->onStateChange(event); });
+    m_progressListener =
+        event::SongDownloadProgress(m_songID).listen([this](const event::SongDownloadProgressData& event) {
+            return this->onDownloadProgress(event);
+        });
+    m_songInfoListener = event::GetSongInfo(m_songID).listen([this](const event::GetSongInfoData& event) {
+        return this->onGetSongInfo(event);
+    });
+    m_downloadFailedListener =
+        event::SongDownloadFailed(m_songID).listen([this](const event::SongDownloadFailedData& event) {
+            return this->onDownloadFailed(event);
+        });
+    m_downloadSuccessListener =
+        event::SongDownloadFinished().listen([this](const event::SongDownloadFinishedData& event) {
+            return this->onDownloadFinish(event);
+        });
+    m_stateListener = event::SongStateChanged().listen([this](const event::SongStateChangedData& event) {
+        return this->onStateChange(event);
+    });
 
     if (this->isIndex()) {
         bool success = this->initIndex();
-        if (!success) {
-            return false;
-        }
+        if (!success) { return false; }
     } else {
         bool success = this->initLocal();
-        if (!success) {
-            return false;
-        }
+        if (!success) { return false; }
     }
 
     this->build();
@@ -131,7 +139,8 @@ bool NongCell::initLocal() {
                        : false;
     m_isDefault = nongs.value()->defaultSong()->metadata()->uniqueID == m_uniqueID;
     m_isActive = nongs.value()->active()->metadata()->uniqueID == m_uniqueID;
-    m_isDownloaded = songInfo->path().has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(songInfo->path().value()));
+    m_isDownloaded =
+        songInfo->path().has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(songInfo->path().value()));
     m_isDownloadable = songInfo->type() != NongType::LOCAL;
     m_isDownloading = false;
     m_nongCell->m_showEditButton = !m_isDefault && !songInfo->indexID().has_value();
@@ -206,18 +215,14 @@ void NongCell::onDownload() {
         log::warn("Canceling downloads is not currently implemented.");
         return;
     }
-    event::StartDownload().send(event::StartDownloadData{m_songID, m_uniqueID});
+    event::StartDownload().send(event::StartDownloadData {m_songID, m_uniqueID});
 }
 
 void NongCell::onEdit() {
     auto nongsOpt = NongManager::get().getNongs(m_songID);
-    if (!nongsOpt.has_value()) {
-        return;
-    }
+    if (!nongsOpt.has_value()) { return; }
     std::optional<Song*> songInfoOpt = nongsOpt.value()->findSong(m_uniqueID);
-    if (!songInfoOpt.has_value()) {
-        return;
-    }
+    if (!songInfoOpt.has_value()) { return; }
     NongAddPopup::create(m_songID, songInfoOpt.value())->show();
 }
 
@@ -227,20 +232,18 @@ void NongCell::onFixDefault() {
         return;
     }
 
-    createQuickPopup("Fix default",
-                     "Do you want to refetch song info <cb>for the default song</c>? Use "
-                     "this <cr>ONLY</c> if it gets renamed by accident!",
-                     "No", "Yes", [this](FLAlertLayer* alert, bool btn2) {
-                         if (btn2) {
-                             NongManager::get().refetchDefault(m_songID);
-                         }
-                     });
+    createQuickPopup(
+        "Fix default",
+        "Do you want to refetch song info <cb>for the default song</c>? Use "
+        "this <cr>ONLY</c> if it gets renamed by accident!",
+        "No", "Yes", [this](FLAlertLayer* alert, bool btn2) {
+            if (btn2) { NongManager::get().refetchDefault(m_songID); }
+        }
+    );
 }
 
 ListenerResult NongCell::onDownloadProgress(const event::SongDownloadProgressData& e) {
-    if (e.uniqueID() != m_uniqueID || e.gdId() != m_songID) {
-        return ListenerResult::Propagate;
-    }
+    if (e.uniqueID() != m_uniqueID || e.gdId() != m_songID) { return ListenerResult::Propagate; }
 
     m_isDownloading = true;
     m_nongCell->m_isDownloading = m_isDownloading;
@@ -251,9 +254,7 @@ ListenerResult NongCell::onDownloadProgress(const event::SongDownloadProgressDat
 }
 
 ListenerResult NongCell::onDownloadFailed(const event::SongDownloadFailedData& e) {
-    if (e.gdId() != m_songID || e.uniqueId() != m_uniqueID) {
-        return ListenerResult::Propagate;
-    }
+    if (e.gdId() != m_songID || e.uniqueId() != m_uniqueID) { return ListenerResult::Propagate; }
 
     m_isDownloading = false;
     build();
@@ -278,13 +279,9 @@ ListenerResult NongCell::onStateChange(const event::SongStateChangedData& e) {
     bool switchedToActive = !m_isActive && sameIDAsActive;
     bool switchedToInactive = m_isActive && !sameIDAsActive;
 
-    if (e.nongs()->songID() != m_songID || (!m_isDownloaded && !m_isDefault)) {
-        return ListenerResult::Propagate;
-    }
+    if (e.nongs()->songID() != m_songID || (!m_isDownloaded && !m_isDefault)) { return ListenerResult::Propagate; }
 
-    if (!switchedToActive && !switchedToInactive) {
-        return ListenerResult::Propagate;
-    }
+    if (!switchedToActive && !switchedToInactive) { return ListenerResult::Propagate; }
 
     bool selected = e.nongs()->active()->metadata()->uniqueID == m_uniqueID;
     m_isActive = selected;
@@ -296,9 +293,7 @@ ListenerResult NongCell::onStateChange(const event::SongStateChangedData& e) {
 
 // Only on default song when doing fix default
 ListenerResult NongCell::onGetSongInfo(const event::GetSongInfoData& e) {
-    if (e.gdId() != m_songID || !m_isDefault) {
-        return ListenerResult::Propagate;
-    }
+    if (e.gdId() != m_songID || !m_isDefault) { return ListenerResult::Propagate; }
 
     m_nongCell->m_songName = e.songName();
     m_nongCell->m_authorName = e.artistName();
@@ -323,21 +318,24 @@ void NongCell::deleteSong(bool onlyAudio) {
         FLAlertLayer::create("Success", "The song was deleted!", "Ok")->show();
     };
 
-    createQuickPopup("Are you sure?", fmt::format("Are you sure you want to delete the song from your NONGs?"), "No",
-                     "Yes", [func](FLAlertLayer* self, bool btn2) {
-                         if (!btn2) {
-                             return;
-                         }
-                         func();
-                     });
+    createQuickPopup(
+        "Are you sure?", fmt::format("Are you sure you want to delete the song from your NONGs?"), "No", "Yes",
+        [func](FLAlertLayer* self, bool btn2) {
+            if (!btn2) { return; }
+            func();
+        }
+    );
 }
 
-NongCell* NongCell::create(int gdSongID, const std::string& uniqueID, const cocos2d::CCSize& size,
-                           std::optional<int> levelID, std::optional<index::IndexSongMetadata*> indexSongMetadataOpt) {
+NongCell* NongCell::create(
+    int gdSongID,
+    const std::string& uniqueID,
+    const cocos2d::CCSize& size,
+    std::optional<int> levelID,
+    std::optional<index::IndexSongMetadata*> indexSongMetadataOpt
+) {
     auto ret = new NongCell();
-    if (ret->init(gdSongID, uniqueID, size, levelID, indexSongMetadataOpt)) {
-        return ret;
-    }
+    if (ret->init(gdSongID, uniqueID, size, levelID, indexSongMetadataOpt)) { return ret; }
 
     delete ret;
     return nullptr;

@@ -1,13 +1,30 @@
+---
 BasedOnStyle: Google
 AccessModifierOffset: -4
+AlignAfterOpenBracket: BlockIndent
+AllowShortBlocksOnASingleLine: Always
+AlwaysBreakBeforeMultilineStrings: false
+BinPackParameters: OnePerLine
+CommentPragmas: ""
+DerivePointerAlignment: true
 ColumnLimit: 120
 IndentWidth: 4
-IncludeBlocks: Preserve
-InsertBraces: true
-InsertNewlineAtEOF: true
-UseTab: Never
----
+RemoveEmptyLinesInUnwrappedLines: true
+RemoveParentheses: MultipleParentheses
+SpaceAfterTemplateKeyword: false
+SpaceBeforeCpp11BracedList: true
+SpacesInContainerLiterals: false
+TabWidth: 4
 Language: Cpp
-DerivePointerAlignment: false
-PointerAlignment: Left
----
+IncludeBlocks: Regroup
+MainIncludeChar: Any
+IncludeCategories:
+  # Standard library: <string>, <cstdint>, ... (no extension, no path)
+  - Regex: '^<[a-z_0-9]+>$'
+    Priority: 1
+  # Own headers
+  - Regex: '^[<"]jukebox/'
+    Priority: 3
+  # Third party: Geode, fmt, matjson, asp, arc, fmod, ...
+  - Regex: '.*'
+    Priority: 2

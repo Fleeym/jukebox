@@ -26,14 +26,16 @@ protected:
 
     IndexManager() = default;
 
-    std::unordered_map<int, std::vector<index::IndexSongMetadata*>> m_nongsForId{};
-    std::unordered_map<std::string, std::tuple<int, std::string>> m_urlToIDs{};
+    std::unordered_map<int, std::vector<index::IndexSongMetadata*>> m_nongsForId {};
+    std::unordered_map<std::string, std::tuple<int, std::string>> m_urlToIDs {};
 
     void onDownloadProgress(int gdSongID, const std::string& uniqueId, float progress);
-    void onDownloadFinish(std::variant<index::IndexSongMetadata*, Song*>&& source, Nongs* destination,
-                          geode::ByteVector&& data);
-    arc::Future<geode::Result<std::optional<matjson::Value>>> fetchIndex(const index::IndexSource& index,
-                                                                         bool forceFresh = false);
+    void onDownloadFinish(
+        std::variant<index::IndexSongMetadata*, Song*>&& source, Nongs* destination, geode::ByteVector&& data
+    );
+    arc::Future<geode::Result<std::optional<matjson::Value>>> fetchIndex(
+        const index::IndexSource& index, bool forceFresh = false
+    );
     arc::Future<geode::Result<matjson::Value>> fetchIndexFromCache(const index::IndexSource& index);
 
     std::optional<std::string> lastModifiedForIndex(const std::string_view url);
@@ -54,7 +56,7 @@ public:
     IndexManager& operator=(IndexManager&&) = delete;
 
     bool init();
-    std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>> m_loadedIndexes{};
+    std::unordered_map<std::string, std::unique_ptr<index::IndexMetadata>> m_loadedIndexes {};
 
     [[nodiscard]] bool initialized() const { return m_initialized; }
     [[nodiscard]] bool fetchingIndexes() const { return m_fetchingIndexes; }

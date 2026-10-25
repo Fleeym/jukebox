@@ -1,9 +1,6 @@
 #include <jukebox/ui/nong_add_popup.hpp>
-#include <asp/fs/std.hpp>
 
-#include <Geode/utils/function.hpp>
 #include <algorithm>
-#include <asp/fs/fs.hpp>
 #include <cstddef>
 #include <filesystem>
 #include <memory>
@@ -11,31 +8,35 @@
 #include <regex>
 #include <utility>
 
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/menu_nodes/CCMenu.h>
-#include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <fmod_common.h>
-#include <fmod_errors.h>
-#include <fmt/core.h>
-#include <fmt/format.h>
+#include "Geode/loader/Log.hpp"
 #include <Geode/Result.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/binding/FMODAudioEngine.hpp>
-#include <Geode/mapping/CCApplication.hpp>
+#include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/cocoa/CCObject.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
+#include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/mapping/CCApplication.hpp>
 #include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
+#include <Geode/utils/function.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
+#include <asp/fs/fs.hpp>
+#include <asp/fs/std.hpp>
 #include <fmod.hpp>
+#include <fmod_common.h>
+#include <fmod_errors.h>
+#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <jukebox/events/manual_song_added.hpp>
 #include <jukebox/managers/index_manager.hpp>
@@ -43,7 +44,6 @@
 #include <jukebox/nong/nong.hpp>
 #include <jukebox/ui/index_choose_popup.hpp>
 #include <jukebox/utils/random_string.hpp>
-#include "Geode/loader/Log.hpp"
 
 using namespace geode::prelude;
 using namespace jukebox::index;
@@ -75,9 +75,14 @@ protected:
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override { m_selected(layer, btn2); }
 
 public:
-    static IndexDisclaimerPopup* create(char const* title, std::string const& content, char const* btn1,
-                                        char const* btn2, float width,
-                                        geode::Function<void(FLAlertLayer*, bool)> selected) {
+    static IndexDisclaimerPopup* create(
+        char const* title,
+        std::string const& content,
+        char const* btn1,
+        char const* btn2,
+        float width,
+        geode::Function<void(FLAlertLayer*, bool)> selected
+    ) {
         auto inst = new IndexDisclaimerPopup();
         inst->m_selected = std::move(selected);
         if (inst->init(inst, title, content, btn1, btn2, width, true, .0f, 1.0f)) {
@@ -94,17 +99,15 @@ namespace jukebox {
 
 bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNong) {
     const CCSize size = this->getPopupSize();
-    if (!Popup::init(size.width, size.height)) {
-        return false;
-    }
+    if (!Popup::init(size.width, size.height)) { return false; }
     this->setTitle("Add Song");
     m_songID = songID;
     m_replacedNong = replacedNong;
 
     if (replacedNong.has_value() && replacedNong.value()->type() == NongType::YOUTUBE) {
         m_mainLayer->addChildAtPosition(
-            geode::Label::create("Sorry, YouTube songs are not available at the moment.", "bigFont.fnt"),
-            Anchor::Center);
+            geode::Label::create("Sorry, YouTube songs are not available at the moment.", "bigFont.fnt"), Anchor::Center
+        );
         return true;
     }
 
@@ -140,11 +143,13 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
     m_switchMenu->addChild(m_switchLocalButton);
     m_switchMenu->addChild(m_switchHostedButton);
     m_switchMenu->addChild(m_switchYTButton);
-    m_switchMenu->setLayout(SimpleRowLayout::create()
-                                ->setMainAxisAlignment(MainAxisAlignment::Center)
-                                ->setMainAxisScaling(AxisScaling::ScaleDown)
-                                ->setCrossAxisScaling(AxisScaling::ScaleDown)
-                                ->setGap(5.0f));
+    m_switchMenu->setLayout(
+        SimpleRowLayout::create()
+            ->setMainAxisAlignment(MainAxisAlignment::Center)
+            ->setMainAxisScaling(AxisScaling::ScaleDown)
+            ->setCrossAxisScaling(AxisScaling::ScaleDown)
+            ->setGap(5.0f)
+    );
 
     m_container->addChild(m_switchMenu);
 
@@ -221,10 +226,12 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
     spr = CCSprite::createWithSpriteFrameName("GJ_pasteBtn2_001.png");
     m_localSongPasteButton = CCMenuItemSpriteExtra::create(spr, this, menu_selector(NongAddPopup::onPaste));
     m_localSongMenu->addChild(m_localSongPasteButton);
-    m_localSongMenu->setLayout(SimpleRowLayout::create()
-                                   ->setGap(5.0f)
-                                   ->setMainAxisScaling(AxisScaling::Fit)
-                                   ->setCrossAxisScaling(AxisScaling::Fit));
+    m_localSongMenu->setLayout(
+        SimpleRowLayout::create()
+            ->setGap(5.0f)
+            ->setMainAxisScaling(AxisScaling::Fit)
+            ->setCrossAxisScaling(AxisScaling::Fit)
+    );
 
     m_specialInfoNode->addChild(m_specialInput);
     m_specialInfoNode->addChild(m_localSongMenu);
@@ -243,12 +250,14 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     m_addSongMenu = CCMenu::create();
     m_addSongMenu->setID("add-song-menu");
-    m_addSongButton = CCMenuItemSpriteExtra::create(ButtonSprite::create(m_replacedNong.has_value() ? "Edit" : "Add"),
-                                                    this, menu_selector(NongAddPopup::addSong));
+    m_addSongButton = CCMenuItemSpriteExtra::create(
+        ButtonSprite::create(m_replacedNong.has_value() ? "Edit" : "Add"), this, menu_selector(NongAddPopup::addSong)
+    );
 
     if (m_replacedNong.has_value()) {
-        m_publishSongButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("Publish"), this,
-                                                            menu_selector(NongAddPopup::onPublish));
+        m_publishSongButton = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("Publish"), this, menu_selector(NongAddPopup::onPublish)
+        );
         m_publishSongButton->setID("publish-song-button");
         m_addSongMenu->addChild(m_publishSongButton);
     }
@@ -272,9 +281,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
     m_container->setLayout(SimpleColumnLayout::create()->setGap(5.0f)->setMainAxisScaling(AxisScaling::ScaleDown));
     m_mainLayer->addChildAtPosition(m_container, Anchor::Top, {0.0f, -40.f});
 
-    if (!m_replacedNong.has_value()) {
-        return true;
-    }
+    if (!m_replacedNong.has_value()) { return true; }
 
     // edit mode
 
@@ -282,9 +289,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     m_songNameInput->setString(edit->metadata()->name);
     m_artistNameInput->setString(edit->metadata()->artist);
-    if (edit->metadata()->level.has_value()) {
-        m_levelNameInput->setString(edit->metadata()->level.value());
-    }
+    if (edit->metadata()->level.has_value()) { m_levelNameInput->setString(edit->metadata()->level.value()); }
     m_startOffsetInput->setString(fmt::to_string(edit->metadata()->startOffset));
 
     switch (edit->type()) {
@@ -307,9 +312,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     for (const std::pair<const std::string, std::unique_ptr<IndexMetadata>>& pair :
          IndexManager::get().m_loadedIndexes) {
-        if (!pair.second->m_features.m_submit.has_value()) {
-            continue;
-        }
+        if (!pair.second->m_features.m_submit.has_value()) { continue; }
         IndexMetadata::Features::Submit& submit = pair.second->m_features.m_submit.value();
 
         bool shouldSubmit = false;
@@ -329,21 +332,15 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
                 break;
         }
 
-        if (!shouldSubmit) {
-            continue;
-        }
+        if (!shouldSubmit) { continue; }
 
         indexIDs.push_back(pair.first);
     }
 
     std::stable_sort(indexIDs.begin(), indexIDs.end(), [](const std::string& a, const std::string& b) {
         // Ensure "song-file-hub-index" comes first
-        if (a == "song-file-hub-index") {
-            return true;
-        }
-        if (b == "song-file-hub-index") {
-            return false;
-        }
+        if (a == "song-file-hub-index") { return true; }
+        if (b == "song-file-hub-index") { return false; }
         return false;  // maintain relative order for other strings
     });
 
@@ -357,26 +354,26 @@ CCSize NongAddPopup::getPopupSize() { return {320.f, 240.f}; }
 void NongAddPopup::openFile(CCObject* target) {
     file::FilePickOptions::Filter filter = {
         .description = "Songs",
-        .files = {"*.mp3", "*.mp2", "*.ogg", "*.wav", "*.aiff", "*.aif", "*.flac", "*.aac", "*.m4a", "*.mid", "*.midi",
-                  "*.mod", "*.s3m", "*.xm", "*.it"}};
+        .files = {
+            "*.mp3", "*.mp2", "*.ogg", "*.wav", "*.aiff", "*.aif", "*.flac", "*.aac", "*.m4a", "*.mid", "*.midi",
+            "*.mod", "*.s3m", "*.xm", "*.it"
+        }
+    };
     file::FilePickOptions options = {std::nullopt, {filter}};
-    async::spawn(file::pick(file::PickMode::OpenFile, options),
-                 [this](file::PickResult result) { this->onFileOpen(std::move(result)); });
+    async::spawn(file::pick(file::PickMode::OpenFile, options), [this](file::PickResult result) {
+        this->onFileOpen(std::move(result));
+    });
 }
 
 void NongAddPopup::onPaste(CCObject*) {
     const std::string clipboard = clipboard::read();
-    if (clipboard.empty()) {
-        return;
-    }
+    if (clipboard.empty()) { return; }
 
     m_specialInput->setString(clipboard);
 }
 
 void NongAddPopup::onFileOpen(file::PickResult result) {
-    if (m_songType != SongType::LOCAL) {
-        return;
-    }
+    if (m_songType != SongType::LOCAL) { return; }
 
     if (result.isErr()) {
         FLAlertLayer::create("Error", fmt::format("Failed to open file. Error: {}", result.err()), "Ok")->show();
@@ -473,9 +470,7 @@ void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
             m_localSongMenu->setVisible(true);
             m_specialInfoNode->updateLayout();
             m_specialInput->getInputNode()->getTextLabel()->setString("Select a file");
-            if (!m_memoizedLocalInput.empty()) {
-                m_specialInput->setString(m_memoizedLocalInput);
-            }
+            if (!m_memoizedLocalInput.empty()) { m_specialInput->setString(m_memoizedLocalInput); }
             break;
         }
         case SongType::HOSTED: {
@@ -483,9 +478,7 @@ void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
             m_localSongMenu->setVisible(false);
             m_specialInfoNode->updateLayout();
             m_specialInput->getInputNode()->getTextLabel()->setString("Enter a song URL");
-            if (!m_memoizedHostedInput.empty()) {
-                m_specialInput->setString(m_memoizedHostedInput);
-            }
+            if (!m_memoizedHostedInput.empty()) { m_specialInput->setString(m_memoizedHostedInput); }
             break;
         }
         case SongType::YOUTUBE: {
@@ -497,10 +490,12 @@ void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
 void NongAddPopup::onSwitchToLocal(CCObject*) { this->setSongType(SongType::LOCAL, true); }
 
 void NongAddPopup::onSwitchToYT(CCObject*) {
-    FLAlertLayer::create("Unavailable",
-                         "YouTube songs are currently <cr>unavailable</c>. "
-                         "They will be enabled in a future <cb>update</c> :)",
-                         "Ok")
+    FLAlertLayer::create(
+        "Unavailable",
+        "YouTube songs are currently <cr>unavailable</c>. "
+        "They will be enabled in a future <cb>update</c> :)",
+        "Ok"
+    )
         ->show();
     /*this->setSongType(SongType::YOUTUBE, true);*/
 }
@@ -539,19 +534,23 @@ void NongAddPopup::onPublish(CCObject* target) {
                 }
 
                 auto metadata = replacedNong->metadata();
-                CCApplication::get()->openURL(fmt::format("{}song-name={}&artist-name={}&start-offset={}&"
-                                                          "song-id={}&level-id={}&level-name={}{}",
-                                                          submit.m_requestParams.value().m_url.c_str(), metadata->name,
-                                                          metadata->artist, metadata->startOffset, metadata->gdID, 0,
-                                                          metadata->level.value_or(""), songSpecificParams)
-                                                  .c_str());
+                CCApplication::get()->openURL(
+                    fmt::format(
+                        "{}song-name={}&artist-name={}&start-offset={}&"
+                        "song-id={}&level-id={}&level-name={}{}",
+                        submit.m_requestParams.value().m_url.c_str(), metadata->name, metadata->artist,
+                        metadata->startOffset, metadata->gdID, 0, metadata->level.value_or(""), songSpecificParams
+                    )
+                        .c_str()
+                );
             }
         };
 
         if (submit.m_preSubmitMessage.has_value()) {
-            const auto popup = IndexDisclaimerPopup::create(fmt::format("{} Disclaimer", name).c_str(),
-                                                            submit.m_preSubmitMessage.value(), "Back", "Continue",
-                                                            420.f, std::move(submitFunc));
+            const auto popup = IndexDisclaimerPopup::create(
+                fmt::format("{} Disclaimer", name).c_str(), submit.m_preSubmitMessage.value(), "Back", "Continue",
+                420.f, std::move(submitFunc)
+            );
             if (popup) {
                 popup->m_scene = this;
                 popup->show();
@@ -573,9 +572,7 @@ void NongAddPopup::addSong(CCObject* target) {
 
     if (!startOffsetStr.empty()) {
         Result<int> startOffsetRes = geode::utils::numFromString<int>(startOffsetStr);
-        if (startOffsetRes.isOk()) {
-            startOffset = startOffsetRes.unwrap();
-        }
+        if (startOffsetRes.isOk()) { startOffset = startOffsetRes.unwrap(); }
     }
 
     if (m_songType == SongType::LOCAL) {
@@ -602,18 +599,15 @@ void NongAddPopup::addSong(CCObject* target) {
     this->onClose(this);
 }
 
-Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::string& artistName,
-                                    const std::optional<std::string> levelName, int offset) {
+Result<> NongAddPopup::addLocalSong(
+    const std::string& songName, const std::string& artistName, const std::optional<std::string> levelName, int offset
+) {
     if (!m_localPath.has_value()) {
         std::filesystem::path path = std::string(std::move(m_specialInput->getString()));
-        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
-            m_localPath = path;
-        }
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { m_localPath = path; }
     }
 
-    if (!m_localPath.has_value()) {
-        return Err("No file selected.");
-    }
+    if (!m_localPath.has_value()) { return Err("No file selected."); }
 
     std::filesystem::path path = m_localPath.value();
 
@@ -621,18 +615,12 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
         return Err("The selected file ({}) does not exist.", path);
     }
 
-    if (asp::fs::Path::fromStdPath(path).isDir()) {
-        return Err("You selected a directory.");
-    }
+    if (asp::fs::Path::fromStdPath(path).isDir()) { return Err("You selected a directory."); }
 
     std::string extension = asp::fs::Path::fromStdPath(path.extension()).string();
-    if (songName.empty()) {
-        return Err("Song name is empty");
-    }
+    if (songName.empty()) { return Err("Song name is empty"); }
 
-    if (artistName.empty()) {
-        return Err("Artist name is empty");
-    }
+    if (artistName.empty()) { return Err("Artist name is empty"); }
 
     std::string id =
         m_replacedNong.has_value() ? m_replacedNong.value()->metadata()->uniqueID : jukebox::random_string(16);
@@ -640,36 +628,30 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
     std::filesystem::path destination = std::filesystem::path(Mod::get()->getSaveDir().native()) / "nongs";
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(destination))) {
         auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(destination));
-        if (createDirRes.isErr()) {
-            return Err("Failed to create nongs directory.");
-        }
+        if (createDirRes.isErr()) { return Err("Failed to create nongs directory."); }
     }
     destination /= unique;
 
     if (destination.compare(path) != 0) {
         GEODE_UNWRAP(
-            asp::fs::copy(asp::fs::Path::fromStdPath(path), asp::fs::Path::fromStdPath(destination)).mapErr([](auto err) {
-                return fmt::format("Failed to save song. Please try again! {}", err);
-            }));
+            asp::fs::copy(asp::fs::Path::fromStdPath(path), asp::fs::Path::fromStdPath(destination))
+                .mapErr([](auto err) { return fmt::format("Failed to save song. Please try again! {}", err); })
+        );
     }
 
-    LocalSong song = LocalSong{SongMetadata{m_songID, id, songName, artistName, levelName, offset}, destination};
+    LocalSong song = LocalSong {SongMetadata {m_songID, id, songName, artistName, levelName, offset}, destination};
 
     Nongs* nongs = NongManager::get().getNongs(m_songID).value();
 
     if (m_replacedNong.has_value()) {
         Result<> res = nongs->replaceSong(m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
-        if (res.isErr()) {
-            return Err("Failed to add song: {}", res.unwrapErr());
-        }
+        if (res.isErr()) { return Err("Failed to add song: {}", res.unwrapErr()); }
     } else {
         Result<LocalSong*> res = nongs->add(std::move(song));
-        if (res.isErr()) {
-            return Err("Failed to add song: {}", res.unwrapErr());
-        }
+        if (res.isErr()) { return Err("Failed to add song: {}", res.unwrapErr()); }
 
-        event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
+        event::ManualSongAdded().send(event::ManualSongAddedData {nongs, res.unwrap()});
     }
 
     if (auto commitRes = nongs->commit(); commitRes.isErr()) {
@@ -679,44 +661,33 @@ Result<> NongAddPopup::addLocalSong(const std::string& songName, const std::stri
     return Ok();
 }
 
-geode::Result<> NongAddPopup::addYTSong(const std::string& songName, const std::string& artistName,
-                                        const std::optional<std::string> levelName, int offset) {
+geode::Result<> NongAddPopup::addYTSong(
+    const std::string& songName, const std::string& artistName, const std::optional<std::string> levelName, int offset
+) {
     return Err("YouTube songs are coming soon :)");
 
     constexpr size_t YOUTUBE_VIDEO_ID_SIZE = 11;
 
-    if (songName.empty()) {
-        return Err("Song name is empty");
-    }
-    if (artistName.empty()) {
-        return Err("Artist name is empty");
-    }
+    if (songName.empty()) { return Err("Song name is empty"); }
+    if (artistName.empty()) { return Err("Artist name is empty"); }
     std::string ytLink = m_specialInput->getString();
-    if (strlen(ytLink.c_str()) == 0) {
-        return Err("No URL specified");
-    }
+    if (strlen(ytLink.c_str()) == 0) { return Err("No URL specified"); }
 
     std::string ytID;
 
-    if (ytLink.size() == YOUTUBE_VIDEO_ID_SIZE) {
-        ytID = ytLink;
-    }
+    if (ytLink.size() == YOUTUBE_VIDEO_ID_SIZE) { ytID = ytLink; }
 
     // I'll trust you on this one Flafy :)
     const static std::regex youtube_regex(R"((?:youtube\.com\/.*[?&]v=|youtu\.be\/)([a-zA-Z0-9_-]{11}))");
     std::smatch match;
 
-    if (std::regex_search(ytLink, match, youtube_regex) && match.size() > 1) {
-        ytID = match.str(1);
-    }
+    if (std::regex_search(ytLink, match, youtube_regex) && match.size() > 1) { ytID = match.str(1); }
 
-    if (ytID.size() != YOUTUBE_VIDEO_ID_SIZE) {
-        return Err("Invalid YouTube video ID");
-    }
+    if (ytID.size() != YOUTUBE_VIDEO_ID_SIZE) { return Err("Invalid YouTube video ID"); }
 
     Nongs* nongs = NongManager::get().getNongs(m_songID).value();
-    auto song = YTSong{
-        SongMetadata{
+    auto song = YTSong {
+        SongMetadata {
             m_songID,
             m_replacedNong.has_value() ? m_replacedNong.value()->metadata()->uniqueID : jukebox::random_string(16),
             songName,
@@ -731,35 +702,26 @@ geode::Result<> NongAddPopup::addYTSong(const std::string& songName, const std::
     if (m_replacedNong.has_value()) {
         auto res = nongs->replaceSong(m_replacedNong.value()->metadata()->uniqueID, std::move(song));
 
-        if (res.isErr()) {
-            return Err("Failed to update song: {}", res.unwrapErr());
-        }
+        if (res.isErr()) { return Err("Failed to update song: {}", res.unwrapErr()); }
     } else {
         auto res = nongs->add(std::move(song));
 
-        if (res.isErr()) {
-            return Err("Failed to add song: {}", res.unwrapErr());
-        }
+        if (res.isErr()) { return Err("Failed to add song: {}", res.unwrapErr()); }
 
-        event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
+        event::ManualSongAdded().send(event::ManualSongAddedData {nongs, res.unwrap()});
     }
 
     return Ok();
 }
 
-geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const std::string& artistName,
-                                            const std::optional<std::string> levelName, int offset) {
-    if (songName.empty()) {
-        return Err("Song name is empty");
-    }
-    if (artistName.empty()) {
-        return Err("Artist name is empty");
-    }
+geode::Result<> NongAddPopup::addHostedSong(
+    const std::string& songName, const std::string& artistName, const std::optional<std::string> levelName, int offset
+) {
+    if (songName.empty()) { return Err("Song name is empty"); }
+    if (artistName.empty()) { return Err("Artist name is empty"); }
 
     const std::string hostedLink = m_specialInput->getString();
-    if (strlen(hostedLink.c_str()) == 0) {
-        return Err("No URL specified");
-    }
+    if (strlen(hostedLink.c_str()) == 0) { return Err("No URL specified"); }
 
     std::string id;
 
@@ -771,34 +733,32 @@ geode::Result<> NongAddPopup::addHostedSong(const std::string& songName, const s
 
     Nongs* nongs = NongManager::get().getNongs(m_songID).value();
 
-    HostedSong song = HostedSong{SongMetadata{
-                                     m_songID,
-                                     id,
-                                     songName,
-                                     artistName,
-                                     levelName,
-                                     offset,
-                                 },
-                                 hostedLink, std::nullopt};
+    HostedSong song = HostedSong {
+        SongMetadata {
+            m_songID,
+            id,
+            songName,
+            artistName,
+            levelName,
+            offset,
+        },
+        hostedLink, std::nullopt
+    };
 
     if (m_replacedNong.has_value()) {
         auto res = nongs->replaceSong(id, std::move(song));
 
-        if (res.isErr()) {
-            return Err("Failed to update song: {}", res.unwrapErr());
-        }
+        if (res.isErr()) { return Err("Failed to update song: {}", res.unwrapErr()); }
     } else {
         auto res = nongs->add(std::move(song));
 
-        if (res.isErr()) {
-            return Err("Failed to create song: {}", res.unwrapErr());
-        }
+        if (res.isErr()) { return Err("Failed to create song: {}", res.unwrapErr()); }
 
         if (auto commitRes = nongs->commit(); commitRes.isErr()) {
             return Err("Failed to save song data: {}", commitRes.unwrapErr());
         }
 
-        event::ManualSongAdded().send(event::ManualSongAddedData{nongs, res.unwrap()});
+        event::ManualSongAdded().send(event::ManualSongAddedData {nongs, res.unwrap()});
     }
     return Ok();
 }
@@ -808,7 +768,8 @@ bool NongAddPopup::isPathValidSong(const std::filesystem::path& song) const {
 
     FMOD::Sound* sound = nullptr;
     const FMOD_RESULT result = FMODAudioEngine::sharedEngine()->m_system->createSound(
-        stringPath.c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
+        stringPath.c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound
+    );
 
     if (result == FMOD_OK) {
         sound->release();
@@ -833,12 +794,13 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     // Thanks to undefined06855 for most of this stuff
     // https://github.com/undefined06855/EditorMusic/blob/main/src/AudioManager.cpp
 
-    NongAddPopup::ParsedMetadata ret{};
+    NongAddPopup::ParsedMetadata ret {};
     FMOD::Sound* sound;
     FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
 
-    FMOD_RESULT result = system->createSound(asp::fs::Path::fromStdPath(path).string().c_str(),
-                                             FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound);
+    FMOD_RESULT result = system->createSound(
+        asp::fs::Path::fromStdPath(path).string().c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound
+    );
 
     if (!sound || result != FMOD_OK) {
         geode::log::warn("FMOD error when reading file {}: {}", path, FMOD_ErrorString(result));
@@ -862,12 +824,8 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
         artistResult = sound->getTag(WAV_ARTIST_TAG, 0, &artistTag);
     }
 
-    if (nameResult != FMOD_ERR_TAGNOTFOUND) {
-        ret.name = parseFromFMODTag(nameTag);
-    }
-    if (artistResult != FMOD_ERR_TAGNOTFOUND) {
-        ret.artist = parseFromFMODTag(artistTag);
-    }
+    if (nameResult != FMOD_ERR_TAGNOTFOUND) { ret.name = parseFromFMODTag(nameTag); }
+    if (artistResult != FMOD_ERR_TAGNOTFOUND) { ret.artist = parseFromFMODTag(artistTag); }
 
     return ret;
 }

@@ -1,7 +1,8 @@
+#include <string>
+
 #include <Geode/binding/LevelSelectLayer.hpp>
 #include <Geode/binding/LevelTools.hpp>
 #include <Geode/binding/MenuLayer.hpp>
-#include <string>
 #include <Geode/modify/LevelSelectLayer.hpp>  // IWYU pragma: keep
 #include <Geode/modify/LevelTools.hpp>        // IWYU pragma: keep
 #include <Geode/modify/MenuLayer.hpp>         // IWYU pragma: keep
@@ -31,14 +32,10 @@ class $modify(LevelTools) {
     // }
 
     static std::string getAudioTitle(int id) {
-        if (g_disableTitleOverride || !NongManager::get().initialized()) {
-            return LevelTools::getAudioTitle(id);
-        }
+        if (g_disableTitleOverride || !NongManager::get().initialized()) { return LevelTools::getAudioTitle(id); }
         int searchID = -id - 1;
         std::optional<Nongs*> res = NongManager::get().getNongs(searchID);
-        if (res.has_value()) {
-            return res.value()->active()->metadata()->name;
-        }
+        if (res.has_value()) { return res.value()->active()->metadata()->name; }
         return LevelTools::getAudioTitle(id);
     }
 };

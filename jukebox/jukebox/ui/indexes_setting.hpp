@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/loader/SettingV3.hpp>
 #include <matjson.hpp>
 
@@ -24,8 +24,9 @@ struct Indexes {
 
 class IndexSetting : public geode::SettingBaseValueV3<Indexes> {
 public:
-    static geode::Result<std::shared_ptr<SettingV3>> parse(const std::string& key, const std::string& modID,
-                                                           const matjson::Value& json);
+    static geode::Result<std::shared_ptr<SettingV3>> parse(
+        const std::string& key, const std::string& modID, const matjson::Value& json
+    );
 
     geode::SettingNodeV3* createNode(float width) override;
 };
@@ -42,12 +43,12 @@ public:
 
 }  // namespace jukebox
 
-template <>
+template<>
 struct geode::SettingTypeForValueType<jukebox::Indexes> {
     using SettingType = jukebox::IndexSetting;
 };
 
-template <>
+template<>
 struct matjson::Serialize<jukebox::Indexes> {
     static matjson::Value toJson(const jukebox::Indexes& value) {
         matjson::Value arr = matjson::Value::array();

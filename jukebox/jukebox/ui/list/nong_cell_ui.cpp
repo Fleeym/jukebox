@@ -1,32 +1,35 @@
 #include <jukebox/ui/list/nong_cell_ui.hpp>
 
+#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/ui/Label.hpp>
-#include <Geode/ui/NineSlice.hpp>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
 #include <Geode/cocos/platform/CCPlatformMacros.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <ccTypes.h>
-#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
-#include <Geode/mapping/CCClippingNode.hpp>
-#include <Geode/mapping/CCProgressTimer.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/mapping/CCClippingNode.hpp>
+#include <Geode/mapping/CCProgressTimer.hpp>
+#include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
+#include <Geode/ui/NineSlice.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
+#include <ccTypes.h>
 
 using namespace geode::prelude;
 
 namespace jukebox {
 
-bool NongCellUI::init(const cocos2d::CCSize& size, geode::Function<void()> onSelect, geode::Function<void()> onTrash,
-                      geode::Function<void()> onFixDefault, geode::Function<void()> onDownload,
-                      geode::Function<void()> onEdit) {
-    if (!CCNode::init()) {
-        return false;
-    }
+bool NongCellUI::init(
+    const cocos2d::CCSize& size,
+    geode::Function<void()> onSelect,
+    geode::Function<void()> onTrash,
+    geode::Function<void()> onFixDefault,
+    geode::Function<void()> onDownload,
+    geode::Function<void()> onEdit
+) {
+    if (!CCNode::init()) { return false; }
 
     m_size = size;
     m_onSelect = std::move(onSelect);
@@ -39,9 +42,7 @@ bool NongCellUI::init(const cocos2d::CCSize& size, geode::Function<void()> onSel
 }
 
 void NongCellUI::build() {
-    if (this->getChildrenCount() > 0) {
-        this->removeAllChildrenWithCleanup(true);
-    }
+    if (this->getChildrenCount() > 0) { this->removeAllChildrenWithCleanup(true); }
 
     this->setContentSize(m_size);
     this->setAnchorPoint({0.5f, 0.5f});
@@ -62,21 +63,23 @@ void NongCellUI::build() {
         // Create outline shape
         NineSlice* outlineStencil = NineSlice::create("square02b_001.png");
         outlineStencil->setScale(0.4f);
-        outlineStencil->setContentSize((m_size + CCPoint{OUTLINE_SIZE, OUTLINE_SIZE}) / outlineStencil->getScale());
+        outlineStencil->setContentSize((m_size + CCPoint {OUTLINE_SIZE, OUTLINE_SIZE}) / outlineStencil->getScale());
 
         // Create text background shape
         NineSlice* textBgStencil = NineSlice::create("square02b_001.png");
         textBgStencil->setScale(0.4f);
         textBgStencil->setContentSize(
-            (CCPoint{verifiedLabel->getScaledContentWidth() + 5, verifiedLabel->getScaledContentHeight() * 2 + 4}) /
-            textBgStencil->getScale());
+            (CCPoint {verifiedLabel->getScaledContentWidth() + 5, verifiedLabel->getScaledContentHeight() * 2 + 4}) /
+            textBgStencil->getScale()
+        );
 
         // Combine the shapes into a single stencil node
         CCNode* stencilNode = CCNode::create();
         stencilNode->addChildAtPosition(outlineStencil, Anchor::Center);
         stencilNode->addChildAtPosition(
             textBgStencil, Anchor::TopRight,
-            {(m_size.width + OUTLINE_SIZE - textBgStencil->getScaledContentWidth()) / 2.f, m_size.height / 2.f});
+            {(m_size.width + OUTLINE_SIZE - textBgStencil->getScaledContentWidth()) / 2.f, m_size.height / 2.f}
+        );
 
         // Create the clip node based on the sprite
         CCClippingNode* clipNode = CCClippingNode::create(stencilNode);
@@ -116,9 +119,7 @@ void NongCellUI::build() {
     m_songNameLabel->setScale(0.6f);
     m_songNameLabel->setID("song-info-label");
 
-    if (m_isSelected) {
-        m_songNameLabel->setColor({188, 254, 206});
-    }
+    if (m_isSelected) { m_songNameLabel->setColor({188, 254, 206}); }
 
     m_authorNameLabel = geode::Label::create(m_authorName, "goldFont.fnt");
     m_authorNameLabel->setAnchorPoint({0.0f, 0.5f});
@@ -133,15 +134,15 @@ void NongCellUI::build() {
 
     m_songInfoNode->addChild(m_songNameLabel);
     m_songInfoNode->addChild(m_authorNameLabel);
-    if (!m_metadata.empty()) {
-        m_songInfoNode->addChild(m_metadataLabel);
-    }
-    m_songInfoNode->setLayout(SimpleColumnLayout::create()
-                                  ->setMainAxisAlignment(MainAxisAlignment::Even)
-                                  ->setCrossAxisAlignment(CrossAxisAlignment::Start)
-                                  ->setMainAxisScaling(AxisScaling::ScaleDown)
-                                  ->setCrossAxisScaling(AxisScaling::ScaleDown)
-                                  ->setMinRelativeScale(0.1f));
+    if (!m_metadata.empty()) { m_songInfoNode->addChild(m_metadataLabel); }
+    m_songInfoNode->setLayout(
+        SimpleColumnLayout::create()
+            ->setMainAxisAlignment(MainAxisAlignment::Even)
+            ->setCrossAxisAlignment(CrossAxisAlignment::Start)
+            ->setMainAxisScaling(AxisScaling::ScaleDown)
+            ->setCrossAxisScaling(AxisScaling::ScaleDown)
+            ->setMinRelativeScale(0.1f)
+    );
     this->addChildAtPosition(m_songInfoNode, Anchor::Left, {PADDING_X, 0.0f});
 
     // Buttons menu
@@ -180,9 +181,7 @@ void NongCellUI::build() {
     // Fix Default button
     CCSprite* fixDefaultSprite = CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png");
     fixDefaultSprite->setScale(0.8f);
-    if (!m_isSelected) {
-        fixDefaultSprite->setColor({0x80, 0x80, 0x80});
-    }
+    if (!m_isSelected) { fixDefaultSprite->setColor({0x80, 0x80, 0x80}); }
     m_fixButton = CCMenuItemSpriteExtra::create(fixDefaultSprite, this, menu_selector(NongCellUI::onFixDefault));
     m_fixButton->setID("fix-button");
     m_buttonsMenu->addChild(m_fixButton);
@@ -192,8 +191,9 @@ void NongCellUI::build() {
     CCSprite* downloadCancelSprite = CCSprite::createWithSpriteFrameName("GJ_cancelDownloadBtn_001.png");
     downloadSprite->setScale(0.7f);
     downloadCancelSprite->setScale(0.7f);
-    m_downloadButton = CCMenuItemSpriteExtra::create(m_isDownloading ? downloadCancelSprite : downloadSprite, this,
-                                                     menu_selector(NongCellUI::onDownload));
+    m_downloadButton = CCMenuItemSpriteExtra::create(
+        m_isDownloading ? downloadCancelSprite : downloadSprite, this, menu_selector(NongCellUI::onDownload)
+    );
     m_downloadButton->setID("download-button");
     m_downloadButton->setVisible(!m_isDownloaded);
     m_buttonsMenu->addChild(m_downloadButton);
@@ -261,12 +261,19 @@ void NongCellUI::onFixDefault(CCObject*) { m_onFixDefault(); }
 void NongCellUI::onDownload(CCObject*) { m_onDownload(); }
 void NongCellUI::onEdit(CCObject*) { m_onEdit(); }
 
-NongCellUI* NongCellUI::create(const cocos2d::CCSize& size, geode::Function<void()> onSelect,
-                               geode::Function<void()> onTrash, geode::Function<void()> onFixDefault,
-                               geode::Function<void()> onDownload, geode::Function<void()> onEdit) {
+NongCellUI* NongCellUI::create(
+    const cocos2d::CCSize& size,
+    geode::Function<void()> onSelect,
+    geode::Function<void()> onTrash,
+    geode::Function<void()> onFixDefault,
+    geode::Function<void()> onDownload,
+    geode::Function<void()> onEdit
+) {
     auto ret = new NongCellUI();
-    if (ret->init(size, std::move(onSelect), std::move(onTrash), std::move(onFixDefault), std::move(onDownload),
-                  std::move(onEdit))) {
+    if (ret->init(
+            size, std::move(onSelect), std::move(onTrash), std::move(onFixDefault), std::move(onDownload),
+            std::move(onEdit)
+        )) {
         return ret;
     }
 

@@ -1,15 +1,15 @@
 #include <jukebox/hooks/music_download_manager.hpp>
-#include <asp/fs/std.hpp>
 
 #include <optional>
+#include <string>
 
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
-#include <string>
 #include <Geode/loader/Log.hpp>
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
 #include <asp/fs/fs.hpp>
+#include <asp/fs/std.hpp>
 
 #include <jukebox/events/get_song_info.hpp>
 #include <jukebox/managers/nong_manager.hpp>
@@ -20,9 +20,7 @@ using namespace jukebox;
 std::string JBMusicDownloadManager::pathForSong(int id) {
     NongManager::get().m_currentlyPreparingNong = std::nullopt;
     std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
-    if (!nongs.has_value()) {
-        return MusicDownloadManager::pathForSong(id);
-    }
+    if (!nongs.has_value()) { return MusicDownloadManager::pathForSong(id); }
     Nongs* value = nongs.value();
     Song* active = value->active();
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(active->path().value()))) {
@@ -37,37 +35,27 @@ void JBMusicDownloadManager::onGetSongInfoCompleted(std::string p1, std::string 
     m_fields->overrideSongInfo = true;
     MusicDownloadManager::onGetSongInfoCompleted(p1, p2);
     geode::Result<int> songIDRes = geode::utils::numFromString<int>(p2);
-    if (songIDRes.isErr()) {
-        return;
-    }
+    if (songIDRes.isErr()) { return; }
 
     int songID = songIDRes.unwrap();
 
     SongInfoObject* obj = this->getSongInfoObject(songID);
     m_fields->overrideSongInfo = false;
 
-    if (obj == nullptr) {
-        return;
-    }
+    if (obj == nullptr) { return; }
 
-    event::GetSongInfo(songID).send(event::GetSongInfoData{songID, obj->m_songName, obj->m_artistName});
+    event::GetSongInfo(songID).send(event::GetSongInfoData {songID, obj->m_songName, obj->m_artistName});
 }
 
 SongInfoObject* JBMusicDownloadManager::getSongInfoObject(int id) {
     auto og = MusicDownloadManager::getSongInfoObject(id);
-    if (og == nullptr) {
-        return og;
-    }
+    if (og == nullptr) { return og; }
 
-    if (m_fields->overrideSongInfo) {
-        return og;
-    }
+    if (m_fields->overrideSongInfo) { return og; }
 
     std::optional<Nongs*> opt = NongManager::get().getNongs(id);
 
-    if (!opt) {
-        return og;
-    }
+    if (!opt) { return og; }
 
     Nongs* res = opt.value();
     Song* active = res->active();

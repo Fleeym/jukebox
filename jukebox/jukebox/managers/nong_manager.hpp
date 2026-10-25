@@ -1,7 +1,5 @@
 #pragma once
 
-#include <asp/fs.hpp>
-#include <asp/fs/std.hpp>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -11,6 +9,8 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/file.hpp>
+#include <asp/fs.hpp>
+#include <asp/fs/std.hpp>
 
 #include <jukebox/nong/nong.hpp>
 
@@ -53,7 +53,8 @@ public:
     bool initialized() const { return m_initialized; }
 
     std::filesystem::path baseManifestPath() {
-        static std::filesystem::path path = std::filesystem::path(geode::Mod::get()->getSaveDir().native()) / "manifest";
+        static std::filesystem::path path =
+            std::filesystem::path(geode::Mod::get()->getSaveDir().native()) / "manifest";
         return path;
     }
 
@@ -144,8 +145,9 @@ public:
      * @param resourcesDir CCFileUtils::get()->getWritablePath2() / "Resources"
      * @param songDir CCFileUtils::get()->getWritablePath()
      */
-    arc::Future<std::string> getMultiAssetSizes(std::string songs, std::string sfx, std::filesystem::path resourcesDir,
-                                                std::filesystem::path songDir);
+    arc::Future<std::string> getMultiAssetSizes(
+        std::string songs, std::string sfx, std::filesystem::path resourcesDir, std::filesystem::path songDir
+    );
 
     /**
      * Add actions needed to fix a broken song default
@@ -189,8 +191,9 @@ public:
     /**
      * Get a path to a song file
      */
-    std::filesystem::path generateSongFilePath(const std::string& extension,
-                                               std::optional<std::string> filename = std::nullopt);
+    std::filesystem::path generateSongFilePath(
+        const std::string& extension, std::optional<std::string> filename = std::nullopt
+    );
 
     static NongManager& get() {
         static NongManager instance;

@@ -1,11 +1,11 @@
 #include <jukebox/ui/list/index_cell.hpp>
 
+#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
-#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
-#include <Geode/binding/CCMenuItemToggler.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/NineSlice.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
@@ -17,11 +17,10 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete,
-                     CCSize const& size) {
-    if (!CCNode::init()) {
-        return false;
-    }
+bool IndexCell::init(
+    IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete, CCSize const& size
+) {
+    if (!CCNode::init()) { return false; }
 
     static constexpr float HORIZONTAL_PADDING = 2.5f;
 
@@ -30,7 +29,7 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, geode::Funct
     m_onDelete = std::move(onDelete);
 
     this->setContentSize(size);
-    this->setAnchorPoint(CCPoint{0.5f, 0.5f});
+    this->setAnchorPoint(CCPoint {0.5f, 0.5f});
 
     auto bg = NineSlice::create("square02b_001.png");
     bg->setColor({0, 0, 0});
@@ -58,8 +57,8 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, geode::Funct
 
     auto buttonsMenu = CCMenu::create();
     buttonsMenu->addChild(m_toggleButton);
-    buttonsMenu->setAnchorPoint(CCPoint{1.0f, 0.5f});
-    buttonsMenu->setContentSize(CCSize{50.f, 30.f});
+    buttonsMenu->setAnchorPoint(CCPoint {1.0f, 0.5f});
+    buttonsMenu->setContentSize(CCSize {50.f, 30.f});
 
     if (m_index->m_userAdded) {
         auto sprite = CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png");
@@ -70,15 +69,18 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, geode::Funct
         m_buttonsSize += deleteButton->getScaledContentWidth();
     }
 
-    buttonsMenu->setLayout(SimpleRowLayout::create()
-                               ->setGap(5.0f)
-                               ->setMainAxisAlignment(MainAxisAlignment::Even)
-                               ->setMainAxisScaling(AxisScaling::ScaleDown)
-                               ->setCrossAxisScaling(AxisScaling::ScaleDown));
+    buttonsMenu->setLayout(
+        SimpleRowLayout::create()
+            ->setGap(5.0f)
+            ->setMainAxisAlignment(MainAxisAlignment::Even)
+            ->setMainAxisScaling(AxisScaling::ScaleDown)
+            ->setCrossAxisScaling(AxisScaling::ScaleDown)
+    );
     buttonsMenu->setID("button-menu");
 
-    auto inputNode = TextInput::create(size.width - HORIZONTAL_PADDING * 2 - buttonsMenu->getContentWidth(),
-                                       "Index url", "chatFont.fnt");
+    auto inputNode = TextInput::create(
+        size.width - HORIZONTAL_PADDING * 2 - buttonsMenu->getContentWidth(), "Index url", "chatFont.fnt"
+    );
     inputNode->setScale(1.f);
     inputNode->setCommonFilter(CommonFilter::Any);
     inputNode->setMaxCharCount(300);
@@ -90,16 +92,18 @@ bool IndexCell::init(IndexesPopup* parentPopup, IndexSource* index, geode::Funct
     menu->addChild(inputNode);
     menu->addChild(buttonsMenu);
 
-    menu->setLayout(SimpleRowLayout::create()
-                        ->setGap(5.0f)
-                        ->setMainAxisAlignment(MainAxisAlignment::Between)
-                        ->setMainAxisScaling(AxisScaling::Scale));
+    menu->setLayout(
+        SimpleRowLayout::create()
+            ->setGap(5.0f)
+            ->setMainAxisAlignment(MainAxisAlignment::Between)
+            ->setMainAxisScaling(AxisScaling::Scale)
+    );
     menu->setID("menu");
-    menu->setAnchorPoint(CCPoint{0.5f, 0.5f});
-    menu->setContentSize(CCSize{size.width - HORIZONTAL_PADDING * 2, size.height});
+    menu->setAnchorPoint(CCPoint {0.5f, 0.5f});
+    menu->setContentSize(CCSize {size.width - HORIZONTAL_PADDING * 2, size.height});
     menu->updateLayout();
 
-    this->addChildAtPosition(menu, Anchor::Center, CCPoint{0.0f, 0.0f});
+    this->addChildAtPosition(menu, Anchor::Center, CCPoint {0.0f, 0.0f});
     this->updateUI();
     return true;
 }
@@ -116,12 +120,11 @@ void IndexCell::onToggle(CCObject*) {
 
 void IndexCell::onDelete(CCObject*) { m_onDelete(); }
 
-IndexCell* IndexCell::create(IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete,
-                             CCSize const& size) {
+IndexCell* IndexCell::create(
+    IndexesPopup* parentPopup, IndexSource* index, geode::Function<void()> onDelete, CCSize const& size
+) {
     auto ret = new IndexCell();
-    if (ret->init(parentPopup, index, std::move(onDelete), size)) {
-        return ret;
-    }
+    if (ret->init(parentPopup, index, std::move(onDelete), size)) { return ret; }
     delete ret;
     return nullptr;
 }

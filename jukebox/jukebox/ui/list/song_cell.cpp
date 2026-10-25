@@ -1,12 +1,12 @@
 #include <jukebox/ui/list/song_cell.hpp>
 
-#include <Geode/ui/NineSlice.hpp>
+#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/ui/Label.hpp>
+#include <Geode/ui/Layout.hpp>
+#include <Geode/ui/NineSlice.hpp>
 #include <ccTypes.h>
 #include <fmt/format.h>
-#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
-#include <Geode/ui/Layout.hpp>
 
 #include <jukebox/nong/nong.hpp>
 
@@ -15,15 +15,13 @@ using namespace geode::prelude;
 namespace jukebox {
 
 bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size, geode::Function<void()> selectCallback) {
-    if (!CCNode::init()) {
-        return false;
-    }
+    if (!CCNode::init()) { return false; }
     m_songID = id;
     m_active = songInfo;
     m_callback = std::move(selectCallback);
 
     this->setContentSize(size);
-    this->setAnchorPoint(CCPoint{0.5f, 0.5f});
+    this->setAnchorPoint(CCPoint {0.5f, 0.5f});
 
     auto bg = NineSlice::create("square02b_001.png");
     bg->setColor({0, 0, 0});
@@ -47,7 +45,7 @@ bool SongCell::init(int id, SongMetadata* songInfo, const CCSize& size, geode::F
     auto idLabel = geode::Label::create(fmt::format("#{}", id), "chatFont.fnt");
     idLabel->setPosition({size.width - 5.f, 0 + 3.f});
     idLabel->setAnchorPoint({1.0f, 0.0f});
-    idLabel->setColor(ccColor3B{230, 230, 230});
+    idLabel->setColor(ccColor3B {230, 230, 230});
     idLabel->setScale(0.6f);
     m_songIDLabel = idLabel;
     this->addChild(idLabel);

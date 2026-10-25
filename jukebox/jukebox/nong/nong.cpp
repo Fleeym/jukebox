@@ -1,5 +1,4 @@
 #include <jukebox/nong/nong.hpp>
-#include <asp/fs/std.hpp>
 
 #include <filesystem>
 #include <memory>
@@ -8,14 +7,15 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
 #include <Geode/loader/Log.hpp>
-#include <Geode/utils/general.hpp>
 #include <Geode/utils/file.hpp>
+#include <Geode/utils/general.hpp>
 #include <asp/fs/fs.hpp>
+#include <asp/fs/std.hpp>
+#include <fmt/format.h>
 #include <matjson.hpp>
 
 #include <jukebox/download/hosted.hpp>
@@ -63,9 +63,7 @@ LocalSong::LocalSong(SongMetadata&& metadata, const std::filesystem::path& path)
 LocalSong::LocalSong(const LocalSong& other) : m_impl(std::make_unique<Impl>(*other.m_impl)) {}
 
 LocalSong& LocalSong::operator=(const LocalSong& other) {
-    if (this == &other) {
-        return *this;
-    }
+    if (this == &other) { return *this; }
 
     m_impl->m_path = other.m_impl->m_path;
     m_impl->m_metadata = std::make_unique<SongMetadata>(*other.m_impl->m_metadata);
@@ -82,13 +80,17 @@ std::optional<std::filesystem::path> LocalSong::path() const { return m_impl->pa
 void LocalSong::setPath(std::filesystem::path p) { m_impl->setPath(std::move(p)); }
 
 LocalSong LocalSong::createUnknown(const int songID) {
-    return LocalSong{SongMetadata{songID, random_string(16), "Unknown", ""},
-                     std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(songID))};
+    return LocalSong {
+        SongMetadata {songID, random_string(16), "Unknown", ""},
+        std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(songID))
+    };
 }
 
 LocalSong LocalSong::fromSongObject(const SongInfoObject* obj) {
-    return LocalSong{SongMetadata{obj->m_songID, random_string(16), obj->m_songName, obj->m_artistName},
-                     std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID))};
+    return LocalSong {
+        SongMetadata {obj->m_songID, random_string(16), obj->m_songName, obj->m_artistName},
+        std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID))
+    };
 }
 
 class YTSong::Impl {
@@ -101,8 +103,12 @@ private:
     std::optional<std::filesystem::path> m_path;
 
 public:
-    Impl(SongMetadata&& metadata, std::string youtubeID, std::optional<std::string> indexID,
-         std::optional<std::filesystem::path> path = std::nullopt)
+    Impl(
+        SongMetadata&& metadata,
+        std::string youtubeID,
+        std::optional<std::string> indexID,
+        std::optional<std::filesystem::path> path = std::nullopt
+    )
         : m_metadata(std::make_unique<SongMetadata>(metadata)),
           m_youtubeID(std::move(youtubeID)),
           m_indexID(std::move(indexID)),
@@ -134,16 +140,18 @@ public:
     void setPath(std::filesystem::path&& p) { m_path = p; }
 };
 
-YTSong::YTSong(SongMetadata&& metadata, std::string youtubeID, std::optional<std::string> indexID,
-               std::optional<std::filesystem::path> path)
+YTSong::YTSong(
+    SongMetadata&& metadata,
+    std::string youtubeID,
+    std::optional<std::string> indexID,
+    std::optional<std::filesystem::path> path
+)
     : m_impl(std::make_unique<Impl>(std::move(metadata), std::move(youtubeID), std::move(indexID), std::move(path))) {}
 
 YTSong::YTSong(const YTSong& other) : m_impl(std::make_unique<Impl>(*other.m_impl)) {}
 
 YTSong& YTSong::operator=(const YTSong& other) {
-    if (this == &other) {
-        return *this;
-    }
+    if (this == &other) { return *this; }
 
     m_impl->m_youtubeID = other.m_impl->m_youtubeID;
     m_impl->m_path = other.m_impl->m_path;
@@ -179,8 +187,12 @@ private:
     std::optional<std::filesystem::path> m_path;
 
 public:
-    Impl(SongMetadata&& metadata, std::string url, std::optional<std::string> indexID,
-         std::optional<std::filesystem::path> path = std::nullopt)
+    Impl(
+        SongMetadata&& metadata,
+        std::string url,
+        std::optional<std::string> indexID,
+        std::optional<std::filesystem::path> path = std::nullopt
+    )
         : m_metadata(std::make_unique<SongMetadata>(metadata)),
           m_url(std::move(url)),
           m_indexID(std::move(indexID)),
@@ -212,16 +224,18 @@ public:
     void setPath(std::filesystem::path&& p) { m_path = p; }
 };
 
-HostedSong::HostedSong(SongMetadata&& metadata, std::string url, std::optional<std::string> indexID,
-                       std::optional<std::filesystem::path> path)
+HostedSong::HostedSong(
+    SongMetadata&& metadata,
+    std::string url,
+    std::optional<std::string> indexID,
+    std::optional<std::filesystem::path> path
+)
     : m_impl(std::make_unique<Impl>(std::move(metadata), std::move(url), std::move(indexID), std::move(path))) {}
 
 HostedSong::HostedSong(const HostedSong& other) : m_impl(std::make_unique<Impl>(*other.m_impl)) {}
 
 HostedSong& HostedSong::operator=(const HostedSong& other) {
-    if (this == &other) {
-        return *this;
-    }
+    if (this == &other) { return *this; }
 
     m_impl->m_metadata = std::make_unique<SongMetadata>(*other.m_impl->m_metadata);
     m_impl->m_path = other.m_impl->m_path;
@@ -290,10 +304,9 @@ public:
 
         matjson::Value json = matjson::Serialize<Nongs>::toJson(*self);
 
-        auto writeRes = geode::utils::file::writeString(asp::fs::Path::fromStdPath(path), json.dump(matjson::NO_INDENTATION));
-        if (writeRes.isErr()) {
-            return Err("Couldn't write manifest: {}", writeRes.unwrapErr());
-        }
+        auto writeRes =
+            geode::utils::file::writeString(asp::fs::Path::fromStdPath(path), json.dump(matjson::NO_INDENTATION));
+        if (writeRes.isErr()) { return Err("Couldn't write manifest: {}", writeRes.unwrapErr()); }
 
         return Ok();
     }
@@ -301,13 +314,9 @@ public:
     Result<> canSetActive(const std::string& uniqueID, const std::filesystem::path& path) const {
         const bool IS_DEFAULT = uniqueID == m_default->metadata()->uniqueID;
 
-        if (IS_DEFAULT) {
-            return Ok();
-        }
+        if (IS_DEFAULT) { return Ok(); }
 
-        if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
-            return Err("Song doesn't exist on disk");
-        }
+        if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) { return Err("Song doesn't exist on disk"); }
 
         return Ok();
     }
@@ -315,47 +324,37 @@ public:
     Result<> setActive(const std::string& uniqueID, Nongs* self) {
         if (const std::optional<LocalSong*> song = this->getLocalFromID(uniqueID)) {
             Result<> res = this->canSetActive(uniqueID, song.value()->path().value());
-            if (res.isErr()) {
-                return res;
-            }
+            if (res.isErr()) { return res; }
 
             m_active = song.value();
 
             if (NongManager::get().initialized()) {
-                event::SongStateChanged().send(event::SongStateChangedData{self});
+                event::SongStateChanged().send(event::SongStateChangedData {self});
             }
 
             return Ok();
         }
 
         if (const std::optional<YTSong*> song = this->getYTFromID(uniqueID)) {
-            if (!song.value()->path()) {
-                return Err("Song is not downloaded");
-            }
+            if (!song.value()->path()) { return Err("Song is not downloaded"); }
             Result<> res = this->canSetActive(uniqueID, song.value()->path().value());
-            if (res.isErr()) {
-                return res;
-            }
+            if (res.isErr()) { return res; }
 
             m_active = song.value();
             if (NongManager::get().initialized()) {
-                event::SongStateChanged().send(event::SongStateChangedData{self});
+                event::SongStateChanged().send(event::SongStateChangedData {self});
             }
             return Ok();
         }
 
         if (const std::optional<HostedSong*> song = this->getHostedFromID(uniqueID)) {
-            if (!song.value()->path()) {
-                return Err("Song is not downloaded");
-            }
+            if (!song.value()->path()) { return Err("Song is not downloaded"); }
             Result<> res = this->canSetActive(uniqueID, song.value()->path().value());
-            if (res.isErr()) {
-                return res;
-            }
+            if (res.isErr()) { return res; }
 
             m_active = song.value();
             if (NongManager::get().initialized()) {
-                event::SongStateChanged().send(event::SongStateChangedData{self});
+                event::SongStateChanged().send(event::SongStateChangedData {self});
             }
             return Ok();
         }
@@ -364,68 +363,51 @@ public:
     }
 
     Result<> merge(Nongs&& other) {
-        if (other.songID() != m_songID) {
-            return Err("Merging with NONGs of a different song ID");
-        }
+        if (other.songID() != m_songID) { return Err("Merging with NONGs of a different song ID"); }
 
         for (const std::unique_ptr<LocalSong>& i : other.locals()) {
-            if (i->path() == other.defaultSong()->path()) {
-                continue;
-            }
+            if (i->path() == other.defaultSong()->path()) { continue; }
             m_locals.emplace_back(std::make_unique<LocalSong>(*i));
         }
 
-        for (const auto& i : other.youtube()) {
-            m_youtube.emplace_back(std::make_unique<YTSong>(*i));
-        }
+        for (const auto& i : other.youtube()) { m_youtube.emplace_back(std::make_unique<YTSong>(*i)); }
 
-        for (const auto& i : other.hosted()) {
-            m_hosted.emplace_back(std::make_unique<HostedSong>(*i));
-        }
+        for (const auto& i : other.hosted()) { m_hosted.emplace_back(std::make_unique<HostedSong>(*i)); }
 
         return Ok();
     }
 
     Result<> deleteAllSongs(Nongs* self) {
-        for (std::unique_ptr<LocalSong>& local : m_locals) {
-            this->deletePath(local->path());
-        }
+        for (std::unique_ptr<LocalSong>& local : m_locals) { this->deletePath(local->path()); }
         m_locals.clear();
 
-        for (std::unique_ptr<YTSong>& youtube : m_youtube) {
-            this->deletePath(youtube->path());
-        }
+        for (std::unique_ptr<YTSong>& youtube : m_youtube) { this->deletePath(youtube->path()); }
         m_youtube.clear();
 
-        for (std::unique_ptr<HostedSong>& hosted : m_hosted) {
-            this->deletePath(hosted->path());
-        }
+        for (std::unique_ptr<HostedSong>& hosted : m_hosted) { this->deletePath(hosted->path()); }
         m_hosted.clear();
 
         m_active = m_default.get();
-        event::SongStateChanged().send(event::SongStateChangedData{self});
+        event::SongStateChanged().send(event::SongStateChangedData {self});
 
         return Ok();
     }
 
     Result<> deleteSong(const std::string& uniqueID, bool audio, Nongs* self) {
-        if (m_default->metadata()->uniqueID == uniqueID) {
-            return Err("Cannot delete default song");
-        }
+        if (m_default->metadata()->uniqueID == uniqueID) { return Err("Cannot delete default song"); }
 
         if (m_active->metadata()->uniqueID == uniqueID) {
-            GEODE_UNWRAP(this->setActive(m_default->metadata()->uniqueID, self)
-                             .mapErr([](std::string err) { return fmt::format("Failed to reset active song: {}", err); }));
+            GEODE_UNWRAP(this->setActive(m_default->metadata()->uniqueID, self).mapErr([](std::string err) {
+                return fmt::format("Failed to reset active song: {}", err);
+            }));
         }
 
         for (auto i = m_locals.begin(); i != m_locals.end(); ++i) {
             if ((*i)->metadata()->uniqueID == uniqueID) {
-                if (audio) {
-                    this->deletePath((*i)->path());
-                }
+                if (audio) { this->deletePath((*i)->path()); }
                 m_locals.erase(i);
                 if (NongManager::get().initialized()) {
-                    event::NongDeleted(m_songID).send(event::NongDeletedData{m_songID, uniqueID});
+                    event::NongDeleted(m_songID).send(event::NongDeletedData {m_songID, uniqueID});
                 }
                 return Ok();
             }
@@ -433,12 +415,10 @@ public:
 
         for (auto i = m_youtube.begin(); i != m_youtube.end(); ++i) {
             if ((*i)->metadata()->uniqueID == uniqueID) {
-                if (audio) {
-                    this->deletePath((*i)->path());
-                }
+                if (audio) { this->deletePath((*i)->path()); }
                 m_youtube.erase(i);
                 if (NongManager::get().initialized()) {
-                    event::NongDeleted(m_songID).send(event::NongDeletedData{m_songID, uniqueID});
+                    event::NongDeleted(m_songID).send(event::NongDeletedData {m_songID, uniqueID});
                 }
                 return Ok();
             }
@@ -446,12 +426,10 @@ public:
 
         for (auto i = m_hosted.begin(); i != m_hosted.end(); ++i) {
             if ((*i)->metadata()->uniqueID == uniqueID) {
-                if (audio) {
-                    this->deletePath((*i)->path());
-                }
+                if (audio) { this->deletePath((*i)->path()); }
                 m_hosted.erase(i);
                 if (NongManager::get().initialized()) {
-                    event::NongDeleted(m_songID).send(event::NongDeletedData{m_songID, uniqueID});
+                    event::NongDeleted(m_songID).send(event::NongDeletedData {m_songID, uniqueID});
                 }
                 return Ok();
             }
@@ -461,18 +439,12 @@ public:
     }
 
     Result<> deleteSongAudio(const std::string& uniqueID) {
-        if (m_default->metadata()->uniqueID == uniqueID) {
-            return Err("Cannot delete audio of the default song");
-        }
+        if (m_default->metadata()->uniqueID == uniqueID) { return Err("Cannot delete audio of the default song"); }
 
-        if (m_active->metadata()->uniqueID == uniqueID) {
-            m_active = m_default.get();
-        }
+        if (m_active->metadata()->uniqueID == uniqueID) { m_active = m_default.get(); }
 
         for (const auto& m_local : m_locals) {
-            if (m_local->metadata()->uniqueID == uniqueID) {
-                return Err("Cannot delete audio of local songs");
-            }
+            if (m_local->metadata()->uniqueID == uniqueID) { return Err("Cannot delete audio of local songs"); }
         }
 
         for (const auto& i : m_youtube) {
@@ -493,14 +465,10 @@ public:
     }
 
     [[nodiscard]] std::optional<LocalSong*> getLocalFromID(const std::string_view uniqueID) const {
-        if (m_default->metadata()->uniqueID == uniqueID) {
-            return m_default.get();
-        }
+        if (m_default->metadata()->uniqueID == uniqueID) { return m_default.get(); }
 
         for (const std::unique_ptr<LocalSong>& i : m_locals) {
-            if (i->metadata()->uniqueID == uniqueID) {
-                return i.get();
-            }
+            if (i->metadata()->uniqueID == uniqueID) { return i.get(); }
         }
 
         return std::nullopt;
@@ -508,9 +476,7 @@ public:
 
     [[nodiscard]] std::optional<YTSong*> getYTFromID(const std::string_view uniqueID) const {
         for (const std::unique_ptr<YTSong>& i : m_youtube) {
-            if (i->metadata()->uniqueID == uniqueID) {
-                return i.get();
-            }
+            if (i->metadata()->uniqueID == uniqueID) { return i.get(); }
         }
 
         return std::nullopt;
@@ -518,35 +484,25 @@ public:
 
     [[nodiscard]] std::optional<HostedSong*> getHostedFromID(const std::string_view uniqueID) const {
         for (const std::unique_ptr<HostedSong>& i : m_hosted) {
-            if (i->metadata()->uniqueID == uniqueID) {
-                return i.get();
-            }
+            if (i->metadata()->uniqueID == uniqueID) { return i.get(); }
         }
 
         return std::nullopt;
     }
 
     [[nodiscard]] std::optional<Song*> findSong(const std::string& uniqueID) const {
-        if (m_default->metadata()->uniqueID == uniqueID) {
-            return m_default.get();
-        }
+        if (m_default->metadata()->uniqueID == uniqueID) { return m_default.get(); }
 
         for (const auto& i : m_locals) {
-            if (i->metadata()->uniqueID == uniqueID) {
-                return i.get();
-            }
+            if (i->metadata()->uniqueID == uniqueID) { return i.get(); }
         }
 
         for (const auto& i : m_youtube) {
-            if (i->metadata()->uniqueID == uniqueID) {
-                return i.get();
-            }
+            if (i->metadata()->uniqueID == uniqueID) { return i.get(); }
         }
 
         for (const auto& i : m_hosted) {
-            if (i->metadata()->uniqueID == uniqueID) {
-                return i.get();
-            }
+            if (i->metadata()->uniqueID == uniqueID) { return i.get(); }
         }
 
         return std::nullopt;
@@ -555,9 +511,7 @@ public:
     Result<> replaceSong(const std::string& id, LocalSong&& song, Nongs* self) {
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
-        if (!opt) {
-            return Err("NONG ID {} not found", id);
-        }
+        if (!opt) { return Err("NONG ID {} not found", id); }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
 
@@ -579,9 +533,7 @@ public:
     Result<> replaceSong(const std::string& id, YTSong&& song, Nongs* self) {
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
-        if (!opt) {
-            return Err("NONG ID {} not found", id);
-        }
+        if (!opt) { return Err("NONG ID {} not found", id); }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
 
@@ -605,9 +557,7 @@ public:
     Result<> replaceSong(const std::string& id, HostedSong&& song, Nongs* self) {
         const bool isActive = m_active->metadata()->uniqueID == id;
         const std::optional<Song*> opt = this->findSong(id);
-        if (!opt) {
-            return Err("NONG ID {} not found", id);
-        }
+        if (!opt) { return Err("NONG ID {} not found", id); }
         const Song* prevNong = opt.value();
         const std::optional<std::filesystem::path> prevPath = prevNong->path();
 
@@ -674,19 +624,13 @@ public:
     Result<> registerIndexSong(IndexSongMetadata* song) {
         bool hasSongID = false;
         for (const int id : song->songIDs) {
-            if (id == m_songID) {
-                hasSongID = true;
-            }
+            if (id == m_songID) { hasSongID = true; }
         }
 
-        if (!hasSongID) {
-            return Err("Index song {} doesn't apply for ID {}", song->uniqueID, m_songID);
-        }
+        if (!hasSongID) { return Err("Index song {} doesn't apply for ID {}", song->uniqueID, m_songID); }
 
         for (const IndexSongMetadata* i : m_indexSongs) {
-            if (i == song) {
-                return Err("Song {} already registered for ID {}", song->uniqueID, m_songID);
-            }
+            if (i == song) { return Err("Song {} already registered for ID {}", song->uniqueID, m_songID); }
         }
 
         m_indexSongs.push_back(song);

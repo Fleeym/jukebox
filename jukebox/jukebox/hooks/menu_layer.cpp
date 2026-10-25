@@ -1,20 +1,18 @@
 #include <string>
-#include <asp/fs/std.hpp>
 
-#include <fmt/core.h>
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/MenuLayer.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/modify/MenuLayer.hpp>  // IWYU pragma: keep
 #include <Geode/modify/Modify.hpp>
+#include <asp/fs/std.hpp>
+#include <fmt/core.h>
 
 using namespace geode::prelude;
 
 class $modify(JBMenuLayer, MenuLayer) {
     bool init() {
-        if (!MenuLayer::init()) {
-            return false;
-        }
+        if (!MenuLayer::init()) { return false; }
 
         if (Mod::get()->getSavedValue<bool>("failed-load", false)) {
             Mod::get()->setSavedValue("failed-load", false);
@@ -23,9 +21,9 @@ class $modify(JBMenuLayer, MenuLayer) {
                 "none of your saved songs have been loaded. Please check "
                 "<cb>{}</c> for any created backups and report this to me on "
                 "my Discord (fleeym)",
-                std::filesystem::path(Mod::get()->getSaveDir().native()) / "backups");
-            FLAlertLayer* popup =
-                FLAlertLayer::create("Jukebox", content.c_str(), "Ok");
+                std::filesystem::path(Mod::get()->getSaveDir().native()) / "backups"
+            );
+            FLAlertLayer* popup = FLAlertLayer::create("Jukebox", content.c_str(), "Ok");
             popup->m_scene = this;
             popup->show();
         }

@@ -1,5 +1,4 @@
 #include <jukebox/managers/index_manager.hpp>
-#include <asp/fs/std.hpp>
 
 #include <filesystem>
 #include <functional>
@@ -10,7 +9,6 @@
 #include <variant>
 #include <vector>
 
-#include <fmt/format.h>
 #include <Geode/Result.hpp>
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/loader/Event.hpp>
@@ -22,6 +20,8 @@
 #include <Geode/utils/web.hpp>
 #include <arc/future/Future.hpp>
 #include <asp/fs/fs.hpp>
+#include <asp/fs/std.hpp>
+#include <fmt/format.h>
 #include <matjson.hpp>
 
 #include <jukebox/download/hosted.hpp>
@@ -46,11 +46,10 @@ using namespace arc;
 namespace jukebox {
 
 bool IndexManager::init() {
-    if (m_initialized) {
-        return true;
-    }
+    if (m_initialized) { return true; }
 
-    if (const std::filesystem::path path = this->baseIndexesPath(); !asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
+    if (const std::filesystem::path path = this->baseIndexesPath();
+        !asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
         auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
         if (createDirRes.isErr()) {
             log::error("Failed to create indexes directory {}: {}", path, createDirRes.unwrapErr());
@@ -58,9 +57,7 @@ bool IndexManager::init() {
     }
 
     async::spawn(this->fetchIndexes(), [](Result<> result) {
-        if (GEODE_UNWRAP_IF_ERR(err, result)) {
-            log::error("Failed to start fetching indexes: {}", err);
-        }
+        if (GEODE_UNWRAP_IF_ERR(err, result)) { log::error("Failed to start fetching indexes: {}", err); }
     });
 
     event::StartDownload()
@@ -68,7 +65,8 @@ bool IndexManager::init() {
             Result<> res = this->downloadSong(event.gdId(), event.uniqueID());
             if (res.isErr()) {
                 event::SongDownloadFailed().send(
-                    event::SongDownloadFailedData{event.gdId(), std::string(event.uniqueID()), res.unwrapErr()});
+                    event::SongDownloadFailedData {event.gdId(), std::string(event.uniqueID()), res.unwrapErr()}
+                );
             }
         })
         .leak();
@@ -80,7 +78,8 @@ bool IndexManager::init() {
                 const int gdId = std::get<int>(it->second);
                 auto uniqueID = std::get<std::string>(it->second);
                 event::SongDownloadProgress(gdId).send(
-                    event::SongDownloadProgressData{gdId, std::move(uniqueID), event.progress()});
+                    event::SongDownloadProgressData {gdId, std::move(uniqueID), event.progress()}
+                );
             }
         })
         .leak();
@@ -100,9 +99,7 @@ std::filesystem::path IndexManager::baseIndexesPath() {
 }
 
 Result<> IndexManager::loadIndex(std::filesystem::path path) {
-    if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
-        return Err("Index file does not exist");
-    }
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) { return Err("Index file does not exist"); }
 
     GEODE_UNWRAP_INTO(matjson::Value jsonObj, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)));
 
@@ -160,7 +157,7 @@ Result<> IndexManager::loadIndex(matjson::Value&& jsonObj) {
 
     for (const auto& [key, hostedNong] : jsonObj["nongs"]["hosted"]) {
         GEODE_UNWRAP_OR_ELSE(r, err, hostedNong.as<IndexSongMetadata>()) {
-            event::SongError().send(event::SongErrorData{false, fmt::format("Failed to parse index song: {}", err)});
+            event::SongError().send(event::SongErrorData {false, fmt::format("Failed to parse index song: {}", err)});
             continue;
         }
 
@@ -176,15 +173,14 @@ Result<> IndexManager::loadIndex(matjson::Value&& jsonObj) {
                 m_nongsForId[id].push_back(song.get());
             }
             std::optional<Nongs*> opt = NongManager::get().getNongs(id);
-            if (!opt.has_value()) {
-                continue;
-            }
+            if (!opt.has_value()) { continue; }
 
             Nongs* nongs = opt.value();
 
             if (GEODE_UNWRAP_IF_ERR(err, nongs->registerIndexSong(song.get()))) {
                 event::SongError().send(
-                    event::SongErrorData{false, fmt::format("Failed to register index song: {}", err)});
+                    event::SongErrorData {false, fmt::format("Failed to register index song: {}", err)}
+                );
             }
         }
 
@@ -208,7 +204,8 @@ Future<Result<>> IndexManager::fetchIndexes() {
                 log::warn(
                     "Skipping default index {} provided by Jukebox, as it is "
                     "disabled",
-                    index.m_url);
+                    index.m_url
+                );
             } else {
                 log::info("Skipping index {}, as it is disabled", index.m_url);
             }
@@ -255,8 +252,9 @@ Future<Result<>> IndexManager::fetchIndexes() {
                 co_await this->onIndexFetched(url, std::move(refetched).value(), true);
             } else {
                 // this should never fail
-                log::error("Index {} return std::nullopt even with forceFresh = true. You are very lucky!",
-                           index.m_url);
+                log::error(
+                    "Index {} return std::nullopt even with forceFresh = true. You are very lucky!", index.m_url
+                );
             }
             continue;
         }
@@ -293,9 +291,7 @@ Future<Result<std::optional<matjson::Value>>> IndexManager::fetchIndex(const Ind
         co_return Ok(std::nullopt);
     }
 
-    if (!response.ok()) {
-        co_return Err(utils::web::getErrorFromResponse(response));
-    }
+    if (!response.ok()) { co_return Err(utils::web::getErrorFromResponse(response)); }
 
     ARC_CO_UNWRAP_INTO(matjson::Value jsonObj, response.json());
 
@@ -303,8 +299,9 @@ Future<Result<std::optional<matjson::Value>>> IndexManager::fetchIndex(const Ind
 
     ARC_CO_UNWRAP(matjson::Serialize<IndexMetadata>::fromJson(jsonObj));
 
-    this->setLastModifiedForIndex(index.m_url,
-                                  response.header("Last-Modified").transform([](auto v) { return std::string(v); }));
+    this->setLastModifiedForIndex(index.m_url, response.header("Last-Modified").transform([](auto v) {
+        return std::string(v);
+    }));
     this->setEtagForIndex(index.m_url, response.header("etag").transform([](auto v) { return std::string(v); }));
 
     co_return Ok(std::move(jsonObj));
@@ -313,12 +310,11 @@ Future<Result<std::optional<matjson::Value>>> IndexManager::fetchIndex(const Ind
 Future<Result<matjson::Value>> IndexManager::fetchIndexFromCache(const IndexSource& index) {
     const std::filesystem::path filepath = this->pathToCachedIndex(std::string_view(index.m_url));
 
-    if (!asp::fs::exists(asp::fs::Path::fromStdPath(filepath))) {
-        co_return Err("No cached entry for index");
-    }
+    if (!asp::fs::exists(asp::fs::Path::fromStdPath(filepath))) { co_return Err("No cached entry for index"); }
 
-    co_return geode::utils::file::readJson(asp::fs::Path::fromStdPath(filepath)).mapErr(
-        [](std::string err) { return fmt::format("Failed to read JSON: {}", err); });
+    co_return geode::utils::file::readJson(asp::fs::Path::fromStdPath(filepath)).mapErr([](std::string err) {
+        return fmt::format("Failed to read JSON: {}", err);
+    });
 }
 
 Future<> IndexManager::onIndexFetched(const std::string& url, matjson::Value&& json, bool cache) {
@@ -327,7 +323,8 @@ Future<> IndexManager::onIndexFetched(const std::string& url, matjson::Value&& j
     if (cache) {
         const std::filesystem::path filepath = this->pathToCachedIndex(std::string_view(url));
 
-        auto success = geode::utils::file::writeString(asp::fs::Path::fromStdPath(filepath), json.dump(matjson::NO_INDENTATION));
+        auto success =
+            geode::utils::file::writeString(asp::fs::Path::fromStdPath(filepath), json.dump(matjson::NO_INDENTATION));
         if (success.isErr()) {
             log::error("Failed to cache index: {}", std::move(success).unwrapErr());
         } else {
@@ -344,11 +341,10 @@ Future<> IndexManager::onIndexFetched(const std::string& url, matjson::Value&& j
 
 std::optional<std::string> IndexManager::getIndexName(const std::string& indexID) {
     auto jsonObj = Mod::get()->getSavedValue<matjson::Value>("cached-index-names");
-    if (!jsonObj.contains(indexID)) {
-        return std::nullopt;
-    }
-    return jsonObj[indexID].asString().mapOr<std::optional<std::string>>(std::nullopt,
-                                                                         [](auto i) { return std::optional(i); });
+    if (!jsonObj.contains(indexID)) { return std::nullopt; }
+    return jsonObj[indexID].asString().mapOr<std::optional<std::string>>(std::nullopt, [](auto i) {
+        return std::optional(i);
+    });
 }
 
 void IndexManager::cacheIndexName(const std::string& indexId, const std::string& indexName) {
@@ -366,7 +362,8 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string_view uniqueI
         GEODE_UNWRAP_INTO(
             nongs, NongManager::get().initSongID(obj, gdSongID, false).mapErr([gdSongID](const std::string& err) {
                 return fmt::format("Failed to initialize song ID {}: {}", gdSongID, err);
-            }));
+            })
+        );
     } else {
         nongs = NongManager::get().getNongs(gdSongID).value();
     }
@@ -375,29 +372,27 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string_view uniqueI
 
     // Try starting download from local reference first
     for (const std::unique_ptr<YTSong>& song : nongs->youtube()) {
-        if (song->metadata()->uniqueID != uniqueID) {
-            continue;
-        }
+        if (song->metadata()->uniqueID != uniqueID) { continue; }
 
         return Err("YouTube song downloads will be enabled in a future release!");
     }
 
     for (const std::unique_ptr<HostedSong>& song : nongs->hosted()) {
-        if (song->metadata()->uniqueID != uniqueID) {
-            continue;
-        }
+        if (song->metadata()->uniqueID != uniqueID) { continue; }
 
         m_urlToIDs[song->url()] = {song->metadata()->gdID, std::string(uniqueID)};
-        async::spawn(song->startDownload(),
-                     [this, song = song.get(), nongs, uniqueID = std::string(uniqueID)](Result<ByteVector> data) {
-                         m_urlToIDs.erase(song->url());
-                         if (data.isErr()) {
-                             event::SongDownloadFailed(nongs->songID())
-                                 .send(event::SongDownloadFailedData{nongs->songID(), uniqueID, data.unwrapErr()});
-                             return;
-                         }
-                         this->onDownloadFinish(song, nongs, std::move(data.unwrap()));
-                     });
+        async::spawn(
+            song->startDownload(),
+            [this, song = song.get(), nongs, uniqueID = std::string(uniqueID)](Result<ByteVector> data) {
+                m_urlToIDs.erase(song->url());
+                if (data.isErr()) {
+                    event::SongDownloadFailed(nongs->songID())
+                        .send(event::SongDownloadFailedData {nongs->songID(), uniqueID, data.unwrapErr()});
+                    return;
+                }
+                this->onDownloadFinish(song, nongs, std::move(data.unwrap()));
+            }
+        );
 
         found = true;
         break;
@@ -410,13 +405,9 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string_view uniqueI
         }
 
         for (IndexSongMetadata* s : m_nongsForId[gdSongID]) {
-            if (s->uniqueID != uniqueID) {
-                continue;
-            }
+            if (s->uniqueID != uniqueID) { continue; }
 
-            if (s->ytId.has_value()) {
-                return Err("YouTube song downloads will be enabled in a future release!");
-            }
+            if (s->ytId.has_value()) { return Err("YouTube song downloads will be enabled in a future release!"); }
 
             if (s->url.has_value()) {
                 m_urlToIDs[s->url.value()] = {nongs->songID(), std::string(uniqueID)};
@@ -426,11 +417,12 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string_view uniqueI
                         m_urlToIDs.erase(s->url.value());
                         if (data.isErr()) {
                             event::SongDownloadFailed(nongs->songID())
-                                .send(event::SongDownloadFailedData{nongs->songID(), uniqueID, data.unwrapErr()});
+                                .send(event::SongDownloadFailedData {nongs->songID(), uniqueID, data.unwrapErr()});
                             return;
                         }
                         this->onDownloadFinish(s, nongs, std::move(data.unwrap()));
-                    });
+                    }
+                );
 
                 found = true;
                 break;
@@ -438,15 +430,14 @@ Result<> IndexManager::downloadSong(int gdSongID, const std::string_view uniqueI
         }
     }
 
-    if (!found) {
-        return Err("Couldn't download song. Reference not found");
-    }
+    if (!found) { return Err("Couldn't download song. Reference not found"); }
 
     return Ok();
 }
 
-void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& source, Nongs* destination,
-                                    ByteVector&& data) {
+void IndexManager::onDownloadFinish(
+    std::variant<IndexSongMetadata*, Song*>&& source, Nongs* destination, ByteVector&& data
+) {
     std::string uniqueId;
     if (std::holds_alternative<index::IndexSongMetadata*>(source)) {
         uniqueId = std::get<index::IndexSongMetadata*>(source)->uniqueID;
@@ -458,7 +449,7 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         const std::string err = "Failed to store downloaded file. ByteVector empty.";
         log::error("{}", err);
         event::SongDownloadFailed(destination->songID())
-            .send(event::SongDownloadFailedData{destination->songID(), uniqueId, err});
+            .send(event::SongDownloadFailedData {destination->songID(), uniqueId, err});
         return;
     }
 
@@ -483,7 +474,7 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         const std::string err = fmt::format("Failed to store downloaded file. {}", res.unwrapErr());
         log::error("{}", err);
         event::SongDownloadFailed(destination->songID())
-            .send(event::SongDownloadFailedData{destination->songID(), uniqueId, err});
+            .send(event::SongDownloadFailedData {destination->songID(), uniqueId, err});
         return;
     }
 
@@ -502,7 +493,7 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         const std::string print = fmt::format("Couldn't store index song. {}", err);
         log::error("{}", print);
         event::SongDownloadFailed(destination->songID())
-            .send(event::SongDownloadFailedData{destination->songID(), uniqueId, print});
+            .send(event::SongDownloadFailedData {destination->songID(), uniqueId, print});
 
         if (auto removeRes = asp::fs::remove(asp::fs::Path::fromStdPath(path)); removeRes.isErr()) {
             auto removeErr = removeRes.unwrapErr();
@@ -511,10 +502,13 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
     };
 
     if (metadata->url.has_value()) {
-        Result<HostedSong*> r =
-            destination->add(HostedSong(SongMetadata(destination->songID(), metadata->uniqueID, metadata->name,
-                                                     metadata->artist, std::nullopt, metadata->startOffset),
-                                        metadata->url.value(), metadata->parentID->m_id, path));
+        Result<HostedSong*> r = destination->add(HostedSong(
+            SongMetadata(
+                destination->songID(), metadata->uniqueID, metadata->name, metadata->artist, std::nullopt,
+                metadata->startOffset
+            ),
+            metadata->url.value(), metadata->parentID->m_id, path
+        ));
 
         if (r.isErr()) {
             orElse(r.unwrapErr());
@@ -523,10 +517,13 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
 
         insertedSong = r.unwrap();
     } else if (metadata->ytId.has_value()) {
-        Result<YTSong*> r =
-            destination->add(YTSong(SongMetadata(destination->songID(), metadata->uniqueID, metadata->name,
-                                                 metadata->artist, std::nullopt, metadata->startOffset),
-                                    metadata->ytId.value(), metadata->parentID->m_id, path));
+        Result<YTSong*> r = destination->add(YTSong(
+            SongMetadata(
+                destination->songID(), metadata->uniqueID, metadata->name, metadata->artist, std::nullopt,
+                metadata->startOffset
+            ),
+            metadata->ytId.value(), metadata->parentID->m_id, path
+        ));
         if (r.isErr()) {
             orElse(r.unwrapErr());
             return;
@@ -543,22 +540,18 @@ void IndexManager::onDownloadFinish(std::variant<IndexSongMetadata*, Song*>&& so
         const std::string err = fmt::format("Couldn't commit downloaded song metadata. {}", commitRes.unwrapErr());
         log::error("{}", err);
         event::SongDownloadFailed(destination->songID())
-            .send(event::SongDownloadFailedData{destination->songID(), uniqueId, err});
+            .send(event::SongDownloadFailedData {destination->songID(), uniqueId, err});
         return;
     }
 
-    event::SongDownloadFinished().send(event::SongDownloadFinishedData{std::optional(metadata), insertedSong});
+    event::SongDownloadFinished().send(event::SongDownloadFinishedData {std::optional(metadata), insertedSong});
 }
 
 void IndexManager::registerIndexNongs(Nongs* destination) {
-    if (!m_nongsForId.contains(destination->songID())) {
-        return;
-    }
+    if (!m_nongsForId.contains(destination->songID())) { return; }
 
     destination->indexSongs().clear();
-    for (IndexSongMetadata* s : m_nongsForId[destination->songID()]) {
-        destination->indexSongs().push_back(s);
-    }
+    for (IndexSongMetadata* s : m_nongsForId[destination->songID()]) { destination->indexSongs().push_back(s); }
 }
 
 std::filesystem::path IndexManager::pathToCachedIndex(const std::string_view url) {
@@ -570,11 +563,10 @@ std::filesystem::path IndexManager::pathToCachedIndex(const std::string_view url
 
 std::optional<std::string> IndexManager::lastModifiedForIndex(const std::string_view url) {
     auto json = Mod::get()->getSavedValue<matjson::Value>("cached-index-last-modified");
-    if (!json.contains(url)) {
-        return std::nullopt;
-    }
-    return json[url].asString().mapOr<std::optional<std::string>>(std::nullopt,
-                                                                  [](auto i) { return std::optional(std::move(i)); });
+    if (!json.contains(url)) { return std::nullopt; }
+    return json[url].asString().mapOr<std::optional<std::string>>(std::nullopt, [](auto i) {
+        return std::optional(std::move(i));
+    });
 }
 
 void IndexManager::setLastModifiedForIndex(const std::string_view url, std::optional<std::string> value) {
@@ -591,11 +583,10 @@ void IndexManager::setLastModifiedForIndex(const std::string_view url, std::opti
 
 std::optional<std::string> IndexManager::etagForIndex(const std::string_view url) {
     auto json = Mod::get()->getSavedValue<matjson::Value>("cached-index-etag");
-    if (!json.contains(url)) {
-        return std::nullopt;
-    }
-    return json[url].asString().mapOr<std::optional<std::string>>(std::nullopt,
-                                                                  [](auto i) { return std::optional(std::move(i)); });
+    if (!json.contains(url)) { return std::nullopt; }
+    return json[url].asString().mapOr<std::optional<std::string>>(std::nullopt, [](auto i) {
+        return std::optional(std::move(i));
+    });
 }
 
 void IndexManager::setEtagForIndex(const std::string_view url, std::optional<std::string> value) {
@@ -613,9 +604,7 @@ void IndexManager::setEtagForIndex(const std::string_view url, std::optional<std
 void IndexManager::clearCaches() {
     for (auto& entry : std::filesystem::directory_iterator(this->baseIndexesPath())) {
         auto res = asp::fs::remove(asp::fs::Path::fromStdPath(entry.path()));
-        if (res.isErr()) {
-            log::warn("Failed to remove cached index: {}", res.unwrapErr());
-        }
+        if (res.isErr()) { log::warn("Failed to remove cached index: {}", res.unwrapErr()); }
     }
 
     Mod::get()->setSavedValue("cached-index-etag", matjson::makeObject({}));

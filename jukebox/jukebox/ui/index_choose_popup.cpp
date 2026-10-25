@@ -2,11 +2,11 @@
 
 #include <optional>
 
-#include <Geode/cocos/base_nodes/CCNode.h>
-#include <Geode/ui/Label.hpp>
-#include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <Geode/cocos/base_nodes/CCNode.h>
+#include <Geode/cocos/sprite_nodes/CCSprite.h>
+#include <Geode/ui/Label.hpp>
 #include <Geode/ui/Layout.hpp>
 
 #include <jukebox/managers/index_manager.hpp>
@@ -15,11 +15,10 @@ using namespace geode::prelude;
 
 namespace jukebox {
 
-bool IndexChoosePopup::init(std::vector<std::string> indexIDs,
-                            geode::Function<void(const std::string& indexID)> chooseIndex) {
-    if (!Popup::init(280.0f, 80.0f)) {
-        return false;
-    }
+bool IndexChoosePopup::init(
+    std::vector<std::string> indexIDs, geode::Function<void(const std::string& indexID)> chooseIndex
+) {
+    if (!Popup::init(280.0f, 80.0f)) { return false; }
     m_indexIDs = std::move(indexIDs);
     m_chooseIndex = std::move(chooseIndex);
 
@@ -103,8 +102,9 @@ void IndexChoosePopup::onOK(CCObject*) {
     m_closeBtn->activate();
 }
 
-IndexChoosePopup* IndexChoosePopup::create(std::vector<std::string> indexIDs,
-                                           geode::Function<void(const std::string&)> setIndexesCallback) {
+IndexChoosePopup* IndexChoosePopup::create(
+    std::vector<std::string> indexIDs, geode::Function<void(const std::string&)> setIndexesCallback
+) {
     auto ret = new IndexChoosePopup();
     if (ret->init(std::move(indexIDs), std::move(setIndexesCallback))) {
         ret->autorelease();
