@@ -6,7 +6,7 @@
 #include <Geode/binding/CustomSongWidget.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
-#include <Geode/cocos/platform/CCPlatformMacros.h>
+#include <Geode/cocos/platform/CCPlatformMacros.h>  // IWYU pragma: keep
 #include <Geode/loader/Event.hpp>
 #include <Geode/ui/Popup.hpp>
 #include <Geode/utils/cocos.hpp>

@@ -20,7 +20,7 @@
 #include <Geode/utils/web.hpp>
 #include <arc/future/Future.hpp>
 #include <asp/fs/fs.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/format.h>
 #include <matjson.hpp>
 

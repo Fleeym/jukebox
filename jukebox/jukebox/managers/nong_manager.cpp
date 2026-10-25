@@ -17,7 +17,7 @@
 #include <Geode/mapping/CCFileUtils.hpp>
 #include <Geode/utils/file.hpp>
 #include <asp/fs/fs.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <asp/iter.hpp>
 #include <fmt/format.h>
 #include <matjson.hpp>

@@ -10,7 +10,7 @@
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/file.hpp>
 #include <asp/fs.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 
 #include <jukebox/nong/nong.hpp>
 

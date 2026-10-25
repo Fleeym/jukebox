@@ -7,7 +7,7 @@
 #include <Geode/loader/Log.hpp>
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/Popup.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 

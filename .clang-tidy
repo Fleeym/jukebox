@@ -1,0 +1,48 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-parent-virtual-call,
+  -bugprone-derived-method-shadowing-base-method,
+  -bugprone-narrowing-conversions,
+  -bugprone-exception-escape,
+  -bugprone-reserved-identifier,
+  -bugprone-casting-through-void,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-virtual-near-miss,
+  clang-analyzer-*,
+  -clang-analyzer-cplusplus.NewDeleteLeaks,
+  -clang-analyzer-optin.cplusplus.VirtualCall,
+  -clang-analyzer-security.ArrayBound,
+  misc-*,
+  -misc-const-correctness,
+  -misc-no-recursion,
+  -misc-non-private-member-variables-in-classes,
+  -misc-use-anonymous-namespace,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
+  -modernize-use-nodiscard,
+  performance-*,
+  -performance-enum-size,
+  -performance-unnecessary-value-param,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -readability-implicit-bool-conversion,
+  -readability-convert-member-functions-to-static,
+  -readability-uppercase-literal-suffix,
+  -readability-named-parameter,
+  -readability-braces-around-statements
+
+HeaderFilterRegex: 'jukebox[/\\]jukebox[/\\]'
+
+FormatStyle: file
+
+CheckOptions:
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: false
+  - key: misc-include-cleaner.IgnoreHeaders
+    value: 'Geode[/\\]platform[/\\].*;Geode[/\\]mapping[/\\].*;Geode[/\\]modify[/\\].*;Geode[/\\]GeneratedPredeclare\.hpp'

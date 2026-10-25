@@ -13,7 +13,7 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
-#include <Geode/cocos/platform/CCPlatformMacros.h>
+#include <Geode/cocos/platform/CCPlatformMacros.h>  // IWYU pragma: keep
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Log.hpp>
 #include <Geode/ui/Label.hpp>
@@ -23,7 +23,7 @@
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/cocos.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <asp/iter/std.hpp>
 #include <fmt/core.h>
 

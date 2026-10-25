@@ -31,7 +31,7 @@
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
 #include <asp/fs/fs.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmod.hpp>
 #include <fmod_common.h>
 #include <fmod_errors.h>

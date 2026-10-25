@@ -5,7 +5,7 @@
 #include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/cocos/label_nodes/CCLabelBMFont.h>
 #include <Geode/loader/Loader.hpp>
-#include <Geode/modify/LevelCell.hpp>
+#include <Geode/modify/LevelCell.hpp>  // IWYU pragma: keep
 
 #include <jukebox/managers/nong_manager.hpp>
 #include <jukebox/nong/nong.hpp>

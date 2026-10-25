@@ -37,6 +37,9 @@ else()
   message(STATUS "Found Geode: $ENV{GEODE_SDK}")
 endif()
 
+# trick clang-format / clang-tidy to include geode as <Geode/...>
+set(GEODE_SET_TARGET_AS_SYSTEM ON)
+
 add_subdirectory($ENV{GEODE_SDK} $ENV{GEODE_SDK}/build)
 
 target_link_libraries(${PROJECT_NAME} geode-sdk)

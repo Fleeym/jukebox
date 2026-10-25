@@ -9,7 +9,7 @@
 #include <Geode/utils/general.hpp>
 #include <Geode/utils/string.hpp>
 #include <asp/fs/fs.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 
 #include <jukebox/events/get_song_info.hpp>
 #include <jukebox/managers/nong_manager.hpp>

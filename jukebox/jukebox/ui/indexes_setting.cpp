@@ -8,7 +8,7 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/cocos/cocoa/CCObject.h>
-#include <Geode/cocos/platform/CCPlatformMacros.h>
+#include <Geode/cocos/platform/CCPlatformMacros.h>  // IWYU pragma: keep
 #include <Geode/loader/SettingV3.hpp>
 #include <Geode/utils/JsonValidation.hpp>
 #include <matjson.hpp>

@@ -5,7 +5,7 @@
 #include <Geode/cocos/cocoa/CCGeometry.h>
 #include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/cocos/menu_nodes/CCMenu.h>
-#include <Geode/cocos/platform/CCPlatformMacros.h>
+#include <Geode/cocos/platform/CCPlatformMacros.h>  // IWYU pragma: keep
 #include <Geode/cocos/sprite_nodes/CCSprite.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/loader/Mod.hpp>

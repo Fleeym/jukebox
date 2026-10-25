@@ -23,7 +23,7 @@
 #include <Geode/ui/Layout.hpp>
 #include <Geode/ui/SimpleAxisLayout.hpp>
 #include <asp/fs/fs.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/format.h>
 
 #include <jukebox/events/indexes_loaded.hpp>

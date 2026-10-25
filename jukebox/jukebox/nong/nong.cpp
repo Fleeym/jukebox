@@ -14,7 +14,7 @@
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/general.hpp>
 #include <asp/fs/fs.hpp>
-#include <asp/fs/std.hpp>
+#include <asp/fs/std.hpp>  // IWYU pragma: keep
 #include <fmt/format.h>
 #include <matjson.hpp>
 
