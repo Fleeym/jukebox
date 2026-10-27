@@ -8,12 +8,12 @@
 namespace jukebox {
 
 void left_trim(std::string& s) {
-    s.erase(s.begin(), std::ranges::find_if(s, , [](unsigned char ch) { return !std::isspace(ch); }));
+    s.erase(s.begin(), std::ranges::find_if(s, [](unsigned char ch) { return !std::isspace(ch); }));
 }
 
 void right_trim(std::string& s) {
     s.erase(
-        std::ranges::find_if(std::views::reverse(s), , [](unsigned char ch) { return !std::isspace(ch); }).base(),
+        std::ranges::find_if(std::views::reverse(s), [](unsigned char ch) { return !std::isspace(ch); }).base(),
         s.end()
     );
 }

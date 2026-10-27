@@ -30,6 +30,7 @@
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/function.hpp>
+#include <Geode/utils/string.hpp>
 #include <asp/fs/Path.hpp>
 #include <asp/fs/fs.hpp>
 #include <asp/fs/std.hpp>  // IWYU pragma: keep
@@ -131,16 +132,6 @@ bool NongList::init(
 
     this->build();
     return true;
-}
-
-bool NongList::matchesSearch(const std::string_view name) const {
-    if (m_searchQuery.empty()) { return true; }
-
-    auto it = std::ranges::search(name, , m_searchQuery, , [](unsigned char u1, unsigned char u2) {
-        return std::tolower(u1) == std::tolower(u2);
-    });
-
-    return it != name.end();
 }
 
 void NongList::build() {
@@ -253,8 +244,12 @@ void NongList::build() {
             return a->metadata()->name < b->metadata()->name;
         });
 
+        auto query = geode::utils::string::toLower(m_searchQuery);
+
         for (Song* nong : allLocalNongs) {
-            if (!this->matchesSearch(nong->metadata()->name) && !this->matchesSearch(nong->metadata()->artist)) {
+            auto name = geode::utils::string::toLower(nong->metadata()->name);
+            auto artist = geode::utils::string::toLower(nong->metadata()->artist);
+            if (!geode::utils::string::contains(name, query) && !geode::utils::string::contains(artist, query)) {
                 continue;
             }
             this->addSongToList(nong, nongs);
@@ -295,17 +290,17 @@ void NongList::build() {
                 allIndexNongs.push_back(index);
             }
 
-            std::ranges::sort(allIndexNongs, , [this](index::IndexSongMetadata* a, index::IndexSongMetadata* b) {
+            std::ranges::sort(allIndexNongs, [this](index::IndexSongMetadata* a, index::IndexSongMetadata* b) {
                 auto sourcePriority = [](index::IndexSongMetadata* s) {
                     if (s->url.has_value()) { return 0; }
                     if (s->ytId.has_value()) { return 1; }
                     return 2;
                 };
 
-                bool aVerified = m_levelID.has_value() ? std::ranges::find(a->verifiedLevelIDs, , m_levelID.value()) !=
+                bool aVerified = m_levelID.has_value() ? std::ranges::find(a->verifiedLevelIDs, m_levelID.value()) !=
                                                              a->verifiedLevelIDs.end()
                                                        : false;
-                bool bVerified = m_levelID.has_value() ? std::ranges::find(b->verifiedLevelIDs, , m_levelID.value()) !=
+                bool bVerified = m_levelID.has_value() ? std::ranges::find(b->verifiedLevelIDs, m_levelID.value()) !=
                                                              b->verifiedLevelIDs.end()
                                                        : false;
 
@@ -323,7 +318,11 @@ void NongList::build() {
 
             uint32_t inserted = 0;
             for (index::IndexSongMetadata* indexNong : allIndexNongs) {
-                if (!this->matchesSearch(indexNong->name) && !this->matchesSearch(indexNong->artist)) { continue; }
+                auto name = geode::utils::string::toLower(indexNong->name);
+                auto artist = geode::utils::string::toLower(indexNong->artist);
+                if (!geode::utils::string::contains(name, query) && !geode::utils::string::contains(artist, query)) {
+                    continue;
+                }
                 inserted++;
                 this->addIndexSongToList(indexNong, nongs);
             }
@@ -414,11 +413,11 @@ void NongList::onBack(cocos2d::CCObject* /*target*/) {
 }
 
 void NongList::setCurrentSong(int songId) {
-    if (std::ranges::find(m_songIds, , songId) != m_songIds.end()) { m_currentSong = songId; }
+    if (std::ranges::find(m_songIds, songId) != m_songIds.end()) { m_currentSong = songId; }
 }
 
 void NongList::onSelectSong(int songId) {
-    if (m_currentSong.has_value() || std::ranges::find(m_songIds, , songId) == m_songIds.end()) { return; }
+    if (m_currentSong.has_value() || std::ranges::find(m_songIds, songId) == m_songIds.end()) { return; }
 
     m_currentSong = songId;
     this->build();

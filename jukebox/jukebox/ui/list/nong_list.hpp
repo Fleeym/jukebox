@@ -20,7 +20,6 @@
 #include "jukebox/events/nong_deleted.hpp"
 #include "jukebox/events/song_download_finished.hpp"
 #include "jukebox/nong/nong.hpp"
-#include "jukebox/ui/list/nong_cell.hpp"
 
 namespace jukebox {
 
@@ -62,8 +61,6 @@ protected:
     geode::ListenerResult onIndexesLoaded();
     // This just moves the list up by 0.00001. That's it. Don't ask.
     void updateLayoutAndFixWeirdDisplay() const;
-
-    bool matchesSearch(std::string_view name) const;
 
 public:
     void scrollToTop();

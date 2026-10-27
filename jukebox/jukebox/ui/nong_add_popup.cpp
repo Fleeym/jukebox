@@ -344,7 +344,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
         indexIDs.push_back(pair.first);
     }
 
-    std::ranges::stable_sort(indexIDs, , [](const std::string& a, const std::string& b) {
+    std::ranges::stable_sort(indexIDs, [](const std::string& a, const std::string& b) {
         // Ensure "song-file-hub-index" comes first
         if (a == "song-file-hub-index") { return true; }
         if (b == "song-file-hub-index") { return false; }
