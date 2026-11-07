@@ -1,6 +1,6 @@
 {
-  "geode": "5.11.2",
-  "version": "3.8.0",
+  "geode": "6.0.0-alpha.1",
+  "version": "3.8.1",
   "id": "fleym.nongd",
   "name": "Jukebox",
   "gd": {
