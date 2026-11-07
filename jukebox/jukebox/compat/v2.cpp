@@ -33,15 +33,15 @@ static bool isSongValid(const matjson::Value& s) {
 
 bool manifestExists() { return asp::fs::exists(asp::fs::Path::fromStdPath(manifestPath())); }
 
-std::filesystem::path manifestPath() {
-    return std::filesystem::path(Mod::get()->getSaveDir().native()) / "nong_data.json";
+asp::fs::Path manifestPath() {
+    return Mod::get()->getSaveDir() / "nong_data.json";
 }
 
 Result<> backupManifest(bool deleteOrig) {
     if (!manifestExists()) { return Ok(); }
 
-    const std::filesystem::path backupDir =
-        std::filesystem::path(Mod::get()->getSaveDir().native()) / ".v2-compat-backup";
+    const asp::fs::Path backupDir =
+        Mod::get()->getSaveDir() / ".v2-compat-backup";
     bool exists = asp::fs::exists(asp::fs::Path::fromStdPath(backupDir));
     bool isDir = asp::fs::Path::fromStdPath(backupDir).isDir();
 
@@ -58,7 +58,7 @@ Result<> backupManifest(bool deleteOrig) {
         }));
     }
 
-    const std::filesystem::path filepath = backupDir / "nong_data.json";
+    const asp::fs::Path filepath = backupDir / "nong_data.json";
     if (asp::fs::exists(asp::fs::Path::fromStdPath(filepath))) {
         GEODE_UNWRAP(asp::fs::remove(asp::fs::Path::fromStdPath(filepath)).mapErr([filepath](const auto& err) {
             return fmt::format("Failed to replace backup file {}: {}", filepath, err);
@@ -85,8 +85,8 @@ Result<> backupManifest(bool deleteOrig) {
 static Result<LocalSong> parseSong(const matjson::Value& i, int id) {
     if (!isSongValid(i)) { return Err("Invalid JSON"); }
 
-    std::filesystem::path path =
-        i["path"].asString().map([](std::string v) { return std::filesystem::path(v); }).unwrap();
+    asp::fs::Path path =
+        i["path"].asString().map([](std::string v) { return asp::fs::Path(v); }).unwrap();
 
     return Ok(LocalSong(
         SongMetadata(
@@ -97,11 +97,11 @@ static Result<LocalSong> parseSong(const matjson::Value& i, int id) {
     ));
 }
 
-static Result<LocalSong> getDefault(int id, const std::filesystem::path& defaultPath, const matjson::Value& songs) {
+static Result<LocalSong> getDefault(int id, const asp::fs::Path& defaultPath, const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
         if (!isSongValid(i)) { continue; }
 
-        std::filesystem::path path = i["path"].asString().unwrap();
+        asp::fs::Path path = i["path"].asString().unwrap();
         if (path == defaultPath) {
             return Ok(LocalSong(
                 SongMetadata(
@@ -116,11 +116,11 @@ static Result<LocalSong> getDefault(int id, const std::filesystem::path& default
     return Err("Default song not found");
 }
 
-static Result<LocalSong> getActive(int id, const std::filesystem::path& activePath, const matjson::Value& songs) {
+static Result<LocalSong> getActive(int id, const asp::fs::Path& activePath, const matjson::Value& songs) {
     for (const matjson::Value& i : songs) {
         if (!isSongValid(i)) { continue; }
 
-        std::filesystem::path path = i["path"].asString().unwrap();
+        asp::fs::Path path = i["path"].asString().unwrap();
         if (path == activePath) {
             return Ok(LocalSong(
                 SongMetadata(
@@ -138,7 +138,7 @@ static Result<LocalSong> getActive(int id, const std::filesystem::path& activePa
 Result<std::unordered_map<int, CompatManifest>> parseManifest() {
     if (!manifestExists()) { return Err("No manifest exists for V2"); }
 
-    std::filesystem::path path = manifestPath();
+    asp::fs::Path path = manifestPath();
 
     GEODE_UNWRAP_INTO(
         matjson::Value json, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)).mapErr([](std::string err) {
@@ -164,8 +164,8 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
             continue;
         }
 
-        std::filesystem::path defaultPath = data["defaultPath"].asString().unwrap();
-        std::filesystem::path activePath = data["active"].asString().unwrap();
+        asp::fs::Path defaultPath = data["defaultPath"].asString().unwrap();
+        asp::fs::Path activePath = data["active"].asString().unwrap();
         matjson::Value songs = data["songs"].asArray().unwrap();
 
         Result<LocalSong> defaultRes = getDefault(id, defaultPath, songs);
@@ -190,7 +190,7 @@ Result<std::unordered_map<int, CompatManifest>> parseManifest() {
                 continue;
             }
 
-            std::filesystem::path path = i["path"].asString().unwrap();
+            asp::fs::Path path = i["path"].asString().unwrap();
             std::string unique;
 
             if (path == defaultPath) {
