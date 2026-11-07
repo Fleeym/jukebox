@@ -165,7 +165,7 @@ class $modify(JBSongWidget, CustomSongWidget) {
     void maybeChangeDownloadedMark(const Nongs* nongs) {
         if (m_songs.empty()) { return; }
 
-        const std::optional<std::filesystem::path> optPath = nongs->active()->path();
+        const std::optional<asp::fs::Path> optPath = nongs->active()->path();
 
         if (const auto found = m_songs.find(nongs->songID()); found != m_songs.end()) {
             if (!optPath) {
@@ -261,8 +261,8 @@ class $modify(JBSongWidget, CustomSongWidget) {
             return;
         }
 
-        const auto resources = std::filesystem::path(CCFileUtils::get()->getWritablePath2()) / "Resources";
-        const auto song = std::filesystem::path(CCFileUtils::get()->getWritablePath());
+        const auto resources = asp::fs::Path(CCFileUtils::get()->getWritablePath2()) / "Resources";
+        const auto song = asp::fs::Path(CCFileUtils::get()->getWritablePath());
 
         if (m_songIDLabel && !m_fields->lastMultiAssetValue.empty()) {
             this->onFixMultiAssetSizeFinished(m_fields->lastMultiAssetValue, false);
@@ -441,12 +441,12 @@ class $modify(JBSongWidget, CustomSongWidget) {
         if (!m_songs.empty() || !m_sfx.empty()) { return; }
 
         Song* active = nongs->active();
-        std::optional<std::filesystem::path> activePathOpt = active->path();
+        std::optional<asp::fs::Path> activePathOpt = active->path();
         int songID = NongManager::get().adjustSongID(nongs->songID(), m_isRobtopSong);
 
         if (!activePathOpt) { return; }
 
-        const std::filesystem::path activePath = std::move(activePathOpt).value();
+        const asp::fs::Path activePath = std::move(activePathOpt).value();
 
         std::string sizeText;
         if (asp::fs::exists(asp::fs::Path::fromStdPath(activePath))) {

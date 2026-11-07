@@ -44,7 +44,7 @@ struct matjson::Serialize<jukebox::LocalSong> {
 
         if (value["filename"].isString()) {
             const std::string filename = value["filename"].asString().unwrap();  // if this crashes I blame mat
-            const std::filesystem::path path = jukebox::NongManager::get().baseNongsPath() / filename;
+            const asp::fs::Path path = jukebox::NongManager::get().baseNongsPath() / filename;
 
             return geode::Ok(jukebox::LocalSong {std::move(metadata), path});
         }
@@ -55,7 +55,7 @@ struct matjson::Serialize<jukebox::LocalSong> {
 
         GEODE_UNWRAP_INTO(auto path, value["path"].as<asp::fs::Path>());
 
-        return geode::Ok(jukebox::LocalSong {std::move(metadata), path.native()});
+        return geode::Ok(jukebox::LocalSong {std::move(metadata), path});
     }
 
     static matjson::Value toJson(const jukebox::LocalSong& value) {
@@ -63,7 +63,7 @@ struct matjson::Serialize<jukebox::LocalSong> {
             {"name", value.metadata()->name},
             {"unique_id", value.metadata()->uniqueID},
             {"artist", value.metadata()->artist},
-            {"filename", asp::fs::Path::fromStdPath(value.path()->filename())},
+            {"filename", asp::fs::Path(value.path()->filename().value())},
             {"path", asp::fs::Path::fromStdPath(value.path().value())},
             {"offset", value.metadata()->startOffset},
         });
@@ -98,7 +98,7 @@ struct matjson::Serialize<jukebox::YTSong> {
             jukebox::YTSong {
                 std::move(metadata), value["youtube_id"].asString().unwrap(),
                 value["index_id"].asString().map([](auto i) { return std::optional(i); }).unwrapOr(std::nullopt),
-                path.native()
+                path
             }
         );
     }
@@ -139,7 +139,7 @@ struct matjson::Serialize<jukebox::HostedSong> {
 
         if (value["filename"].isString()) {
             const std::string filename = value["filename"].asString().unwrap();  // if this crashes I blame mat
-            const std::filesystem::path path = jukebox::NongManager::get().baseNongsPath() / filename;
+            const asp::fs::Path path = jukebox::NongManager::get().baseNongsPath() / filename;
 
             return geode::Ok(jukebox::HostedSong {std::move(metadata), url, indexId, path});
         }
@@ -154,7 +154,7 @@ struct matjson::Serialize<jukebox::HostedSong> {
             jukebox::HostedSong {
                 std::move(metadata), value["url"].asString().unwrap(),
                 value["index_id"].asString().map([](auto i) { return std::optional(i); }).unwrapOr(std::nullopt),
-                path.native()
+                path
             }
         );
     }
@@ -165,7 +165,7 @@ struct matjson::Serialize<jukebox::HostedSong> {
             {"unique_id", value.metadata()->uniqueID},
             {"artist", value.metadata()->artist},
             {"path", asp::fs::Path::fromStdPath(value.path().value())},
-            {"filename", asp::fs::Path::fromStdPath(value.path()->filename())},
+            {"filename", asp::fs::Path(value.path()->filename().value())},
             {"offset", value.metadata()->startOffset},
             {"url", value.url()},
         });

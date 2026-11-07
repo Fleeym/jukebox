@@ -55,7 +55,7 @@ namespace jukebox {
 bool IndexManager::init() {
     if (m_initialized) { return true; }
 
-    if (const std::filesystem::path path = this->baseIndexesPath();
+    if (const asp::fs::Path path = this->baseIndexesPath();
         !asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
         auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
         if (createDirRes.isErr()) {
@@ -100,12 +100,12 @@ Result<std::vector<IndexSource>> IndexManager::getIndexes() {
     return Ok(setting.indexes);
 }
 
-std::filesystem::path IndexManager::baseIndexesPath() {
-    static std::filesystem::path path = std::filesystem::path(Mod::get()->getSaveDir().native()) / "indexes-cache";
+asp::fs::Path IndexManager::baseIndexesPath() {
+    static asp::fs::Path path = Mod::get()->getSaveDir() / "indexes-cache";
     return path;
 }
 
-Result<> IndexManager::loadIndex(std::filesystem::path path) {
+Result<> IndexManager::loadIndex(asp::fs::Path path) {
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) { return Err("Index file does not exist"); }
 
     GEODE_UNWRAP_INTO(matjson::Value jsonObj, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)));
@@ -315,7 +315,7 @@ Future<Result<std::optional<matjson::Value>>> IndexManager::fetchIndex(const Ind
 }
 
 Future<Result<matjson::Value>> IndexManager::fetchIndexFromCache(const IndexSource& index) {
-    const std::filesystem::path filepath = this->pathToCachedIndex(std::string_view(index.m_url));
+    const asp::fs::Path filepath = this->pathToCachedIndex(std::string_view(index.m_url));
 
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(filepath))) { co_return Err("No cached entry for index"); }
 
@@ -328,7 +328,7 @@ Future<> IndexManager::onIndexFetched(const std::string& url, matjson::Value&& j
     log::info("Fetched index: {}", url);
 
     if (cache) {
-        const std::filesystem::path filepath = this->pathToCachedIndex(std::string_view(url));
+        const asp::fs::Path filepath = this->pathToCachedIndex(std::string_view(url));
 
         auto success =
             geode::utils::file::writeString(asp::fs::Path::fromStdPath(filepath), json.dump(matjson::NO_INDENTATION));
@@ -460,7 +460,7 @@ void IndexManager::onDownloadFinish(
         return;
     }
 
-    std::filesystem::path path;
+    asp::fs::Path path;
 
     if (std::holds_alternative<IndexSongMetadata*>(source)) {
         auto* s = std::get<IndexSongMetadata*>(source);
@@ -561,7 +561,7 @@ void IndexManager::registerIndexNongs(Nongs* destination) {
     for (IndexSongMetadata* s : m_nongsForId[destination->songID()]) { destination->indexSongs().push_back(s); }
 }
 
-std::filesystem::path IndexManager::pathToCachedIndex(const std::string_view url) {
+asp::fs::Path IndexManager::pathToCachedIndex(const std::string_view url) {
     static constexpr std::hash<std::string_view> hasher;
     std::size_t hashValue = hasher(url);
 
@@ -609,9 +609,13 @@ void IndexManager::setEtagForIndex(const std::string_view url, std::optional<std
 }
 
 void IndexManager::clearCaches() {
-    for (const auto& entry : std::filesystem::directory_iterator(this->baseIndexesPath())) {
-        auto res = asp::fs::remove(asp::fs::Path::fromStdPath(entry.path()));
-        if (res.isErr()) { log::warn("Failed to remove cached index: {}", res.unwrapErr()); }
+    auto iterRes = asp::fs::iterDir(this->baseIndexesPath());
+    if (iterRes.isOk()) {
+        for (auto dirResult : iterRes.unwrap()) {
+            if (dirResult.isErr()) { continue; }
+            auto res = asp::fs::remove(dirResult.unwrap().path);
+            if (res.isErr()) { log::warn("Failed to remove cached index: {}", res.unwrapErr()); }
+        }
     }
 
     Mod::get()->setSavedValue("cached-index-etag", matjson::makeObject({}));
