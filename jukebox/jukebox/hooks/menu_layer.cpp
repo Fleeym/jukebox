@@ -23,7 +23,7 @@ class $modify(JBMenuLayer, MenuLayer) {
                 "none of your saved songs have been loaded. Please check "
                 "<cb>{}</c> for any created backups and report this to me on "
                 "my Discord (fleeym)",
-                std::filesystem::path(Mod::get()->getSaveDir().native()) / "backups"
+                Mod::get()->getSaveDir() / "backups"
             );
             FLAlertLayer* popup = FLAlertLayer::create("Jukebox", content, "Ok");
             popup->m_scene = this;

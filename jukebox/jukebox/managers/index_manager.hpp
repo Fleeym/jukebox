@@ -44,7 +44,7 @@ protected:
     std::optional<std::string> etagForIndex(std::string_view url);
     void setEtagForIndex(std::string_view url, std::optional<std::string> value);
 
-    std::filesystem::path pathToCachedIndex(std::string_view url);
+    asp::fs::Path pathToCachedIndex(std::string_view url);
 
     arc::Future<> onIndexFetched(const std::string& url, matjson::Value&& json, bool cache);
 
@@ -63,7 +63,7 @@ public:
 
     arc::Future<geode::Result<>> fetchIndexes();
 
-    geode::Result<> loadIndex(std::filesystem::path path);
+    geode::Result<> loadIndex(asp::fs::Path path);
     geode::Result<> loadIndex(matjson::Value&& jsonObj);
 
     geode::Result<std::vector<index::IndexSource>> getIndexes();
@@ -71,7 +71,7 @@ public:
     std::optional<std::string> getIndexName(const std::string& indexID);
     void cacheIndexName(const std::string& indexId, const std::string& indexName);
 
-    std::filesystem::path baseIndexesPath();
+    asp::fs::Path baseIndexesPath();
 
     geode::Result<> downloadSong(int gdSongID, std::string_view uniqueID);
 

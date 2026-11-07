@@ -42,10 +42,10 @@ private:
     friend class LocalSong;
 
     std::unique_ptr<SongMetadata> m_metadata;
-    std::filesystem::path m_path;
+    asp::fs::Path m_path;
 
 public:
-    Impl(SongMetadata&& metadata, std::filesystem::path path)
+    Impl(SongMetadata&& metadata, asp::fs::Path path)
         : m_metadata(std::make_unique<SongMetadata>(metadata)), m_path(std::move(path)) {}
 
     Impl(const Impl& other) : m_metadata(std::make_unique<SongMetadata>(*other.m_metadata)), m_path(other.m_path) {}
@@ -57,11 +57,11 @@ public:
     Impl& operator=(Impl&&) = default;
 
     [[nodiscard]] SongMetadata* metadata() const { return m_metadata.get(); }
-    [[nodiscard]] std::filesystem::path path() const { return m_path; }
-    void setPath(std::filesystem::path&& p) { m_path = std::move(p); }
+    [[nodiscard]] asp::fs::Path path() const { return m_path; }
+    void setPath(asp::fs::Path&& p) { m_path = std::move(p); }
 };
 
-LocalSong::LocalSong(SongMetadata&& metadata, const std::filesystem::path& path)
+LocalSong::LocalSong(SongMetadata&& metadata, const asp::fs::Path& path)
     : m_impl(std::make_unique<Impl>(std::move(metadata), path)) {}
 
 LocalSong::LocalSong(const LocalSong& other) : m_impl(std::make_unique<Impl>(*other.m_impl)) {}
@@ -80,20 +80,20 @@ LocalSong& LocalSong::operator=(LocalSong&&) noexcept = default;
 LocalSong::~LocalSong() = default;
 
 SongMetadata* LocalSong::metadata() const { return m_impl->metadata(); }
-std::optional<std::filesystem::path> LocalSong::path() const { return m_impl->path(); }
-void LocalSong::setPath(std::filesystem::path p) { m_impl->setPath(std::move(p)); }
+std::optional<asp::fs::Path> LocalSong::path() const { return m_impl->path(); }
+void LocalSong::setPath(asp::fs::Path p) { m_impl->setPath(std::move(p)); }
 
 LocalSong LocalSong::createUnknown(const int songID) {
     return LocalSong {
         SongMetadata {songID, random_string(16), "Unknown", ""},
-        std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(songID))
+        asp::fs::Path(MusicDownloadManager::sharedState()->pathForSong(songID))
     };
 }
 
 LocalSong LocalSong::fromSongObject(const SongInfoObject* obj) {
     return LocalSong {
         SongMetadata {obj->m_songID, random_string(16), obj->m_songName, obj->m_artistName},
-        std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID))
+        asp::fs::Path(MusicDownloadManager::sharedState()->pathForSong(obj->m_songID))
     };
 }
 
@@ -104,14 +104,14 @@ private:
     std::unique_ptr<SongMetadata> m_metadata;
     std::string m_youtubeID;
     std::optional<std::string> m_indexID;
-    std::optional<std::filesystem::path> m_path;
+    std::optional<asp::fs::Path> m_path;
 
 public:
     Impl(
         SongMetadata&& metadata,
         std::string youtubeID,
         std::optional<std::string> indexID,
-        std::optional<std::filesystem::path> path = std::nullopt
+        std::optional<asp::fs::Path> path = std::nullopt
     )
         : m_metadata(std::make_unique<SongMetadata>(metadata)),
           m_youtubeID(std::move(youtubeID)),
@@ -131,7 +131,7 @@ public:
     Impl& operator=(Impl&&) = default;
 
     [[nodiscard]] SongMetadata* metadata() const { return m_metadata.get(); }
-    [[nodiscard]] std::optional<std::filesystem::path> path() const { return m_path; }
+    [[nodiscard]] std::optional<asp::fs::Path> path() const { return m_path; }
     [[nodiscard]] std::string youtubeID() const { return m_youtubeID; }
     [[nodiscard]] std::optional<std::string> indexID() const { return m_indexID; }
     Future<Result<ByteVector>> startDownload() const {
@@ -141,14 +141,14 @@ public:
 
         co_return co_await download::startYoutubeDownload(m_youtubeID);
     }
-    void setPath(std::filesystem::path&& p) { m_path = p; }
+    void setPath(asp::fs::Path&& p) { m_path = p; }
 };
 
 YTSong::YTSong(
     SongMetadata&& metadata,
     std::string youtubeID,
     std::optional<std::string> indexID,
-    std::optional<std::filesystem::path> path
+    std::optional<asp::fs::Path> path
 )
     : m_impl(std::make_unique<Impl>(std::move(metadata), std::move(youtubeID), std::move(indexID), std::move(path))) {}
 
@@ -176,8 +176,8 @@ std::string YTSong::youtubeID() const { return m_impl->youtubeID(); }
 std::optional<std::string> YTSong::indexID() const { return m_impl->indexID(); }
 void YTSong::setIndexID(const std::string& id) { m_impl->m_indexID = id; }
 
-std::optional<std::filesystem::path> YTSong::path() const { return m_impl->path(); }
-void YTSong::setPath(std::filesystem::path p) { m_impl->setPath(std::move(p)); }
+std::optional<asp::fs::Path> YTSong::path() const { return m_impl->path(); }
+void YTSong::setPath(asp::fs::Path p) { m_impl->setPath(std::move(p)); }
 
 Future<Result<ByteVector>> YTSong::startDownload() const { return m_impl->startDownload(); }
 
@@ -188,14 +188,14 @@ private:
     std::unique_ptr<SongMetadata> m_metadata;
     std::string m_url;
     std::optional<std::string> m_indexID;
-    std::optional<std::filesystem::path> m_path;
+    std::optional<asp::fs::Path> m_path;
 
 public:
     Impl(
         SongMetadata&& metadata,
         std::string url,
         std::optional<std::string> indexID,
-        std::optional<std::filesystem::path> path = std::nullopt
+        std::optional<asp::fs::Path> path = std::nullopt
     )
         : m_metadata(std::make_unique<SongMetadata>(metadata)),
           m_url(std::move(url)),
@@ -217,7 +217,7 @@ public:
     [[nodiscard]] SongMetadata* metadata() const noexcept { return m_metadata.get(); }
     [[nodiscard]] std::string url() const noexcept { return m_url; }
     [[nodiscard]] std::optional<std::string> indexID() const noexcept { return m_indexID; }
-    [[nodiscard]] std::optional<std::filesystem::path> path() const noexcept { return m_path; }
+    [[nodiscard]] std::optional<asp::fs::Path> path() const noexcept { return m_path; }
     Future<Result<ByteVector>> startDownload() const {
         if (m_path.has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(m_path.value()))) {
             co_return Err("Song is already downloaded");
@@ -225,14 +225,14 @@ public:
 
         co_return co_await download::startHostedDownload(m_url);
     }
-    void setPath(std::filesystem::path&& p) { m_path = p; }
+    void setPath(asp::fs::Path&& p) { m_path = p; }
 };
 
 HostedSong::HostedSong(
     SongMetadata&& metadata,
     std::string url,
     std::optional<std::string> indexID,
-    std::optional<std::filesystem::path> path
+    std::optional<asp::fs::Path> path
 )
     : m_impl(std::make_unique<Impl>(std::move(metadata), std::move(url), std::move(indexID), std::move(path))) {}
 
@@ -252,8 +252,8 @@ SongMetadata* HostedSong::metadata() const { return m_impl->metadata(); }
 std::string HostedSong::url() const { return m_impl->url(); }
 std::optional<std::string> HostedSong::indexID() const { return m_impl->indexID(); }
 void HostedSong::setIndexID(const std::string& id) { m_impl->m_indexID = id; }
-std::optional<std::filesystem::path> HostedSong::path() const { return m_impl->path(); }
-void HostedSong::setPath(std::filesystem::path p) { m_impl->setPath(std::move(p)); }
+std::optional<asp::fs::Path> HostedSong::path() const { return m_impl->path(); }
+void HostedSong::setPath(asp::fs::Path p) { m_impl->setPath(std::move(p)); }
 
 Future<Result<ByteVector>> HostedSong::startDownload() const { return m_impl->startDownload(); }
 
@@ -274,7 +274,7 @@ private:
 
     std::vector<IndexSongMetadata*> m_indexSongs;
 
-    void deletePath(const std::optional<std::filesystem::path>& path) {
+    void deletePath(const std::optional<asp::fs::Path>& path) {
         if (path.has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(path.value()))) {
             auto removeRes = asp::fs::remove(asp::fs::Path::fromStdPath(path.value()));
             if (removeRes.isErr()) {
@@ -291,7 +291,7 @@ public:
     explicit Impl(const int songID) : Impl(songID, std::make_unique<LocalSong>(LocalSong::createUnknown(songID))) {}
 
     Result<> commit(Nongs* self) {
-        const std::filesystem::path path = NongManager::get().baseManifestPath() / fmt::format("{}.json", m_songID);
+        const asp::fs::Path path = NongManager::get().baseManifestPath() / fmt::format("{}.json", m_songID);
 
         // Don't save manifest for songs with no nongs
         if (m_locals.empty() && m_youtube.empty() && m_hosted.empty()) {
@@ -315,7 +315,7 @@ public:
         return Ok();
     }
 
-    Result<> canSetActive(const std::string& uniqueID, const std::filesystem::path& path) const {
+    Result<> canSetActive(const std::string& uniqueID, const asp::fs::Path& path) const {
         const bool IS_DEFAULT = uniqueID == m_default->metadata()->uniqueID;
 
         if (IS_DEFAULT) { return Ok(); }
@@ -517,7 +517,7 @@ public:
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) { return Err("NONG ID {} not found", id); }
         const Song* prevNong = opt.value();
-        const std::optional<std::filesystem::path> prevPath = prevNong->path();
+        const std::optional<asp::fs::Path> prevPath = prevNong->path();
 
         const bool deleteAudio = prevPath != song.path();
         if (GEODE_UNWRAP_IF_ERR(err, this->deleteSong(id, deleteAudio, self))) {
@@ -539,7 +539,7 @@ public:
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) { return Err("NONG ID {} not found", id); }
         const Song* prevNong = opt.value();
-        const std::optional<std::filesystem::path> prevPath = prevNong->path();
+        const std::optional<asp::fs::Path> prevPath = prevNong->path();
 
         const bool deleteAudio = prevPath != song.path();
         if (GEODE_UNWRAP_IF_ERR(err, this->deleteSong(id, deleteAudio, self))) {
@@ -563,7 +563,7 @@ public:
         const std::optional<Song*> opt = this->findSong(id);
         if (!opt) { return Err("NONG ID {} not found", id); }
         const Song* prevNong = opt.value();
-        const std::optional<std::filesystem::path> prevPath = prevNong->path();
+        const std::optional<asp::fs::Path> prevPath = prevNong->path();
 
         const bool deleteAudio = prevPath != song.path();
         if (GEODE_UNWRAP_IF_ERR(err, this->deleteSong(id, deleteAudio, self))) {

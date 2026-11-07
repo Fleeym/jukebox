@@ -407,10 +407,10 @@ void NongAddPopup::onFileOpen(file::PickResult result) {
         return;
     }
 
-    auto path = std::filesystem::path(pathOpt->native());
+    asp::fs::Path path = *pathOpt;
 
     std::string strPath = asp::fs::Path::fromStdPath(path).string();
-    std::string extension = asp::fs::Path::fromStdPath(path.extension()).string();
+    std::string extension = (path.extension().has_value() ? "." + std::string(*path.extension()) : std::string());
     std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
     if (!this->isPathValidSong(path)) {
@@ -623,13 +623,13 @@ Result<> NongAddPopup::addLocalSong(
     const std::string& songName, const std::string& artistName, const std::optional<std::string> levelName, int offset
 ) {
     if (!m_localPath.has_value()) {
-        std::filesystem::path path = std::string(std::move(m_specialInput->getString()));
+        asp::fs::Path path = std::string(std::move(m_specialInput->getString()));
         if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { m_localPath = path; }
     }
 
     if (!m_localPath.has_value()) { return Err("No file selected."); }
 
-    std::filesystem::path path = m_localPath.value();
+    asp::fs::Path path = m_localPath.value();
 
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
         return Err("The selected file ({}) does not exist.", path);
@@ -637,7 +637,7 @@ Result<> NongAddPopup::addLocalSong(
 
     if (asp::fs::Path::fromStdPath(path).isDir()) { return Err("You selected a directory."); }
 
-    std::string extension = asp::fs::Path::fromStdPath(path.extension()).string();
+    std::string extension = (path.extension().has_value() ? "." + std::string(*path.extension()) : std::string());
     if (songName.empty()) { return Err("Song name is empty"); }
 
     if (artistName.empty()) { return Err("Artist name is empty"); }
@@ -645,14 +645,14 @@ Result<> NongAddPopup::addLocalSong(
     std::string id =
         m_replacedNong.has_value() ? m_replacedNong.value()->metadata()->uniqueID : jukebox::random_string(16);
     std::string unique = fmt::format("{}{}", id, extension);
-    std::filesystem::path destination = std::filesystem::path(Mod::get()->getSaveDir().native()) / "nongs";
+    asp::fs::Path destination = Mod::get()->getSaveDir() / "nongs";
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(destination))) {
         auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(destination));
         if (createDirRes.isErr()) { return Err("Failed to create nongs directory."); }
     }
     destination /= unique;
 
-    if (destination.compare(path) != 0) {
+    if (destination != path) {
         GEODE_UNWRAP(
             asp::fs::copy(asp::fs::Path::fromStdPath(path), asp::fs::Path::fromStdPath(destination))
                 .mapErr([](auto err) { return fmt::format("Failed to save song. Please try again! {}", err); })
@@ -783,7 +783,7 @@ geode::Result<> NongAddPopup::addHostedSong(
     return Ok();
 }
 
-bool NongAddPopup::isPathValidSong(const std::filesystem::path& song) const {
+bool NongAddPopup::isPathValidSong(const asp::fs::Path& song) const {
     const auto stringPath = asp::fs::Path::fromStdPath(song).string();
 
     FMOD::Sound* sound = nullptr;
@@ -801,7 +801,7 @@ bool NongAddPopup::isPathValidSong(const std::filesystem::path& song) const {
     return false;
 }
 
-std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::filesystem::path path) {
+std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(asp::fs::Path path) {
     const char* MP3_NAME_TAG = "TIT2";
     const char* MP3_ARTIST_TAG = "TPE1";
 
@@ -832,7 +832,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(std::
     FMOD_RESULT nameResult = FMOD_OK;
     FMOD_RESULT artistResult = FMOD_OK;
 
-    const std::string extension = asp::fs::Path::fromStdPath(path.extension()).string();
+    const std::string extension = (path.extension().has_value() ? "." + std::string(*path.extension()) : std::string());
     if (extension == ".mp3") {
         nameResult = sound->getTag(MP3_NAME_TAG, 0, &nameTag);
         artistResult = sound->getTag(MP3_ARTIST_TAG, 0, &artistTag);

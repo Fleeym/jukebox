@@ -89,7 +89,7 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id, bool robtop)
 
     if (obj && robtop) {
         std::string filename = LevelTools::getAudioFileName(id);
-        std::filesystem::path gdDir = std::filesystem::path(CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
+        asp::fs::Path gdDir = asp::fs::Path(CCFileUtils::sharedFileUtils()->getWritablePath2().c_str());
         std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(Nongs {
             adjusted, LocalSong {
                           SongMetadata {adjusted, jukebox::random_string(16), obj->m_songName, obj->m_artistName},
@@ -125,7 +125,7 @@ Result<Nongs*> NongManager::initSongID(SongInfoObject* obj, int id, bool robtop)
     std::unique_ptr<Nongs> nongs = std::make_unique<Nongs>(Nongs {
         adjusted, LocalSong {
                       SongMetadata {adjusted, jukebox::random_string(16), obj->m_songName, obj->m_artistName},
-                      std::filesystem::path(MusicDownloadManager::sharedState()->pathForSong(id).c_str())
+                      asp::fs::Path(MusicDownloadManager::sharedState()->pathForSong(id).c_str())
                   }
     });
 
@@ -182,7 +182,7 @@ bool NongManager::init() {
 
     log::info("Starting NONG read");
 
-    const std::filesystem::path path = this->baseManifestPath();
+    const asp::fs::Path path = this->baseManifestPath();
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
         log::info("No manifest directory found. Creating...");
         auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
@@ -190,7 +190,7 @@ bool NongManager::init() {
             log::error("Failed to create the manifest directory: {}", createDirRes.unwrapErr());
         }
     }
-    if (const std::filesystem::path nongsPath = this->baseNongsPath();
+    if (const asp::fs::Path nongsPath = this->baseNongsPath();
         !asp::fs::exists(asp::fs::Path::fromStdPath(nongsPath))) {
         auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(nongsPath));
         if (createDirRes.isErr()) {
@@ -198,26 +198,27 @@ bool NongManager::init() {
         }
     }
 
-    std::error_code ec;
-    auto entries = std::filesystem::directory_iterator(path, ec);
-    if (ec) {
-        log::error("Failed to iterate directory {}: {}", path, ec.message());
+    auto iterRes = asp::fs::iterDir(path);
+    if (iterRes.isErr()) {
+        log::error("Failed to iterate directory {}: {}", path, iterRes.unwrapErr());
         return false;
     }
 
-    for (const auto& entry : entries) {
-        if (entry.path().extension() != ".json") { continue; }
+    for (auto dirResult : iterRes.unwrap()) {
+        if (dirResult.isErr()) {
+            log::warn("Failed to read directory entry: {}", dirResult.unwrapErr());
+            continue;
+        }
+        auto& entry = dirResult.unwrap();
+        if (!entry.isFile() || entry.path.extension() != "json") { continue; }
 
-        auto res = this->loadNongsFromPath(entry.path());
+        auto res = this->loadNongsFromPath(entry.path);
         if (res.isErr()) {
-            log::error("Failed to read file {}: {}", entry.path().filename(), res.unwrapErr());
-            auto renameRes = asp::fs::rename(
-                asp::fs::Path::fromStdPath(entry.path()),
-                asp::fs::Path::fromStdPath(path / fmt::format("{}.bak", entry.path().filename()))
-            );
+            log::error("Failed to read file {}: {}", entry.path, res.unwrapErr());
+            auto renameRes = asp::fs::rename(entry.path, asp::fs::Path(entry.path.string() + ".bak"));
             if (renameRes.isErr()) {
                 auto err = renameRes.unwrapErr();
-                log::error("Failed to rename file {}: {}", entry.path(), err);
+                log::error("Failed to rename file {}: {}", entry.path, err);
             }
             continue;
         }
@@ -294,7 +295,7 @@ Result<> NongManager::migrateV2() {
 }
 
 Result<> NongManager::saveNongs(std::optional<int> saveID) {
-    const std::filesystem::path path = this->baseManifestPath();
+    const asp::fs::Path path = this->baseManifestPath();
 
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
         auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
@@ -314,11 +315,11 @@ Result<> NongManager::saveNongs(std::optional<int> saveID) {
     return Ok();
 }
 
-Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(const std::filesystem::path& path) {
-    auto stem = asp::fs::Path::fromStdPath(path.stem()).string();
+Result<std::unique_ptr<Nongs>> NongManager::loadNongsFromPath(const asp::fs::Path& path) {
+    auto stem = std::string(path.stem().value_or(""));
     GEODE_UNWRAP_INTO(int id, geode::utils::numFromString<int>(stem));
 
-    if (id == 0) { return Err("Invalid filename {}", path.filename()); }
+    if (id == 0) { return Err("Invalid filename {}", path); }
 
     GEODE_UNWRAP_INTO(
         matjson::Value json,
@@ -340,19 +341,19 @@ bool NongManager::isNongVerifiedForLevelSong(const int levelID, int songID, cons
     return std::ranges::find(verifiedNongs, uniqueID) != verifiedNongs.end();
 }
 
-std::string NongManager::getFormattedSize(const std::filesystem::path& path) {
-    std::error_code code;
-    const auto size = std::filesystem::file_size(path, code);
-    if (code) { return "N/A"; }
+std::string NongManager::getFormattedSize(const asp::fs::Path& path) {
+    auto sizeRes = asp::fs::fileSize(path);
+    if (sizeRes.isErr()) { return "N/A"; }
+    const auto size = sizeRes.unwrap();
     double toMegabytes = static_cast<double>(size) / 1024.f / 1024.f;
     return fmt::format("{:.2f}MB", toMegabytes);
 }
 
 arc::Future<std::string> NongManager::getMultiAssetSizes(
-    std::string songs, std::string sfx, const std::filesystem::path resourcesDir, const std::filesystem::path songDir
+    std::string songs, std::string sfx, const asp::fs::Path resourcesDir, const asp::fs::Path songDir
 ) {
     uintmax_t sum = 0.f;
-    std::error_code _ec;
+    auto sizeOf = [](const asp::fs::Path& p) -> uintmax_t { return asp::fs::fileSize(p).unwrapOr(0); };
 
     for (auto s : asp::iter::split(std::string_view(songs), ',')) {
         Result<int> idRes = geode::utils::numFromString<int>(s);
@@ -374,7 +375,7 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(
 
         auto path = nongs->active()->path().value();
         if (asp::fs::Path::fromStdPath(path).string().starts_with("songs/")) { path = resourcesDir / path; }
-        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { sum += std::filesystem::file_size(path, _ec); }
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { sum += sizeOf(path); }
     }
 
     for (auto s : asp::iter::split(std::string_view(sfx), ',')) {
@@ -382,11 +383,11 @@ arc::Future<std::string> NongManager::getMultiAssetSizes(
         auto localPath = resourcesDir / "sfx" / filename;
 
         if (asp::fs::exists(asp::fs::Path::fromStdPath(localPath))) {
-            sum += std::filesystem::file_size(localPath, _ec);
+            sum += sizeOf(localPath);
             continue;
         }
         auto path = songDir / filename;
-        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { sum += std::filesystem::file_size(path, _ec); }
+        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { sum += sizeOf(path); }
     }
 
     double toMegabytes = static_cast<double>(sum) / 1000000.f;
@@ -442,11 +443,11 @@ Result<> NongManager::deleteAllSongs(int gdSongID) {
     return this->saveNongs(gdSongID);
 }
 
-std::filesystem::path NongManager::generateSongFilePath(
+asp::fs::Path NongManager::generateSongFilePath(
     const std::string& extension, std::optional<std::string> filename
 ) {
     auto unique = filename.value_or(jukebox::random_string(16));
-    auto destination = std::filesystem::path(Mod::get()->getSaveDir().native()) / "nongs";
+    auto destination = Mod::get()->getSaveDir() / "nongs";
     if (!asp::fs::exists(asp::fs::Path::fromStdPath(destination))) {
         auto createDirRes = asp::fs::createDir(asp::fs::Path::fromStdPath(destination));
         if (createDirRes.isErr()) {
