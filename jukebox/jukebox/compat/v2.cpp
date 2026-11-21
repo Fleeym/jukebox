@@ -1,6 +1,5 @@
 #include "jukebox/compat/v2.hpp"
 
-#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>

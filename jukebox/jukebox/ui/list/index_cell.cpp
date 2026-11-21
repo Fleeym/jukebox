@@ -90,7 +90,7 @@ bool IndexCell::init(
     inputNode->setCommonFilter(CommonFilter::Any);
     inputNode->setMaxCharCount(300);
     inputNode->setString(m_index->m_url, false);
-    inputNode->setTextAlign(TextInputAlign::Left);
+    inputNode->setAlignment(Label::Alignment::Left);
     inputNode->setCallback([this](std::string const& str) { m_index->m_url = str; });
 
     auto* menu = CCMenu::create();

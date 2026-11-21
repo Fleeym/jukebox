@@ -1,7 +1,6 @@
 #include "jukebox/ui/list/nong_list.hpp"
 
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
@@ -126,7 +125,7 @@ bool NongList::init(
     );
     m_list->setID("list");
 
-    this->addChildAtPosition(m_list, Anchor::Center, -m_list->getScaledContentSize() / 2);
+    this->addChildAtPosition(m_list, Anchor::Center);
 
     m_onListTypeChange(m_currentSong);
 
@@ -148,7 +147,7 @@ void NongList::build() {
 
         m_searchInput->setVisible(false);
         m_list->setContentSize({m_list->getContentSize().width, this->getContentSize().height - s_padding});
-        m_list->updateAnchoredPosition(Anchor::Center, -m_list->getScaledContentSize() / 2);
+        m_list->updateAnchoredPosition(Anchor::Center);
 
         for (int id : m_songIds) {
             std::optional<Nongs*> nongs = NongManager::get().getNongs(id);
@@ -167,9 +166,7 @@ void NongList::build() {
         m_searchInput->setVisible(true);
         float listHeight = this->getContentSize().height - s_padding - s_searchBarHeight;
         m_list->setContentSize({m_list->getContentSize().width, listHeight});
-        m_list->updateAnchoredPosition(
-            Anchor::Center, CCPoint {0.0f, -(s_searchBarHeight / 2)} - m_list->getScaledContentSize() / 2
-        );
+        m_list->updateAnchoredPosition(Anchor::Center, CCPoint {0.0f, -(s_searchBarHeight / 2)});
 
         int id = m_currentSong.value();
 

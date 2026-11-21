@@ -55,13 +55,12 @@ using namespace geode::prelude;
 using namespace jukebox::index;
 
 static void setInputProps(TextInput* i) {
-    i->getInputNode()->setLabelPlaceholderColor({.r = 108, .g = 153, .b = 216});
-    i->getInputNode()->setMaxLabelScale(0.7f);
-    i->getInputNode()->setLabelPlaceholderScale(0.7f);
+    i->setPlaceholderColor({.r = 108, .g = 153, .b = 216, .a = 255});
+    i->setScale(0.7f);
+    i->setPlaceholderScale(0.7f);
 }
 
 static std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
-    std::string ret;
 #ifdef GEODE_IS_WINDOWS
     if (tag.datatype == FMOD_TAGDATATYPE_STRING_UTF16) {
         return string::wideToUtf8(reinterpret_cast<const wchar_t*>(tag.data));
@@ -75,13 +74,15 @@ static std::optional<std::string> parseFromFMODTag(const FMOD_TAG& tag) {
     return std::string(reinterpret_cast<const char*>(tag.data), tag.datalen);
 }
 
+namespace {
+
 class IndexDisclaimerPopup : public FLAlertLayer, public FLAlertLayerProtocol {
 protected:
     geode::Function<void(FLAlertLayer*, bool)> m_selected;
 
+public:
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override { m_selected(layer, btn2); }
 
-public:
     static IndexDisclaimerPopup* create(
         char const* title,
         std::string const& content,
@@ -101,6 +102,7 @@ public:
         return nullptr;
     }
 };
+} // namespace
 
 namespace jukebox {
 
@@ -216,7 +218,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
             break;
     }
 
-    m_specialInput = TextInput::create(inputWidth, placeholder.c_str(), "bigFont.fnt");
+    m_specialInput = TextInput::create(inputWidth, placeholder, "bigFont.fnt");
     m_specialInput->setID("special-input");
     m_specialInput->setCommonFilter(CommonFilter::Any);
     setInputProps(m_specialInput);
@@ -489,7 +491,7 @@ void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
             m_specialInput->setString("");
             m_localSongMenu->setVisible(true);
             m_specialInfoNode->updateLayout();
-            m_specialInput->getInputNode()->getTextLabel()->setString("Select a file");
+            m_specialInput->setPlaceholder("Select a file");
             if (!m_memoizedLocalInput.empty()) { m_specialInput->setString(m_memoizedLocalInput); }
             break;
         }
@@ -497,7 +499,7 @@ void NongAddPopup::setSongType(SongType type, bool memorizePrevious) {
             m_specialInput->setString("");
             m_localSongMenu->setVisible(false);
             m_specialInfoNode->updateLayout();
-            m_specialInput->getInputNode()->getTextLabel()->setString("Enter a song URL");
+            m_specialInput->setPlaceholder("Enter a song URL");
             if (!m_memoizedHostedInput.empty()) { m_specialInput->setString(m_memoizedHostedInput); }
             break;
         }
@@ -623,7 +625,7 @@ Result<> NongAddPopup::addLocalSong(
     const std::string& songName, const std::string& artistName, const std::optional<std::string> levelName, int offset
 ) {
     if (!m_localPath.has_value()) {
-        std::filesystem::path path = std::string(std::move(m_specialInput->getString()));
+        std::filesystem::path path = std::string(m_specialInput->getString());
         if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { m_localPath = path; }
     }
 

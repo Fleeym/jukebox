@@ -1,7 +1,6 @@
 #include "jukebox/download/hosted.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -28,7 +27,7 @@ arc::Future<Result<ByteVector>> startHostedDownload(const std::string_view url) 
 
     const web::WebResponse response =
         co_await web::WebRequest()
-            .timeout(std::chrono::seconds(timeout))
+            .timeout(asp::time::Duration::fromSecs(timeout))
             .onProgress([url = std::string(url)](const web::WebProgress& progress) {
                 const float actual = progress.downloadProgress().value_or(0.0f);
 
