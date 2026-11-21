@@ -4,6 +4,20 @@ All notable changes to this mod will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.8.1] - 2026-11-22
+
+### Changed
+
+- Port to Geometry Dash 2.2091 and Geode v6.0.0
+- Replaced `std::filesystem` with `asp::fs`
+- Replaced `std::chrono` for HTTP requests with `asp::Duration`
+- Adapted positioning of the NongList to 2.2091
+- Internal code cleanup
+
+## Fixed
+
+- Fixed the request-timeout setting being read as a bool
+
 ## [3.8.0] - 2026-09-26
 
 ### Added
