@@ -348,7 +348,7 @@ void NongList::addSongToList(Song* nong, Nongs* parent, bool liveInsert) {
     std::string uniqueID = nong->metadata()->uniqueID;
     std::optional<asp::fs::Path> path = nong->path();
     bool isFromIndex = nong->indexID().has_value();
-    bool isDownloaded = path.has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(path.value()));
+    bool isDownloaded = path.has_value() && asp::fs::exists(path.value());
     NongCell* cell = NongCell::create(id, uniqueID, itemSize, m_levelID, std::nullopt);
     cell->setID(uniqueID);
 

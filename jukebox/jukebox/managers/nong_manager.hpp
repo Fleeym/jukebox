@@ -25,8 +25,8 @@ protected:
     void setupManifestPath() {
         const asp::fs::Path path = this->baseManifestPath();
 
-        if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
-            auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
+        if (!asp::fs::exists(path)) {
+            auto createDirRes = geode::utils::file::createDirectory(path);
             if (createDirRes.isErr()) {
                 geode::log::error("Failed to create manifest path {}: {}", path, createDirRes.unwrapErr());
             }

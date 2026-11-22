@@ -302,7 +302,7 @@ bool NongAddPopup::init(const int songID, const std::optional<Song*> replacedNon
 
     switch (edit->type()) {
         case NongType::LOCAL:
-            m_memoizedLocalInput = asp::fs::Path::fromStdPath(edit->path().value()).string();
+            m_memoizedLocalInput = edit->path().value().string();
             m_localPath = edit->path();
             this->setSongType(SongType::LOCAL, false);
             break;
@@ -410,7 +410,7 @@ void NongAddPopup::onFileOpen(file::PickResult result) {
 
     asp::fs::Path path = *pathOpt;
 
-    std::string strPath = asp::fs::Path::fromStdPath(path).string();
+    std::string strPath = path.string();
     std::string extension = (path.extension().has_value() ? "." + std::string(*path.extension()) : std::string());
     std::ranges::transform(extension, extension.begin(), [](const unsigned char c) { return std::tolower(c); });
 
@@ -539,7 +539,7 @@ void NongAddPopup::onPublish(CCObject* /*target*/) {
                 Song* replacedNong = m_replacedNong.value();
 
                 std::string songSpecificParams;
-                const auto pathStr = asp::fs::Path::fromStdPath(replacedNong->path().value()).string();
+                const auto pathStr = replacedNong->path().value().string();
                 switch (replacedNong->type()) {
                     case NongType::LOCAL:
                         songSpecificParams = fmt::format("&path={}&source=local", pathStr);
@@ -625,18 +625,18 @@ Result<> NongAddPopup::addLocalSong(
 ) {
     if (!m_localPath.has_value()) {
         asp::fs::Path path = std::string(m_specialInput->getString());
-        if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) { m_localPath = path; }
+        if (asp::fs::exists(path)) { m_localPath = path; }
     }
 
     if (!m_localPath.has_value()) { return Err("No file selected."); }
 
     asp::fs::Path path = m_localPath.value();
 
-    if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
+    if (!asp::fs::exists(path)) {
         return Err("The selected file ({}) does not exist.", path);
     }
 
-    if (asp::fs::Path::fromStdPath(path).isDir()) { return Err("You selected a directory."); }
+    if (path.isDir()) { return Err("You selected a directory."); }
 
     std::string extension = (path.extension().has_value() ? "." + std::string(*path.extension()) : std::string());
     if (songName.empty()) { return Err("Song name is empty"); }
@@ -647,15 +647,15 @@ Result<> NongAddPopup::addLocalSong(
         m_replacedNong.has_value() ? m_replacedNong.value()->metadata()->uniqueID : jukebox::random_string(16);
     std::string unique = fmt::format("{}{}", id, extension);
     asp::fs::Path destination = Mod::get()->getSaveDir() / "nongs";
-    if (!asp::fs::exists(asp::fs::Path::fromStdPath(destination))) {
-        auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(destination));
+    if (!asp::fs::exists(destination)) {
+        auto createDirRes = geode::utils::file::createDirectory(destination);
         if (createDirRes.isErr()) { return Err("Failed to create nongs directory."); }
     }
     destination /= unique;
 
     if (destination != path) {
         GEODE_UNWRAP(
-            asp::fs::copy(asp::fs::Path::fromStdPath(path), asp::fs::Path::fromStdPath(destination))
+            asp::fs::copy(path, destination)
                 .mapErr([](auto err) { return fmt::format("Failed to save song. Please try again! {}", err); })
         );
     }
@@ -785,7 +785,7 @@ geode::Result<> NongAddPopup::addHostedSong(
 }
 
 bool NongAddPopup::isPathValidSong(const asp::fs::Path& song) const {
-    const auto stringPath = asp::fs::Path::fromStdPath(song).string();
+    const auto stringPath = song.string();
 
     FMOD::Sound* sound = nullptr;
     const FMOD_RESULT result = FMODAudioEngine::sharedEngine()->m_system->createSound(
@@ -820,7 +820,7 @@ std::optional<NongAddPopup::ParsedMetadata> NongAddPopup::tryParseMetadata(asp::
     FMOD::System* system = FMODAudioEngine::sharedEngine()->m_system;
 
     FMOD_RESULT result = system->createSound(
-        asp::fs::Path::fromStdPath(path).string().c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound
+        path.string().c_str(), FMOD_CREATESTREAM | FMOD_OPENONLY, nullptr, &sound
     );
 
     if (!sound || result != FMOD_OK) {

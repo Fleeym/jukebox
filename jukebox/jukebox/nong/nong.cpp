@@ -45,7 +45,7 @@ private:
 
 public:
     Impl(SongMetadata&& metadata, asp::fs::Path path)
-        : m_metadata(std::make_unique<SongMetadata>(metadata)), m_path(std::move(path)) {}
+        : m_metadata(std::make_unique<SongMetadata>(std::move(metadata))), m_path(std::move(path)) {}
 
     Impl(const Impl& other) : m_metadata(std::make_unique<SongMetadata>(*other.m_metadata)), m_path(other.m_path) {}
     Impl& operator=(const Impl&) = delete;
@@ -112,7 +112,7 @@ public:
         std::optional<std::string> indexID,
         std::optional<asp::fs::Path> path = std::nullopt
     )
-        : m_metadata(std::make_unique<SongMetadata>(metadata)),
+        : m_metadata(std::make_unique<SongMetadata>(std::move(metadata))),
           m_youtubeID(std::move(youtubeID)),
           m_indexID(std::move(indexID)),
           m_path(std::move(path)) {}
@@ -134,7 +134,7 @@ public:
     [[nodiscard]] std::string youtubeID() const { return m_youtubeID; }
     [[nodiscard]] std::optional<std::string> indexID() const { return m_indexID; }
     Future<Result<ByteVector>> startDownload() const {
-        if (m_path.has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(m_path.value()))) {
+        if (m_path.has_value() && asp::fs::exists(m_path.value())) {
             co_return Err("Song is already downloaded");
         }
 
@@ -196,7 +196,7 @@ public:
         std::optional<std::string> indexID,
         std::optional<asp::fs::Path> path = std::nullopt
     )
-        : m_metadata(std::make_unique<SongMetadata>(metadata)),
+        : m_metadata(std::make_unique<SongMetadata>(std::move(metadata))),
           m_url(std::move(url)),
           m_indexID(std::move(indexID)),
           m_path(std::move(path)) {}
@@ -218,7 +218,7 @@ public:
     [[nodiscard]] std::optional<std::string> indexID() const noexcept { return m_indexID; }
     [[nodiscard]] std::optional<asp::fs::Path> path() const noexcept { return m_path; }
     Future<Result<ByteVector>> startDownload() const {
-        if (m_path.has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(m_path.value()))) {
+        if (m_path.has_value() && asp::fs::exists(m_path.value())) {
             co_return Err("Song is already downloaded");
         }
 
@@ -274,8 +274,8 @@ private:
     std::vector<IndexSongMetadata*> m_indexSongs;
 
     void deletePath(const std::optional<asp::fs::Path>& path) {
-        if (path.has_value() && asp::fs::exists(asp::fs::Path::fromStdPath(path.value()))) {
-            auto removeRes = asp::fs::remove(asp::fs::Path::fromStdPath(path.value()));
+        if (path.has_value() && asp::fs::exists(path.value())) {
+            auto removeRes = asp::fs::remove(path.value());
             if (removeRes.isErr()) {
                 auto err = removeRes.unwrapErr();
                 log::error("Couldn't delete NONG: {}", err);
@@ -294,8 +294,8 @@ public:
 
         // Don't save manifest for songs with no nongs
         if (m_locals.empty() && m_youtube.empty() && m_hosted.empty()) {
-            if (asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
-                auto removeRes = asp::fs::remove(asp::fs::Path::fromStdPath(path));
+            if (asp::fs::exists(path)) {
+                auto removeRes = asp::fs::remove(path);
                 if (removeRes.isErr()) {
                     auto err = removeRes.unwrapErr();
                     return Err("Failed to remove file: {}", err);
@@ -308,7 +308,7 @@ public:
         matjson::Value json = matjson::Serialize<Nongs>::toJson(*self);
 
         auto writeRes =
-            geode::utils::file::writeString(asp::fs::Path::fromStdPath(path), json.dump(matjson::NO_INDENTATION));
+            geode::utils::file::writeString(path, json.dump(matjson::NO_INDENTATION));
         if (writeRes.isErr()) { return Err("Couldn't write manifest: {}", writeRes.unwrapErr()); }
 
         return Ok();
@@ -319,7 +319,7 @@ public:
 
         if (IS_DEFAULT) { return Ok(); }
 
-        if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) { return Err("Song doesn't exist on disk"); }
+        if (!asp::fs::exists(path)) { return Err("Song doesn't exist on disk"); }
 
         return Ok();
     }

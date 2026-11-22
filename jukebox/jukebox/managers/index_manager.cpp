@@ -54,8 +54,8 @@ bool IndexManager::init() {
     if (m_initialized) { return true; }
 
     if (const asp::fs::Path path = this->baseIndexesPath();
-        !asp::fs::exists(asp::fs::Path::fromStdPath(path))) {
-        auto createDirRes = geode::utils::file::createDirectory(asp::fs::Path::fromStdPath(path));
+        !asp::fs::exists(path)) {
+        auto createDirRes = geode::utils::file::createDirectory(path);
         if (createDirRes.isErr()) {
             log::error("Failed to create indexes directory {}: {}", path, createDirRes.unwrapErr());
         }
@@ -104,9 +104,9 @@ asp::fs::Path IndexManager::baseIndexesPath() {
 }
 
 Result<> IndexManager::loadIndex(asp::fs::Path path) {
-    if (!asp::fs::exists(asp::fs::Path::fromStdPath(path))) { return Err("Index file does not exist"); }
+    if (!asp::fs::exists(path)) { return Err("Index file does not exist"); }
 
-    GEODE_UNWRAP_INTO(matjson::Value jsonObj, geode::utils::file::readJson(asp::fs::Path::fromStdPath(path)));
+    GEODE_UNWRAP_INTO(matjson::Value jsonObj, geode::utils::file::readJson(path));
 
     return this->loadIndex(std::move(jsonObj));
 }
@@ -315,9 +315,9 @@ Future<Result<std::optional<matjson::Value>>> IndexManager::fetchIndex(const Ind
 Future<Result<matjson::Value>> IndexManager::fetchIndexFromCache(const IndexSource& index) {
     const asp::fs::Path filepath = this->pathToCachedIndex(std::string_view(index.m_url));
 
-    if (!asp::fs::exists(asp::fs::Path::fromStdPath(filepath))) { co_return Err("No cached entry for index"); }
+    if (!asp::fs::exists(filepath)) { co_return Err("No cached entry for index"); }
 
-    co_return geode::utils::file::readJson(asp::fs::Path::fromStdPath(filepath)).mapErr([](std::string err) {
+    co_return geode::utils::file::readJson(filepath).mapErr([](std::string err) {
         return fmt::format("Failed to read JSON: {}", err);
     });
 }
@@ -329,7 +329,7 @@ Future<> IndexManager::onIndexFetched(const std::string& url, matjson::Value&& j
         const asp::fs::Path filepath = this->pathToCachedIndex(std::string_view(url));
 
         auto success =
-            geode::utils::file::writeString(asp::fs::Path::fromStdPath(filepath), json.dump(matjson::NO_INDENTATION));
+            geode::utils::file::writeString(filepath, json.dump(matjson::NO_INDENTATION));
         if (success.isErr()) {
             log::error("Failed to cache index: {}", std::move(success).unwrapErr());
         } else {
@@ -475,7 +475,7 @@ void IndexManager::onDownloadFinish(
         path = NongManager::get().baseNongsPath() / name;
     }
 
-    if (auto res = file::writeBinary(asp::fs::Path::fromStdPath(path), data); res.isErr()) {
+    if (auto res = file::writeBinary(path, data); res.isErr()) {
         const std::string err = fmt::format("Failed to store downloaded file. {}", res.unwrapErr());
         log::error("{}", err);
         event::SongDownloadFailed(destination->songID())
@@ -500,7 +500,7 @@ void IndexManager::onDownloadFinish(
         event::SongDownloadFailed(destination->songID())
             .send(event::SongDownloadFailedData {destination->songID(), uniqueId, print});
 
-        if (auto removeRes = asp::fs::remove(asp::fs::Path::fromStdPath(path)); removeRes.isErr()) {
+        if (auto removeRes = asp::fs::remove(path); removeRes.isErr()) {
             auto removeErr = removeRes.unwrapErr();
             log::warn("Failed to cleanup partially downloaded file {}: {}", path, removeErr);
         }

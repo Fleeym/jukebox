@@ -63,7 +63,7 @@ struct matjson::Serialize<jukebox::LocalSong> {
             {"unique_id", value.metadata()->uniqueID},
             {"artist", value.metadata()->artist},
             {"filename", asp::fs::Path(value.path()->filename().value())},
-            {"path", asp::fs::Path::fromStdPath(value.path().value())},
+            {"path", value.path().value()},
             {"offset", value.metadata()->startOffset},
         });
         if (value.metadata()->level.has_value()) { ret["level"] = value.metadata()->level.value(); }
@@ -107,7 +107,7 @@ struct matjson::Serialize<jukebox::YTSong> {
             {"name", value.metadata()->name},
             {"unique_id", value.metadata()->uniqueID},
             {"artist", value.metadata()->artist},
-            {"path", asp::fs::Path::fromStdPath(value.path().value())},
+            {"path", value.path().value()},
             {"offset", value.metadata()->startOffset},
             {"youtube_id", value.youtubeID()},
         });
@@ -163,7 +163,7 @@ struct matjson::Serialize<jukebox::HostedSong> {
             {"name", value.metadata()->name},
             {"unique_id", value.metadata()->uniqueID},
             {"artist", value.metadata()->artist},
-            {"path", asp::fs::Path::fromStdPath(value.path().value())},
+            {"path", value.path().value()},
             {"filename", asp::fs::Path(value.path()->filename().value())},
             {"offset", value.metadata()->startOffset},
             {"url", value.url()},
