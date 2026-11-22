@@ -12,7 +12,6 @@
 #include <arc/future/Future.hpp>
 #include <matjson.hpp>
 
-#include "jukebox/events/start_download.hpp"
 #include "jukebox/nong/index.hpp"
 #include "jukebox/nong/nong.hpp"
 

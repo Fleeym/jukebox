@@ -190,21 +190,21 @@ struct matjson::Serialize<jukebox::Nongs> {
             locals.push(matjson::Serialize<jukebox::LocalSong>::toJson(*local));
         }
 
-        ret["locals"] = locals;
+        ret["locals"] = std::move(locals);
 
         matjson::Value youtubes = matjson::Value::array();
         for (std::unique_ptr<jukebox::YTSong>& youtube : value.youtube()) {
             if (!youtube->path().has_value()) { continue; }
             youtubes.push(matjson::Serialize<jukebox::YTSong>::toJson(*youtube));
         }
-        ret["youtube"] = youtubes;
+        ret["youtube"] = std::move(youtubes);
 
         matjson::Value hosteds = matjson::Value::array();
         for (std::unique_ptr<jukebox::HostedSong>& hosted : value.hosted()) {
             if (!hosted->path().has_value()) { continue; }
             hosteds.push(matjson::Serialize<jukebox::HostedSong>::toJson(*hosted));
         }
-        ret["hosted"] = hosteds;
+        ret["hosted"] = std::move(hosteds);
 
         return ret;
     }

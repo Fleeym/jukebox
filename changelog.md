@@ -4,7 +4,7 @@ All notable changes to this mod will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [3.8.1] - 2026-11-22
+## [3.9.0] - 2026-11-22
 
 ### Changed
 
@@ -12,11 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Replaced `std::filesystem` with `asp::fs`
 - Replaced `std::chrono` for HTTP requests with `asp::Duration`
 - Adapted positioning of the NongList to 2.2091
+- Optimized json serialization
 - Internal code cleanup
 
 ## Fixed
 
 - Fixed the request-timeout setting being read as a bool
+- Fixed songs with different metadata being treated as duplicate
 
 ## [3.8.0] - 2026-09-26
 

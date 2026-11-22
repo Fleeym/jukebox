@@ -16,7 +16,6 @@
 #include <Geode/utils/file.hpp>
 
 #include "jukebox/nong/nong.hpp"
-#include "jukebox/ui/nong_dropdown_layer.hpp"
 
 namespace jukebox {
 

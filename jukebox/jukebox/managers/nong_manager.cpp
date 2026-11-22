@@ -74,7 +74,10 @@ int NongManager::getCurrentManifestVersion() const { return m_manifest.m_version
 
 int NongManager::getStoredIDCount() const { return m_manifest.m_nongs.size(); }
 
-int NongManager::adjustSongID(int id, bool robtop) { return robtop ? (id < 0 ? id : -id - 1) : id; }
+int NongManager::adjustSongID(int id, bool robtop) {
+    if (!robtop || id < 0) { return id; }
+    return -id - 1;
+}
 
 bool NongManager::hasSongID(int id) const { return m_manifest.m_nongs.contains(id); }
 
