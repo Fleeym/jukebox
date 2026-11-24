@@ -88,7 +88,7 @@ struct matjson::Serialize<jukebox::index::IndexMetadata> {
 
         // Links
         jukebox::index::IndexMetadata::Links links;
-        if ((value.contains("links")) && (value["links"].contains("discord"))) {
+        if (value.contains("links") && value["links"].contains("discord")) {
             GEODE_UNWRAP_INTO(links.m_discord, value["links"]["discord"].asString());
         }
 
