@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector> // IWYU pragma: keep
 
 #include <Geode/binding/MusicDownloadManager.hpp>
 #include <Geode/binding/SongInfoObject.hpp>
